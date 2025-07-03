@@ -6820,6 +6820,11 @@ class AlbumCollectionApp {
             this.originalMusicalArtists = [...(this.musicalArtists || [])];
             this.originalTechnicalArtists = [...(this.technicalArtists || [])];
         }
+
+        // Store current sort state before filtering
+        const artistsSort = document.getElementById('artists-sort');
+        const currentSortType = artistsSort ? artistsSort.value : 'most-albums';
+        console.log(`🔄 Current sort type: ${currentSortType}`);
         
         if (!query.trim()) {
             // Empty search - restore original arrays and re-render
@@ -6830,14 +6835,9 @@ class AlbumCollectionApp {
             document.getElementById('musical-artists-count').textContent = `(${this.musicalArtists.length})`;
             document.getElementById('technical-artists-count').textContent = `(${this.technicalArtists.length})`;
             
-            // Re-render with original data
-            this.renderActiveArtistsTab();
-            
-            // Re-apply current sort if any
-            const artistsSort = document.getElementById('artists-sort');
-            if (artistsSort && artistsSort.value && artistsSort.value !== 'most-albums') {
-                this.sortArtists(artistsSort.value);
-            }
+            // Re-apply the current sort to restored data
+            console.log(`🔄 Re-applying sort after clearing search: ${currentSortType}`);
+            this.sortArtists(currentSortType);
             return;
         }
 
@@ -6866,14 +6866,9 @@ class AlbumCollectionApp {
         document.getElementById('musical-artists-count').textContent = `(${filteredMusical.length})`;
         document.getElementById('technical-artists-count').textContent = `(${filteredTechnical.length})`;
         
-        // Re-render the active tab with filtered data
-        this.renderActiveArtistsTab();
-        
-        // Re-apply current sort to filtered results
-        const artistsSort = document.getElementById('artists-sort');
-        if (artistsSort && artistsSort.value && artistsSort.value !== 'most-albums') {
-            this.sortArtists(artistsSort.value);
-        }
+        // Re-apply current sort to filtered results (always apply, regardless of sort type)
+        console.log(`🔄 Re-applying sort after search filtering: ${currentSortType}`);
+        this.sortArtists(currentSortType);
         
         console.log(`✅ Found ${filteredMusical.length} musical, ${filteredTechnical.length} technical artists matching "${query}"`);
     }
