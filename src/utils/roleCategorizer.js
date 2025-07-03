@@ -50,7 +50,14 @@ class RoleCategorizer {
             
             // Legal & Business
             'legal', 'copyright', 'rights', 'licensing', 'clearance',
-            'publisher', 'publishing'
+            'publisher', 'publishing',
+            
+            // Direction & Coordination
+            'directed by', 'copyist', 'graphics', 'crew', 'booking',
+            'adapted by', 'promotion', 'assisting', 'stylist', 'hair',
+            'public relations', 'assistants', 'french translation',
+            'additional assistant', 'translation', 'assistance', 'assistent',
+            'technical support'
         ]);
 
         // Musical/Performance roles (to be shown prominently)
