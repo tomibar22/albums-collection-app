@@ -1,0 +1,5466 @@
+/* Album Card Component Styles */
+.album-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.album-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-color);
+}
+
+.album-card-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.album-cover {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--bg-secondary);
+}
+
+.cover-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.album-card:hover .cover-image {
+    transform: scale(1.05);
+}
+
+.album-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.album-card:hover .album-overlay {
+    opacity: 1;
+}
+
+.album-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-direction: column;
+    align-items: center;
+}
+
+.action-btn {
+    background: var(--accent-color);
+    color: var(--text-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+.action-btn .btn-icon {
+    font-size: 1rem;
+}
+
+.album-info {
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.album-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.album-artist {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.album-year {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+    font-weight: 400;
+}
+
+.album-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    gap: 0.5rem;
+}
+
+.track-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.genre-tag {
+    background: var(--accent-color);
+    color: var(--text-primary);
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.625rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.genre-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+/* Albums Grid Layout */
+.albums-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .albums-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 1rem;
+    }
+    
+    .album-actions {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    
+    .action-btn {
+        min-width: 80px;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .album-info {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .albums-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    
+    .action-btn .btn-text {
+        display: none;
+    }
+    
+    .action-btn {
+        min-width: 40px;
+        padding: 0.5rem;
+    }
+}
+
+/* Scraper View Styles */
+.scraper-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.scraper-section {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.scraper-section h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.search-container {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.search-container input {
+    flex: 1;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+}
+
+.search-container input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-container button {
+    background-color: var(--accent-primary);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+    white-space: nowrap;
+}
+
+.search-container button:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.search-results {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background-color: var(--bg-secondary);
+}
+
+.search-results:empty {
+    display: none;
+}
+
+.result-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.result-item:last-child {
+    border-bottom: none;
+}
+
+.result-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.result-info {
+    flex: 1;
+}
+
+.result-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.result-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.result-checkbox {
+    margin-left: 1rem;
+}
+
+.result-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-primary);
+}
+
+/* Cart Styles */
+.scraper-cart {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.scraper-cart h4 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.cart-items {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background-color: var(--bg-secondary);
+    margin-bottom: 1rem;
+}
+
+.cart-items:empty::after {
+    content: "No albums selected";
+    display: block;
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.cart-item {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-item-remove {
+    background: none;
+    border: none;
+    color: var(--error);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius);
+    transition: background-color 0.2s ease;
+}
+
+.cart-item-remove:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.scrape-btn {
+    background-color: var(--success);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+    width: 100%;
+}
+
+.scrape-btn:hover:not(:disabled) {
+    background-color: #059669;
+    transform: translateY(-1px);
+}
+
+.scrape-btn:disabled {
+    background-color: var(--bg-tertiary);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    padding: 1rem;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    max-width: 1000px;
+    width: 95%;
+    max-height: 95vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    animation: modalSlideIn 0.3s ease-out;
+    backdrop-filter: blur(10px);
+    margin: auto;
+}
+
+@keyframes modalSlideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(-20px) scale(0.95); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
+}
+
+.modal-header {
+    padding: 2rem;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03), rgba(79, 70, 229, 0.03));
+}
+
+.modal-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-title-image {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent-color);
+    flex-shrink: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.modal-back-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    transition: all 0.2s ease;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.modal-back-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--accent-color);
+}
+
+.modal-body {
+    padding: 0;
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+}
+
+/* Responsive Design for Scraper */
+@media (max-width: 768px) {
+    .search-container {
+        flex-direction: column;
+    }
+    
+    .search-container button {
+        align-self: stretch;
+    }
+    
+    .result-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .result-checkbox {
+        margin-left: 0;
+        align-self: flex-end;
+    }
+}
+
+/* Empty State Styles */
+.empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    text-align: center;
+}
+
+.empty-state-content h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-content p {
+    font-size: 1rem;
+    color: var(--text-muted);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Album Modal Styles */
+.album-modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    padding: 2.5rem;
+    min-height: 600px;
+}
+
+.album-modal-header {
+    display: flex;
+    gap: 2.5rem;
+    align-items: flex-start;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03), rgba(79, 70, 229, 0.03));
+    border-radius: 16px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.album-modal-image {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-cover-image {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.modal-cover-image:hover {
+    transform: scale(1.02);
+}
+
+.modal-placeholder-image {
+    width: 200px;
+    height: 200px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.placeholder-icon {
+    font-size: 3rem;
+    opacity: 0.6;
+}
+
+.placeholder-text {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.album-modal-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+
+.modal-album-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+
+.modal-album-artist {
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.modal-album-year {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 500;
+}
+
+.modal-album-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+}
+
+.modal-track-count {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    background: var(--bg-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: inline-block;
+    width: fit-content;
+}
+
+.modal-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.genre-tag-modal {
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    transition: all 0.2s ease;
+}
+
+.genre-tag-modal:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.album-modal-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.modal-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: all 0.2s ease;
+}
+
+.modal-section:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
+}
+
+.modal-section h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 1.5rem 0;
+    padding: 0;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-section h4:before {
+    content: '';
+    width: 4px;
+    height: 1.5rem;
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    border-radius: 2px;
+}
+
+.tracklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.track-item {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    background: var(--bg-primary);
+    border: 1px solid transparent;
+}
+
+.track-item:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--accent-color);
+    transform: translateX(4px);
+}
+
+.track-position {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    width: 2.5rem;
+    flex-shrink: 0;
+    text-align: center;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 0.25rem;
+    border-radius: 6px;
+}
+
+.track-title {
+    flex: 1;
+    font-size: 1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.track-duration {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    background: var(--bg-secondary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+}
+
+.credits {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.credit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    background: var(--bg-primary);
+    border: 1px solid transparent;
+}
+
+.credit-item:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--accent-color);
+    transform: translateX(4px);
+}
+
+.credit-name {
+    font-size: 1rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.credit-name:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+}
+
+.credit-role {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    font-weight: 500;
+}
+
+.no-content {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+    margin: 0;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    margin-top: 1rem;
+    border-top: 2px solid var(--border-color);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.02), rgba(79, 70, 229, 0.02));
+    border-radius: 16px;
+}
+
+.modal-action-btn {
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+    min-width: 160px;
+    justify-content: center;
+}
+
+.modal-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    filter: brightness(1.1);
+}
+
+.modal-action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Responsive Modal Styles */
+@media (max-width: 768px) {
+    .modal-content {
+        max-width: 95vw;
+        max-height: 90vh;
+        margin: 1rem;
+        border-radius: 16px;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+        max-height: calc(90vh - 80px);
+    }
+    
+    .album-modal-content {
+        padding: 1.5rem;
+        gap: 2rem;
+    }
+    
+    .album-modal-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+    
+    .modal-cover-image {
+        width: 160px;
+        height: 160px;
+    }
+    
+    .modal-placeholder-image {
+        width: 160px;
+        height: 160px;
+    }
+    
+    .modal-album-title {
+        font-size: 1.5rem;
+    }
+    
+    .modal-album-artist {
+        font-size: 1.125rem;
+    }
+    
+    .modal-section {
+        padding: 1.5rem;
+    }
+    
+    .modal-section h4 {
+        font-size: 1.25rem;
+    }
+    
+    .track-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+    
+    .track-position {
+        width: auto;
+        align-self: flex-start;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .modal-action-btn {
+        width: 100%;
+        min-width: auto;
+    }
+}
+    
+    .track-position {
+        width: auto;
+        text-align: left;
+    }
+    
+    .credit-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        margin: 0.5rem;
+        max-height: 90vh;
+        max-width: 100vw;
+    }
+    
+    .modal-header,
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-cover-image {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .modal-section {
+        padding: 1rem;
+    }
+}
+
+
+/* Artist Card Component Styles */
+.artist-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.artist-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-color);
+}
+
+.artist-card.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.artist-card.highlighted {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(64, 224, 255, 0.3);
+}
+
+.artist-card-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.artist-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--bg-secondary);
+}
+
+.artist-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    background-color: var(--bg-secondary);
+}
+
+.artist-card:hover .artist-photo {
+    transform: scale(1.05);
+}
+
+.artist-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.artist-card:hover .artist-overlay {
+    opacity: 1;
+}
+
+.artist-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.artist-info {
+    padding: 0.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.artist-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.artist-album-count {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.artist-roles {
+    font-size: 0.75rem;
+    color: var(--accent-color);
+    margin: 0.25rem 0 0 0;
+    font-weight: 400;
+    opacity: 0.9;
+    font-style: italic;
+    line-height: 1.2;
+}
+
+/* Artist card loading state */
+.artist-card.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Mobile responsiveness for artist cards */
+@media (max-width: 768px) {
+    .artist-info {
+        padding: 0.75rem;
+    }
+    
+    .artist-name {
+        font-size: 1rem;
+    }
+    
+    .artist-album-count {
+        font-size: 0.8rem;
+    }
+    
+    .artist-actions {
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .artist-info {
+        padding: 0.5rem;
+    }
+    
+    .artist-name {
+        font-size: 0.95rem;
+    }
+    
+    .artist-album-count {
+        font-size: 0.75rem;
+    }
+    
+    .action-btn .btn-text {
+        display: none;
+    }
+    
+    .action-btn {
+        min-width: auto;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+    }
+}
+
+
+/* Artist Albums Modal Styles */
+.artist-albums-modal {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.artist-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(79, 70, 229, 0.05));
+    border-radius: 16px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.artist-header h3 {
+    margin: 0 0 0.75rem 0;
+    color: var(--text-primary);
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.artist-album-count {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+/* Artist Albums Modal now uses standard .albums-grid styling */
+
+/* Artist Albums Modal now uses standard .album-card styling */
+
+/* Modal Action Button Styles */
+.modal-action-btn.youtube-btn {
+    background: var(--accent-color);
+    color: white;
+    border: 2px solid var(--accent-color);
+}
+
+.modal-action-btn.youtube-btn:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+/* Album Card Action Button Styles */
+.action-btn.youtube-btn {
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    color: white;
+    border: 2px solid var(--accent-color);
+}
+
+.action-btn.youtube-btn:hover {
+    background: linear-gradient(135deg, var(--accent-hover), var(--accent-color));
+    border-color: var(--accent-hover);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Mobile responsiveness for artist albums modal */
+@media (max-width: 768px) {
+    .artist-albums-modal {
+        padding: 1.5rem;
+    }
+    
+    .artist-header {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .artist-header h3 {
+        font-size: 1.75rem;
+    }
+    
+    .artist-albums-list {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        padding: 1rem;
+        max-height: 650px;
+    }
+    
+    .artist-album-item {
+        padding: 1.25rem;
+    }
+    
+    .artist-album-cover {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 0.75rem;
+    }
+    
+    .artist-album-cover-placeholder {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 0.75rem;
+        font-size: 2rem;
+    }
+    
+    .artist-album-title {
+        font-size: 1rem;
+    }
+}
+
+/* Very small screens - single column */
+@media (max-width: 480px) {
+    .artist-albums-list {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0.25rem;
+    }
+    
+    .artist-album-cover {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .artist-album-cover-placeholder {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+    }
+    
+    .artist-album-title {
+        font-size: 0.85rem;
+    }
+}
+    
+    .artist-album-title {
+        font-size: 0.9rem;
+    }
+    
+    .artist-album-year {
+        font-size: 0.8rem;
+    }
+    
+    .artist-album-tracks {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .artist-albums-modal {
+        padding: 0.5rem;
+    }
+    
+    .artist-albums-list {
+        max-height: 450px;
+    }
+    
+    .artist-album-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .artist-album-cover {
+        align-self: center;
+    }
+    
+    .artist-album-info {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .artist-album-actions {
+        align-self: center;
+    }
+}
+
+
+/* =======================
+   Track Cards
+   ======================= */
+
+.track-card {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.track-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-color);
+    background: linear-gradient(145deg, var(--surface-color), var(--surface-hover));
+}
+
+.track-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 2;
+}
+
+.track-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.track-frequency {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    padding: 0.25rem 0.75rem;
+    background: var(--background-secondary);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.track-actions {
+    margin-top: 0.5rem;
+}
+
+.track-view-albums-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.track-view-albums-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+/* =======================
+   Track Albums Modal
+   ======================= */
+
+.track-albums-content {
+    max-width: 100%;
+    padding: 2rem;
+}
+
+.track-albums-header {
+    margin-bottom: 2.5rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(79, 70, 229, 0.05));
+    border-radius: 16px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    text-align: center;
+}
+
+.track-albums-header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.track-albums-header p strong {
+    color: var(--accent-color);
+    font-weight: 700;
+    font-size: 1.4rem;
+}
+
+/* Track Albums Modal now uses standard .albums-grid styling */
+
+/* Track Albums Modal now uses standard .album-card styling */
+
+/* Track positions display for track albums modal */
+.track-positions {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+/* Role filtering styles */
+.clickable-role-filter {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.clickable-role-filter:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.clickable-role-filter.active-filter {
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+}
+
+.albums-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.albums-section-header h4 {
+    margin: 0;
+}
+
+.role-filter-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(79, 70, 229, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    font-size: 0.875rem;
+}
+
+.filter-text {
+    color: var(--text-primary);
+}
+
+.clear-filter-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.375rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-filter-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .albums-section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .role-filter-status {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+}
+
+/* Mobile responsiveness for track albums */
+@media (max-width: 768px) {
+    .track-albums-content {
+        padding: 1.5rem;
+    }
+    
+    .track-albums-header {
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .track-albums-header p {
+        font-size: 1.1rem;
+    }
+    
+    .track-albums-header p strong {
+        font-size: 1.25rem;
+    }
+    
+    .track-albums-list {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        padding: 0.75rem;
+        max-height: 650px;
+    }
+    
+    .track-album-item {
+        padding: 1.5rem;
+    }
+    
+    .track-album-cover,
+    .track-album-cover-placeholder {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .track-album-title {
+        font-size: 1.1rem;
+    }
+}
+}
+
+/* Track albums modal scrollbar */
+.track-albums-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.track-albums-list::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 3px;
+}
+
+.track-albums-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.track-albums-list::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* =======================
+   Track Cards Responsive
+   ======================= */
+
+@media (max-width: 768px) {
+    .track-card {
+        padding: 1rem;
+    }
+    
+    .track-title {
+        font-size: 1rem;
+    }
+    
+    .track-frequency {
+        font-size: 0.85rem;
+    }
+    
+    .track-view-albums-btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .track-albums-content {
+        padding: 1rem;
+    }
+    
+    .track-albums-header {
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .track-albums-header p {
+        font-size: 1rem;
+    }
+    
+    .track-albums-header p strong {
+        font-size: 1.15rem;
+    }
+    
+    .track-albums-list {
+        grid-template-columns: 1fr;
+        max-height: 500px;
+        gap: 1.25rem;
+        padding: 0.5rem;
+    }
+    
+    .track-album-item {
+        padding: 1.25rem;
+    }
+    
+    .track-album-cover,
+    .track-album-cover-placeholder {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .track-album-title {
+        font-size: 1rem;
+    }
+    
+    .track-album-artist {
+        font-size: 0.9rem;
+    }
+    
+    .track-album-year {
+        font-size: 0.85rem;
+    }
+    
+    .track-album-tracks {
+        font-size: 0.85rem;
+    }
+}
+
+/* =======================
+   Image Placeholders
+   ======================= */
+
+.album-placeholder,
+.artist-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(145deg, var(--background-secondary), var(--surface-color));
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-tertiary);
+    text-align: center;
+}
+
+.album-placeholder .placeholder-icon,
+.artist-placeholder .placeholder-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+.album-placeholder .placeholder-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.artist-placeholder .placeholder-icon {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--accent-color);
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modal Placeholders */
+.modal-placeholder-image {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(145deg, var(--background-secondary), var(--surface-color));
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-tertiary);
+}
+
+.modal-placeholder-image .placeholder-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+.modal-placeholder-image .placeholder-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+/* Artist Album Cover Placeholder */
+.artist-album-cover-placeholder {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, var(--bg-secondary), var(--bg-card));
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 2rem;
+    color: var(--text-tertiary);
+    opacity: 0.6;
+    margin: 0 auto 0.75rem auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Track Album Image Placeholder */
+.track-album-image .placeholder-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, var(--background-secondary), var(--surface-color));
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1.5rem;
+    color: var(--text-tertiary);
+    opacity: 0.7;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .album-placeholder .placeholder-icon,
+    .artist-placeholder .placeholder-icon {
+        font-size: 2rem;
+    }
+    
+    .modal-placeholder-image {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .modal-placeholder-image .placeholder-icon {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .album-placeholder .placeholder-icon,
+    .artist-placeholder .placeholder-icon {
+        font-size: 1.5rem;
+    }
+    
+    .modal-placeholder-image {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .modal-placeholder-image .placeholder-icon {
+        font-size: 2rem;
+    }
+    
+    .artist-album-cover-placeholder {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+    }
+}
+
+/* ============================================ */
+/* SCRAPER STYLES (Step 3.1) */
+/* ============================================ */
+
+.scraper-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.scraper-section {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.scraper-section h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+/* Search Results */
+.search-results {
+    margin-top: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background-color: var(--bg-secondary);
+}
+
+.search-results:empty {
+    display: none;
+}
+
+.search-results-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-card);
+}
+
+.search-results-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.search-results-list {
+    padding: 0.5rem;
+}
+
+.search-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    transition: all 0.2s ease;
+}
+
+.search-result-item:hover {
+    background-color: var(--hover-bg);
+    transform: translateY(-1px);
+}
+
+.result-info {
+    flex: 1;
+}
+
+.result-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.result-meta {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.result-actions {
+    margin-left: 1rem;
+}
+
+.scrape-artist-btn {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
+}
+
+.scrape-artist-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--accent-hover), var(--accent-primary));
+    transform: translateY(-1px);
+}
+
+.scrape-artist-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.scrape-artist-btn.completed {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.scrape-artist-btn.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* No Results State */
+.no-results, .error-message {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.error-message {
+    color: #ef4444;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .scraper-content {
+        gap: 1.5rem;
+    }
+    
+    .scraper-section {
+        padding: 1rem;
+    }
+    
+    .search-result-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .result-actions {
+        margin-left: 0;
+    }
+    
+    .scrape-artist-btn {
+        width: 100%;
+    }
+}
+
+/* STEP 3.2: ALBUM SEARCH & CART STYLES */
+/* ============================================ */
+
+/* Album-specific result styling */
+.album-result .result-artist {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: 0.25rem;
+}
+
+.filter-note {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0.5rem 0 0 0;
+    font-style: italic;
+}
+
+/* Cart button styling */
+.add-to-cart-btn {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--accent-hover), var(--accent-primary));
+    transform: translateY(-1px);
+}
+
+.add-to-cart-btn.in-cart {
+    background: linear-gradient(135deg, #10b981, #059669);
+    cursor: default;
+}
+
+.add-to-cart-btn:disabled {
+    opacity: 0.8;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Cart Section */
+.scraper-cart {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.scraper-cart h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.cart-items {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.empty-cart {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.cart-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-card);
+}
+
+.cart-header h5 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.cart-items-list {
+    padding: 0.5rem;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    transition: all 0.2s ease;
+}
+
+.cart-item:hover {
+    background-color: var(--hover-bg);
+}
+
+.cart-item-info {
+    flex: 1;
+}
+
+.cart-item-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.cart-item-artist {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.remove-from-cart-btn {
+    background: transparent;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.remove-from-cart-btn:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Scrape Albums Button */
+.scrape-btn {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.scrape-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--accent-hover), var(--accent-primary));
+    transform: translateY(-1px);
+}
+
+.scrape-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    transform: none;
+}
+
+.scrape-btn.completed {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.scrape-btn.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Mobile responsive cart */
+@media (max-width: 768px) {
+    .cart-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .remove-from-cart-btn {
+        align-self: flex-end;
+        width: auto;
+    }
+    
+    .scraper-cart {
+        margin-top: 1rem;
+        padding-top: 1rem;
+    }
+}
+
+/* ===== ROLE CARDS STYLING ===== */
+
+.role-card {
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    height: fit-content;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.role-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.role-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+    transform: translateY(-2px);
+}
+
+.role-card:hover::before {
+    transform: scaleX(1);
+}
+
+.role-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+}
+
+.role-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.role-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 1;
+}
+
+.role-frequency {
+    color: var(--accent-primary);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.role-artists {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* New styling for primary vs secondary stats */
+.primary-stat {
+    color: var(--accent-primary);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.secondary-stat {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-size: 0.85rem;
+}
+
+.role-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.role-view-artists-btn {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.role-view-artists-btn:hover {
+    background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+.role-view-artists-btn:active {
+    transform: translateY(0);
+}
+
+/* Role Artists Modal Styling */
+.role-artists-content {
+    padding: 1rem 0;
+}
+
+.role-artists-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.role-artists-header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.role-artists-list {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.role-artist-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-primary);
+    transition: all 0.2s ease;
+}
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.role-artist-item:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
+}
+
+.role-artist-image {
+    flex-shrink: 0;
+}
+
+.placeholder-artist-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.role-artist-details {
+    flex-grow: 1;
+    min-width: 0;
+    max-width: calc(100% - 120px); /* Reserve space for image and button */
+}
+
+.role-artist-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    line-height: 1.3;
+    word-wrap: break-word;
+    /* Allow name to wrap instead of truncating */
+}
+
+.role-artist-role {
+    color: var(--accent-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.role-artist-count {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* Role artist interactions */
+.clickable-artist-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.clickable-artist-item:hover {
+    background-color: var(--bg-secondary);
+    transform: translateY(-1px);
+}
+
+.role-artist-actions {
+    display: flex;
+    align-items: center;
+    margin-left: 1rem;
+}
+
+.view-artist-albums-btn {
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.view-artist-albums-btn:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.view-artist-albums-btn:active {
+    transform: translateY(0);
+}
+
+/* Mobile responsive role cards */
+@media (max-width: 768px) {
+    .role-card {
+        padding: 1rem;
+    }
+    
+    .role-title {
+        font-size: 1.1rem;
+    }
+    
+    .role-artists-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .role-artist-item {
+        padding: 0.75rem;
+    }
+    
+    .placeholder-artist-image {
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+    }
+    
+    .role-artist-actions {
+        margin-left: 0.5rem;
+    }
+    
+    .view-artist-albums-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+}
+
+
+/* Organized Credits Styling - Compact and Subtle */
+.organized-credit-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.organized-credit-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Compact inline layout for artist name and roles */
+.credit-line {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.credit-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin: 0;
+    flex-shrink: 0;
+}
+
+/* Clickable artist names in credits */
+.clickable-artist-name {
+    cursor: pointer;
+    color: var(--accent-primary) !important;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.clickable-artist-name:hover {
+    color: var(--accent-secondary) !important;
+    text-decoration-color: var(--accent-secondary);
+    transform: translateY(-1px);
+}
+
+.credit-roles-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.credit-roles-section {
+    margin-bottom: 0.5rem;
+}
+
+.credit-roles-section:last-child {
+    margin-bottom: 0;
+}
+
+.general-roles {
+    margin-bottom: 0.75rem;
+}
+
+.track-specific-roles {
+    margin-top: 0.5rem;
+}
+
+.role-tag {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    margin: 0;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.general-role {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.track-role {
+    background: rgba(59, 130, 246, 0.1);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.role-tag:hover {
+    background: rgba(59, 130, 246, 0.25);
+    color: #3b82f6;
+}
+
+/* Album-specific role styling in artist modals */
+.album-specific-roles {
+    margin: 0.5rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    justify-content: center;
+}
+
+.musical-role-small {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
+    transition: all 0.2s ease;
+    letter-spacing: 0.01em;
+}
+
+.technical-role-small {
+    background: linear-gradient(135deg, #6b7280, #9ca3af);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(107, 114, 128, 0.25);
+    transition: all 0.2s ease;
+    letter-spacing: 0.01em;
+}
+
+.musical-role-small:hover {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    transform: scale(1.05);
+}
+
+.technical-role-small:hover {
+    background: linear-gradient(135deg, #4b5563, #6b7280);
+    transform: scale(1.05);
+}
+
+.no-role {
+    color: #6b7280;
+    font-style: italic;
+    font-size: 0.7rem;
+    padding: 2px 0;
+}
+
+.track-role-group {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.track-role-group:last-child {
+    margin-bottom: 0;
+}
+
+.track-info {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2196F3;
+    margin-bottom: 0.25rem;
+    font-style: italic;
+}
+
+.track-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+/* Responsive adjustments for credits */
+@media (max-width: 768px) {
+    .organized-credit-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .credit-name {
+        font-size: 0.9rem;
+    }
+    
+    .role-tag {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .track-role-group {
+        padding: 0.4rem;
+    }
+    
+    .track-info {
+        font-size: 0.75rem;
+    }
+}
+
+/* Compact Credits Styling */
+.credit-roles-compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0.5rem 0;
+}
+
+.track-roles-expandable {
+    margin-top: 0.5rem;
+}
+
+.track-roles-toggle {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.track-roles-toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: var(--text-primary);
+}
+
+.track-roles-toggle.expanded {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+.toggle-icon {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+}
+
+.track-roles-summary {
+    flex: 1;
+    font-weight: 400;
+}
+
+.track-roles-details {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(33, 150, 243, 0.05);
+    border: 1px solid rgba(33, 150, 243, 0.2);
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    overflow: hidden;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+
+.track-role-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.track-role-item:last-child {
+    margin-bottom: 0;
+}
+
+.track-context {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-style: italic;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    flex: 1;
+    margin-right: 0.5rem;
+}
+
+/* Enhanced role tags for compact design */
+.role-tag {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    margin: 0.1rem 0.2rem 0.1rem 0;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.general-role {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.track-role {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color: white;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.role-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive compact design */
+@media (max-width: 768px) {
+    .organized-credit-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .credit-name {
+        font-size: 0.95rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    .role-tag {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.4rem;
+        margin: 0.1rem 0.15rem 0.1rem 0;
+    }
+    
+    .track-roles-toggle {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .track-context {
+        font-size: 0.75rem;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+    }
+    
+    .track-roles-details {
+        padding: 0.5rem;
+    }
+    
+    .track-role-item {
+        gap: 0.3rem;
+        margin-bottom: 0.4rem;
+    }
+}
+
+/* Animation for smooth expand/collapse */
+.track-roles-details {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Technical Credits Section Styling */
+.technical-credits-section {
+    margin-top: 1.5rem;
+    border-top: 1px solid #374151;
+    padding-top: 1rem;
+}
+
+.technical-credits-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.75rem 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.technical-credits-toggle:hover {
+    color: #d1d5db;
+    background-color: rgba(75, 85, 99, 0.3);
+    border-radius: 0.375rem;
+    padding-left: 0.5rem;
+}
+
+.technical-credits-toggle.expanded {
+    color: #60a5fa;
+}
+
+.technical-credits-toggle .toggle-icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+    color: #60a5fa;
+}
+
+.technical-credits-toggle.expanded .toggle-icon {
+    transform: rotate(90deg);
+}
+
+.technical-credits-content {
+    padding: 1rem 0 0.5rem 0;
+    border-left: 2px solid #374151;
+    margin-left: 0.5rem;
+    padding-left: 1rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.musical-credits {
+    padding-bottom: 0.5rem;
+}
+
+/* Enhanced role tags for technical credits */
+.technical-credits-content .role-tag {
+    background-color: rgba(107, 114, 128, 0.6);
+    color: #d1d5db;
+    border: 1px solid #4b5563;
+}
+
+.technical-credits-content .role-tag:hover {
+    background-color: rgba(107, 114, 128, 0.8);
+    border-color: #6b7280;
+}
+
+/* Distinguish musical from technical credits */
+.musical-credits .credit-name {
+    color: #60a5fa;
+    font-weight: 500;
+}
+
+.technical-credits-content .credit-name {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+/* Responsive adjustments for technical credits */
+@media (max-width: 768px) {
+    .technical-credits-toggle {
+        font-size: 0.85rem;
+        padding: 0.6rem 0;
+    }
+    
+    .technical-credits-content {
+        padding-left: 0.75rem;
+        margin-left: 0.25rem;
+    }
+}
+
+/* Artist Role Tabs Styling */
+.artist-roles-section {
+    margin: 1.5rem 0;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.artist-role-tabs {
+    display: flex;
+    background-color: #1f2937;
+    border-bottom: 1px solid #374151;
+}
+
+.role-tab-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.role-tab-btn:hover {
+    background-color: rgba(75, 85, 99, 0.5);
+    color: #d1d5db;
+}
+
+.role-tab-btn.active {
+    background-color: #374151;
+    color: #60a5fa;
+    border-bottom: 2px solid #60a5fa;
+}
+
+.role-tab-btn:not(:last-child) {
+    border-right: 1px solid #374151;
+}
+
+.artist-role-content {
+    padding: 1rem;
+    background-color: #111827;
+    max-height: 150px;
+    overflow-y: auto;
+    min-height: 60px;
+}
+
+.role-tab-content {
+    display: none;
+}
+
+.role-tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.role-tab-content .role-tag {
+    margin: 0.25rem 0.25rem 0.25rem 0;
+}
+
+.musical-role {
+    background-color: rgba(96, 165, 250, 0.2);
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+}
+
+.musical-role:hover {
+    background-color: rgba(96, 165, 250, 0.3);
+    border-color: #60a5fa;
+}
+
+.technical-role {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: #d1d5db;
+    border: 1px solid #6b7280;
+}
+
+.technical-role:hover {
+    background-color: rgba(107, 114, 128, 0.3);
+    border-color: #9ca3af;
+}
+
+.no-roles {
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+    padding: 1rem;
+}
+
+/* Responsive adjustments for artist role tabs */
+@media (max-width: 768px) {
+    .role-tab-btn {
+        font-size: 0.8rem;
+        padding: 0.6rem 0.75rem;
+    }
+    
+    .artist-role-content {
+        padding: 0.75rem;
+    }
+    
+    .role-tab-content .role-tag {
+        font-size: 0.7rem;
+        margin: 0.2rem 0.2rem 0.2rem 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .artist-role-tabs {
+        flex-direction: column;
+    }
+    
+    .role-tab-btn:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid #374151;
+    }
+    
+    .role-tab-btn.active {
+        border-bottom: none;
+        border-left: 3px solid #60a5fa;
+    }
+}
+
+/* Roles Page Tab System */
+.roles-tabs {
+    display: flex;
+    background-color: #1f2937;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid #374151;
+    border-bottom: none;
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.role-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 1rem 1.5rem;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    position: relative;
+}
+
+.role-tab-btn:hover {
+    background-color: rgba(75, 85, 99, 0.5);
+    color: #d1d5db;
+}
+
+.role-tab-btn.active {
+    background-color: #374151;
+    color: #e2e8f0;
+    border-bottom: 3px solid #60a5fa;
+}
+
+.role-tab-btn[data-tab="musical"].active {
+    border-bottom-color: #60a5fa;
+}
+
+.role-tab-btn[data-tab="technical"].active {
+    border-bottom-color: #9ca3af;
+}
+
+.role-tab-btn:not(:last-child) {
+    border-right: 1px solid #374151;
+}
+
+.tab-icon {
+    font-size: 1.25rem;
+}
+
+.tab-label {
+    font-weight: 600;
+}
+
+.tab-count {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #6b7280;
+    margin-left: 0.25rem;
+}
+
+.role-tab-btn.active .tab-count {
+    color: #9ca3af;
+}
+
+.roles-content {
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    min-height: 400px;
+}
+
+.roles-tab-content {
+    display: none;
+    padding: 2rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.roles-tab-content.active {
+    display: block;
+}
+
+.roles-tab-content .roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Enhanced Role Cards for Tabs */
+.role-card {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.role-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+/* Musical tab styling */
+#musical-roles-tab .role-card::before {
+    background: #3b82f6;
+}
+
+#musical-roles-tab .role-card:hover::before {
+    width: 8px;
+    background: #60a5fa;
+}
+
+#musical-roles-tab .musical-action-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: 1px solid #2563eb;
+}
+
+#musical-roles-tab .musical-action-btn:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Technical tab styling */
+#technical-roles-tab .role-card::before {
+    background: #6b7280;
+}
+
+#technical-roles-tab .role-card:hover::before {
+    width: 8px;
+    background: #9ca3af;
+}
+
+#technical-roles-tab .technical-action-btn {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    border: 1px solid #4b5563;
+}
+
+#technical-roles-tab .technical-action-btn:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+    border-color: #374151;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.role-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.role-category-icon {
+    font-size: 1.25rem;
+    opacity: 0.8;
+}
+
+.role-title {
+    flex: 1;
+}
+
+/* Empty state for tabs */
+.roles-tab-content .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Responsive Design for Role Tabs */
+@media (max-width: 1024px) {
+    .roles-tab-content .roles-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.25rem;
+    }
+    
+    .role-tab-btn {
+        font-size: 0.9rem;
+        padding: 0.875rem 1.25rem;
+        gap: 0.5rem;
+    }
+    
+    .tab-icon {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .roles-tabs {
+        flex-direction: column;
+    }
+    
+    .role-tab-btn:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid #374151;
+    }
+    
+    .role-tab-btn.active {
+        border-bottom: none;
+        border-left: 4px solid #60a5fa;
+    }
+    
+    .role-tab-btn[data-tab="technical"].active {
+        border-left-color: #9ca3af;
+    }
+    
+    .roles-tab-content {
+        padding: 1.5rem;
+    }
+    
+    .roles-tab-content .roles-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+    
+    .tab-label {
+        font-size: 0.9rem;
+    }
+    
+    .tab-count {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .roles-tab-content .roles-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .roles-tab-content {
+        padding: 1rem;
+    }
+    
+    .role-tab-btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .tab-icon {
+        font-size: 1rem;
+    }
+}
+
+/* Accessibility Improvements */
+.role-tab-btn:focus {
+    outline: 2px solid #60a5fa;
+    outline-offset: -2px;
+}
+
+.role-card:focus-within {
+    outline: 2px solid #60a5fa;
+    outline-offset: 2px;
+}
+
+/* Tab switching animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Artists Page Tab System */
+.artists-tabs {
+    display: flex;
+    background-color: #1f2937;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid #374151;
+    border-bottom: none;
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.artist-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 1rem 1.5rem;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    border-right: 1px solid #374151;
+    position: relative;
+}
+
+.artist-tab-btn:last-child {
+    border-right: none;
+}
+
+.artist-tab-btn:hover {
+    background-color: #374151;
+    color: #d1d5db;
+}
+
+.artist-tab-btn.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    position: relative;
+}
+
+.artist-tab-btn[data-tab="technical"].active {
+    background-color: #6b7280;
+}
+
+.artist-tab-btn .tab-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.artist-tab-btn .tab-label {
+    font-weight: 600;
+}
+
+.artist-tab-btn .tab-count {
+    color: #d1d5db;
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+.artist-tab-btn.active .tab-count {
+    color: #ffffff;
+    opacity: 1;
+}
+
+/* Artist Tab Content */
+.artists-content {
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 0 0 8px 8px;
+    min-height: 400px;
+}
+
+.artists-tab-content {
+    display: none;
+    padding: 2rem;
+}
+
+.artists-tab-content.active {
+    display: block;
+}
+
+.artists-tab-content .artists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    width: 100%;
+}
+
+/* Responsive Design for Artist Tabs */
+@media (max-width: 1024px) {
+    .artists-tab-content .artists-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+
+    .artist-tab-btn {
+        font-size: 0.9rem;
+        padding: 0.875rem 1.25rem;
+        gap: 0.5rem;
+    }
+
+    .artist-tab-btn .tab-icon {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .artists-tabs {
+        flex-direction: column;
+    }
+
+    .artist-tab-btn:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid #374151;
+    }
+
+    .artist-tab-btn.active {
+        border-bottom: none;
+        border-left: 4px solid #60a5fa;
+    }
+
+    .artist-tab-btn[data-tab="technical"].active {
+        border-left-color: #9ca3af;
+    }
+
+    .artists-tab-content {
+        padding: 1.5rem;
+    }
+
+    .artists-tab-content .artists-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.875rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .artist-tab-btn {
+        padding: 1rem;
+        gap: 0.5rem;
+    }
+
+    .artist-tab-btn .tab-label {
+        font-size: 0.875rem;
+    }
+
+    .artists-tab-content {
+        padding: 1rem;
+    }
+
+    .artists-tab-content .artists-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+/* ===============================
+   EDIT/DELETE FUNCTIONALITY
+   =============================== */
+
+/* Edit and Delete Buttons */
+.modal-action-btn.edit-btn {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.modal-action-btn.edit-btn:hover {
+    background: linear-gradient(135deg, #047857 0%, #059669 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.modal-action-btn.delete-btn {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.modal-action-btn.delete-btn:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Edit Forms */
+.edit-form {
+    max-width: 600px;
+    margin: 0 auto;
+    background: rgba(31, 41, 55, 0.95);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #f9fafb;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(17, 24, 39, 0.8);
+    border: 1px solid rgba(75, 85, 99, 0.5);
+    border-radius: 8px;
+    color: #f9fafb;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.form-tag {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-tag .remove-tag {
+    cursor: pointer;
+    color: #ef4444;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.form-tag .remove-tag:hover {
+    color: #dc2626;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.form-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-btn.save-btn {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: white;
+}
+
+.form-btn.save-btn:hover {
+    background: linear-gradient(135deg, #047857 0%, #059669 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.form-btn.cancel-btn {
+    background: rgba(75, 85, 99, 0.3);
+    color: #d1d5db;
+    border: 1px solid rgba(75, 85, 99, 0.5);
+}
+
+.form-btn.cancel-btn:hover {
+    background: rgba(75, 85, 99, 0.5);
+    color: #f9fafb;
+}
+
+/* Enhanced Track Edit Sections */
+.track-edit-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.track-edit-row:hover {
+    background: rgba(17, 24, 39, 0.8);
+    border-color: rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.track-number {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 1.5rem;
+}
+
+.track-fields-group {
+    display: grid;
+    grid-template-columns: 80px 1fr 100px;
+    gap: 1rem;
+    flex: 1;
+    align-items: flex-end;
+}
+
+.track-field-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.track-title-wrapper {
+    flex: 1;
+}
+
+.track-field-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #9ca3af;
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.track-position,
+.track-title,
+.track-duration {
+    padding: 0.75rem;
+    background: rgba(31, 41, 55, 0.8);
+    border: 1px solid rgba(75, 85, 99, 0.4);
+    border-radius: 8px;
+    color: #f9fafb;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.track-position:focus,
+.track-title:focus,
+.track-duration:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: rgba(31, 41, 55, 0.95);
+}
+
+.track-position {
+    text-align: center;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.track-title {
+    font-weight: 500;
+}
+
+.track-duration {
+    text-align: center;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+.remove-track-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1.5rem;
+    flex-shrink: 0;
+}
+
+.remove-track-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+    transform: scale(1.05);
+}
+
+/* Enhanced Credit Edit Sections */
+.credit-edit-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.credit-edit-row:hover {
+    background: rgba(17, 24, 39, 0.8);
+    border-color: rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.credit-fields-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    flex: 1;
+    align-items: flex-end;
+}
+
+.credit-field-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.credit-name-wrapper {
+    flex: 1.2;
+}
+
+.credit-role-wrapper {
+    flex: 1;
+}
+
+.credit-field-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: #9ca3af;
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.credit-field-label svg {
+    opacity: 0.7;
+}
+
+.credit-name,
+.credit-role {
+    padding: 0.75rem;
+    background: rgba(31, 41, 55, 0.8);
+    border: 1px solid rgba(75, 85, 99, 0.4);
+    border-radius: 8px;
+    color: #f9fafb;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.credit-name:focus,
+.credit-role:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: rgba(31, 41, 55, 0.95);
+}
+
+.credit-name {
+    font-weight: 500;
+}
+
+.credit-role {
+    font-style: italic;
+    color: #d1d5db;
+}
+
+.remove-credit-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1.5rem;
+    flex-shrink: 0;
+}
+
+.remove-credit-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+    transform: scale(1.05);
+}
+
+/* Add Buttons Enhanced */
+.add-track-btn,
+.add-credit-btn {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+    border: 2px dashed rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+    padding: 0.875rem 1.25rem;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.add-track-btn:hover,
+.add-credit-btn:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: #60a5fa;
+    transform: translateY(-1px);
+}
+
+/* Section Titles */
+.edit-section-title {
+    color: #f9fafb;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(75, 85, 99, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .track-fields-group {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .track-number {
+        margin-top: 0;
+    }
+    
+    .remove-track-btn {
+        margin-top: 0;
+        align-self: flex-start;
+    }
+    
+    .credit-fields-group {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .remove-credit-btn {
+        margin-top: 0;
+        align-self: flex-start;
+    }
+    
+    .track-edit-row,
+    .credit-edit-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+/* Confirmation Dialog */
+.confirmation-dialog {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center;
+    background: rgba(31, 41, 55, 0.95);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.confirmation-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.confirmation-title {
+    color: #f9fafb;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.confirmation-message {
+    color: #d1d5db;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.confirmation-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+/* Loading States */
+.form-btn.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.form-btn.loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 0.5rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Edit Icons on Cards */
+.card-edit-overlay {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.album-card:hover .card-edit-overlay,
+.artist-card:hover .card-edit-overlay,
+.track-card:hover .card-edit-overlay,
+.role-card:hover .card-edit-overlay {
+    opacity: 1;
+}
+
+.card-edit-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card-edit-btn.edit {
+    background: rgba(59, 130, 246, 0.9);
+    color: white;
+}
+
+.card-edit-btn.edit:hover {
+    background: #3b82f6;
+    transform: scale(1.1);
+}
+
+.card-edit-btn.delete {
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+}
+
+.card-edit-btn.delete:hover {
+    background: #ef4444;
+    transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .edit-form {
+        padding: 1.5rem;
+        margin: 0 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .confirmation-dialog {
+        margin: 0 1rem;
+        padding: 1.5rem;
+    }
+    
+    .confirmation-actions {
+        flex-direction: column;
+    }
+}
+
+
+/* ============================================
+   SCRAPED CONTENT DISPLAY STYLING - ENHANCED
+   ============================================ */
+
+/* Scraped Content Section */
+.scraped-content-section {
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(59, 130, 246, 0.05) 100%);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+
+.scraped-content-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+    border-radius: 16px 16px 0 0;
+}
+
+.scraped-content-section h3 {
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, var(--text-primary), #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Collection Stats - Enhanced Cards */
+.collection-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(135deg, var(--surface-color), rgba(59, 130, 246, 0.08));
+    padding: 24px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
+.stat-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Scraped Content Tabs - Enhanced */
+.scraped-content-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    background: var(--surface-color);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.scraped-tab-btn {
+    background: none;
+    border: none;
+    padding: 16px 24px;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.scraped-tab-btn:hover {
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.scraped-tab-btn.active {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+}
+
+.scraped-tab-btn.active::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    padding: 1px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+}
+
+/* Scraped Content Display */
+.scraped-content-display {
+    min-height: 320px;
+    position: relative;
+}
+
+.scraped-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.scraped-tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.scraped-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--surface-color);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Custom Scrollbar */
+.scraped-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scraped-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scraped-list::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 3px;
+}
+
+.scraped-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.5);
+}
+
+/* Empty State - Enhanced */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 30px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--surface-color), rgba(59, 130, 246, 0.02));
+    border-radius: 12px;
+}
+
+.empty-state::before {
+    content: '✨';
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.empty-state p:first-child {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.empty-state p:last-child {
+    font-size: 0.95rem;
+    opacity: 0.7;
+    color: var(--text-secondary);
+    max-width: 300px;
+    line-height: 1.5;
+}
+
+/* Scraped Artist Item - Enhanced */
+.scraped-artist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.scraped-artist-item:last-child {
+    border-bottom: none;
+}
+
+.scraped-artist-item:hover {
+    background: linear-gradient(135deg, var(--hover-bg), rgba(59, 130, 246, 0.05));
+    transform: translateX(4px);
+}
+
+.scraped-artist-item:hover::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 0 2px 2px 0;
+}
+
+.scraped-artist-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.scraped-artist-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    position: relative;
+}
+
+.scraped-artist-avatar::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0.3;
+}
+
+.scraped-artist-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.scraped-artist-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.scraped-artist-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.scraped-artist-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.scraped-artist-albums {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    min-width: 45px;
+    text-align: center;
+}
+
+/* Scraped Album Item - Enhanced */
+.scraped-album-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.scraped-album-item:last-child {
+    border-bottom: none;
+}
+
+.scraped-album-item:hover {
+    background: linear-gradient(135deg, var(--hover-bg), rgba(59, 130, 246, 0.05));
+    transform: translateX(4px);
+}
+
+.scraped-album-item:hover::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 0 2px 2px 0;
+}
+
+.scraped-album-cover {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--surface-color), rgba(59, 130, 246, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.scraped-album-cover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
+.scraped-album-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.scraped-album-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.scraped-album-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+}
+
+.scraped-album-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.scraped-album-year {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.scraped-album-timestamp {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    margin-left: auto;
+    white-space: nowrap;
+    font-style: italic;
+}
+
+/* Recently Added Indicator - Enhanced */
+.recently-added {
+    position: relative;
+}
+
+.recently-added::after {
+    content: 'NEW';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.recently-added::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 80%;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+/* Responsive Design - Enhanced */
+@media (max-width: 768px) {
+    .scraped-content-section {
+        padding: 24px 20px;
+    }
+    
+    .collection-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .stat-item {
+        padding: 20px 16px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .scraped-content-tabs {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .scraped-tab-btn {
+        padding: 14px 20px;
+        font-size: 0.9rem;
+    }
+    
+    .scraped-artist-info {
+        gap: 12px;
+    }
+    
+    .scraped-artist-avatar {
+        width: 42px;
+        height: 42px;
+        font-size: 0.9rem;
+    }
+    
+    .scraped-album-cover {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .scraped-album-timestamp {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .collection-stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .stat-item {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 16px;
+        padding: 16px;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .scraped-artist-info {
+        gap: 10px;
+    }
+    
+    .scraped-artist-avatar {
+        width: 38px;
+        height: 38px;
+        font-size: 0.8rem;
+    }
+    
+    .scraped-album-cover {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .scraped-album-item {
+        gap: 12px;
+    }
+}
+
+/* Load Images Button Styles */
+.load-images-btn {
+    background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 0.75rem;
+}
+
+.load-images-btn:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.load-images-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.load-images-btn.loading {
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+.load-images-btn.loading::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 0.25rem;
+}
+
+/* Mobile responsiveness for load images button */
+@media (max-width: 768px) {
+    .load-images-btn {
+        margin-left: 0.5rem;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .load-images-btn {
+        margin-left: 0;
+        margin-top: 0.5rem;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Scraped Artists History Styles */
+.scraped-artists-history {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.scraped-history-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.history-item-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.history-item-name {
+    font-weight: 500;
+    color: #e2e8f0;
+}
+
+.history-item-details {
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.history-item-date {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.history-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.history-count {
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+.secondary-btn {
+    background: rgba(220, 38, 38, 0.1);
+    color: #fca5a5;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+    background: rgba(220, 38, 38, 0.2);
+    border-color: rgba(220, 38, 38, 0.4);
+}
+
+/* Artist search result indicators */
+.search-result-item.already-scraped {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.search-result-item.already-scraped::after {
+    content: "✅ Already Scraped";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.75rem;
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.search-result-item {
+    position: relative;
+}
+
+/* ===== SEARCH CONTROLS ===== */
+.search-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-right: 1rem;
+}
+
+.search-input {
+    width: 700px;
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    min-height: 52px;
+    box-sizing: border-box;
+}
+
+/* Make albums search extra wide */
+#albums-view .search-input {
+    width: 800px;
+    max-width: 80vw;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    background: var(--bg-primary);
+}
+
+.search-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* Enhanced view controls layout */
+.view-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Mobile responsive search */
+@media (max-width: 768px) {
+    .search-controls {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .search-input {
+        width: 100%;
+        min-width: 250px;
+        max-width: none;
+    }
+    
+    /* Albums view search on mobile */
+    #albums-view .search-input {
+        width: 100%;
+        max-width: none;
+    }
+    
+    /* Select button on mobile */
+    .select-mode-btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    
+    .view-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+}
+
+/* Search result highlighting */
+.search-highlight {
+    background: rgba(59, 130, 246, 0.3);
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* Search results count */
+.search-results-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+}
+
+/* Clear search button */
+.clear-search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.clear-search-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+/* Search input with clear button */
+.search-input-container {
+    position: relative;
+    display: inline-block;
+}
+/* Lazy Loading Styles */
+
+/* Loading indicator styles */
+.lazy-loading-indicator {
+    grid-column: 1 / -1; /* Span full width of grid */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    margin: 1rem 0;
+}
+
+.loading-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--bg-secondary);
+    border-top: 2px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Completion message styles */
+.lazy-loading-complete {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.complete-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+/* Manual Load More Button */
+.manual-load-more-btn {
+    padding: 0.75rem 1.5rem;
+    margin: 1.5rem auto;
+    display: block;
+    border: 2px solid var(--accent-primary);
+    background: transparent;
+    color: var(--accent-primary);
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.manual-load-more-btn:hover {
+    background: var(--accent-primary);
+    color: var(--bg-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.manual-load-more-btn:active {
+    transform: translateY(0);
+}
+
+/* Lazy Loading Sentinel */
+.lazy-loading-sentinel {
+    height: 1px;
+    width: 100%;
+    visibility: hidden;
+    position: relative;
+    margin: 2rem 0;
+}
+
+.complete-icon {
+    font-size: 1rem;
+}
+
+/* Sentinel element (invisible trigger for infinite scroll) */
+.lazy-loading-sentinel {
+    height: 1px;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Load more button (optional manual loading) */
+.load-more-btn {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.load-more-btn button {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.load-more-btn button:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.load-more-btn button:disabled {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Performance stats overlay (for debugging) */
+.lazy-stats-overlay {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    z-index: 1000;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+/* Grid optimization classes */
+.optimized-grid {
+    /* Improve rendering performance */
+    contain: layout style paint;
+    transform: translateZ(0); /* Force GPU acceleration */
+}
+
+.grid-item {
+    /* Optimize individual grid items */
+    contain: layout paint;
+    will-change: transform, opacity;
+}
+
+/* Responsive adjustments for lazy loading */
+@media (max-width: 768px) {
+    .loading-content {
+        font-size: 0.8rem;
+        gap: 0.5rem;
+    }
+    
+    .loading-spinner {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .lazy-loading-indicator {
+        padding: 1.5rem;
+    }
+    
+    .load-more-btn button {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .loading-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .complete-content {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+/* ===== ALBUM SELECTION CONTROLS ===== */
+
+/* Select Mode Button */
+.select-mode-btn {
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 52px;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.select-mode-btn:hover {
+    background: var(--primary-blue-hover);
+    transform: translateY(-1px);
+}
+
+.select-mode-btn.active {
+    background: var(--accent-orange);
+    color: white;
+}
+
+.select-mode-btn.active:hover {
+    background: var(--accent-orange-hover);
+}
+
+/* Selection Controls Container */
+.selection-controls {
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border: 1px solid var(--primary-blue);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+}
+
+.selection-controls.hidden {
+    display: none;
+}
+
+/* Selection Info */
+.selection-info {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-blue);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.selection-info::before {
+    content: "📋";
+    font-size: 1.2rem;
+}
+
+/* Selection Actions */
+.selection-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+/* Selection Action Buttons */
+.select-all-btn,
+.delete-selected-btn,
+.cancel-selection-btn {
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.select-all-btn {
+    background: var(--success-green);
+    color: white;
+}
+
+.select-all-btn:hover {
+    background: var(--success-green-hover);
+    transform: translateY(-1px);
+}
+
+.delete-selected-btn {
+    background: var(--error-red);
+    color: white;
+}
+
+.delete-selected-btn:hover {
+    background: var(--error-red-hover);
+    transform: translateY(-1px);
+}
+
+.delete-selected-btn:disabled {
+    background: var(--text-secondary);
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cancel-selection-btn {
+    background: var(--text-secondary);
+    color: white;
+}
+
+.cancel-selection-btn:hover {
+    background: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+/* Album Card Selection Styles */
+.album-card.selection-mode {
+    position: relative;
+    cursor: pointer;
+}
+
+.album-card.selection-mode::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.album-card.selection-mode.selected::before {
+    border-color: var(--primary-blue);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.album-card.selection-mode:hover::before {
+    border-color: var(--primary-blue);
+    opacity: 0.5;
+}
+
+/* Selection Checkbox */
+.selection-checkbox {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 20px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+}
+
+.selection-checkbox:hover {
+    background: rgba(59, 130, 246, 0.8);
+    border-color: var(--primary-blue);
+}
+
+.selection-checkbox.checked {
+    background: var(--primary-blue);
+    border-color: var(--primary-blue);
+}
+
+.selection-checkbox.checked::after {
+    content: "✓";
+    color: white;
+    font-weight: bold;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .selection-controls {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .selection-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .selection-checkbox {
+        width: 24px;
+        height: 24px;
+        font-size: 14px;
+    }
+}
+
+/* Modal Search Container */
+.modal-search-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 8px 0;
+}
+
+.modal-search-input {
+    flex: 1;
+    padding: 16px 20px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-height: 52px;
+    min-width: 600px;
+    box-sizing: border-box;
+}
+
+.modal-search-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-results-count {
+    color: var(--text-muted);
+    font-size: 13px;
+    white-space: nowrap;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+/* Albums Section Header Enhanced */
+.albums-section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.albums-section-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Responsive adjustments for modal search */
+@media (max-width: 768px) {
+    .modal-search-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .search-results-count {
+        text-align: center;
+    }
+}

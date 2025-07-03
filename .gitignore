@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test files (extensive test suite)
+test-*.html
+debug-*.html
+quick-*.html
+roles-sort-validation.html
+scraper-fixes-test.html
+server-status.html
+step-debug.html
+force-refresh-test.html
+index-cache-busted.html
+
+# Documentation files (session summaries)
+*.md
+!README.md
+!CONTRIBUTING.md
+!LICENSE.md
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+dist/
+build/
+
+# Temporary files
+tmp/
+temp/
+
+# Local configuration overrides
+src/config.local.js
+src/config.js
+
+# Server process files
+*.pid

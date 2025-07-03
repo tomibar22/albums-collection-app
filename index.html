@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎧 Albums Collection App</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <link rel="stylesheet" href="src/styles/components.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">🎧 Albums Collection</h1>
+                <nav class="main-navigation">
+                    <button class="nav-btn active" data-view="albums">Albums</button>
+                    <button class="nav-btn" data-view="artists">Artists</button>
+                    <button class="nav-btn" data-view="tracks">Tracks</button>
+                    <button class="nav-btn" data-view="roles">Roles</button>
+                    <button class="nav-btn" data-view="scraper">Scraper</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Albums View -->
+            <section id="albums-view" class="view-container active">
+                <div class="view-header">
+                    <h2>Albums <span id="albums-count">(0)</span></h2>
+                    <div class="view-controls">
+                        <div class="search-controls">
+                            <input type="text" id="albums-search" placeholder="🔍 Search albums by title, artist, year..." class="search-input">
+                            <button class="select-mode-btn" id="select-mode-toggle">📋 Select</button>
+                        </div>
+                        <div class="sort-controls">
+                            <label>Sort by:</label>
+                            <select id="albums-sort">
+                                <option value="recently-added" selected>Recently Added</option>
+                                <option value="year-asc">Year (Ascending)</option>
+                                <option value="year-desc">Year (Descending)</option>
+                                <option value="random">Random</option>
+                            </select>
+                        </div>
+                        <button class="shuffle-btn hidden" id="shuffle-albums">🔀 Shuffle</button>
+                    </div>
+                    <!-- Selection Controls (shown when in select mode) -->
+                    <div class="selection-controls hidden" id="selection-controls">
+                        <div class="selection-info">
+                            <span id="selected-count">0</span> selected
+                        </div>
+                        <div class="selection-actions">
+                            <button class="select-all-btn" id="select-all-albums">☑️ Select All</button>
+                            <button class="delete-selected-btn" id="delete-selected-albums">🗑️ Delete Selected</button>
+                            <button class="cancel-selection-btn" id="cancel-selection">✖️ Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="albums-grid" id="albums-grid">
+                    <!-- Album cards will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Artists View -->
+            <section id="artists-view" class="view-container">
+                <div class="view-header">
+                    <h2>Artists <span id="artists-count">(0)</span></h2>
+                    <div class="view-controls">
+                        <div class="search-controls">
+                            <input type="text" id="artists-search" placeholder="🔍 Search artists by name, role..." class="search-input">
+                        </div>
+                        <div class="sort-controls">
+                            <label>Sort by:</label>
+                            <select id="artists-sort">
+                                <option value="most-albums">Most Albums</option>
+                                <option value="a-z">A-Z</option>
+                                <option value="random">Random</option>
+                            </select>
+                        </div>
+                        <button class="shuffle-btn hidden" id="shuffle-artists">🔀 Shuffle</button>
+                        <button class="load-images-btn" id="load-artist-images" onclick="window.albumApp.manuallyLoadArtistImages()" title="Load artist images from Discogs/Wikipedia">
+                            🖼️ Load Images
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Artist Tabs -->
+                <div class="artists-tabs">
+                    <button class="artist-tab-btn active" data-tab="musical" onclick="window.albumApp.switchArtistsTab('musical')">
+                        <span class="tab-icon">🎵</span>
+                        <span class="tab-label">Musical Artists</span>
+                        <span class="tab-count" id="musical-artists-count">(0)</span>
+                    </button>
+                    <button class="artist-tab-btn" data-tab="technical" onclick="window.albumApp.switchArtistsTab('technical')">
+                        <span class="tab-icon">🔧</span>
+                        <span class="tab-label">Technical Contributors</span>
+                        <span class="tab-count" id="technical-artists-count">(0)</span>
+                    </button>
+                </div>
+
+                <!-- Artist Content -->
+                <div class="artists-content">
+                    <div id="musical-artists-tab" class="artists-tab-content active">
+                        <div class="artists-grid" id="musical-artists-grid">
+                            <!-- Musical artist cards will be dynamically inserted here -->
+                        </div>
+                    </div>
+                    <div id="technical-artists-tab" class="artists-tab-content">
+                        <div class="artists-grid" id="technical-artists-grid">
+                            <!-- Technical artist cards will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tracks View -->
+            <section id="tracks-view" class="view-container">
+                <div class="view-header">
+                    <h2>Tracks <span id="tracks-count">(0)</span></h2>
+                    <div class="view-controls">
+                        <div class="search-controls">
+                            <input type="text" id="tracks-search" placeholder="🔍 Search tracks by title..." class="search-input">
+                        </div>
+                        <div class="sort-controls">
+                            <label>Sort by:</label>
+                            <select id="tracks-sort">
+                                <option value="frequency">Most Frequent</option>
+                                <option value="a-z">A-Z</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="tracks-grid" id="tracks-grid">
+                    <!-- Track items will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Roles View -->
+            <section id="roles-view" class="view-container">
+                <div class="view-header">
+                    <h2>Roles <span id="roles-count">(0)</span></h2>
+                    <div class="view-controls">
+                        <div class="search-controls">
+                            <input type="text" id="roles-search" placeholder="🔍 Search roles by name..." class="search-input">
+                        </div>
+                        <div class="sort-controls">
+                            <label>Sort by:</label>
+                            <select id="roles-sort">
+                                <option value="frequency">Most Frequent</option>
+                                <option value="a-z">A-Z</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Role Tabs -->
+                <div class="roles-tabs">
+                    <button class="role-tab-btn active" data-tab="musical" onclick="window.albumApp.switchRolesTab('musical')">
+                        <span class="tab-icon">🎵</span>
+                        <span class="tab-label">Musical Roles</span>
+                        <span class="tab-count" id="musical-roles-count">(0)</span>
+                    </button>
+                    <button class="role-tab-btn" data-tab="technical" onclick="window.albumApp.switchRolesTab('technical')">
+                        <span class="tab-icon">🔧</span>
+                        <span class="tab-label">Technical Roles</span>
+                        <span class="tab-count" id="technical-roles-count">(0)</span>
+                    </button>
+                </div>
+                
+                <!-- Role Content -->
+                <div class="roles-content">
+                    <div id="musical-roles-tab" class="roles-tab-content active">
+                        <div class="roles-grid" id="musical-roles-grid">
+                            <!-- Musical role items will be dynamically inserted here -->
+                        </div>
+                    </div>
+                    <div id="technical-roles-tab" class="roles-tab-content">
+                        <div class="roles-grid" id="technical-roles-grid">
+                            <!-- Technical role items will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scraper View -->
+            <section id="scraper-view" class="view-container">
+                <div class="view-header">
+                    <h2>Collection Scraper</h2>
+                    <div class="view-controls">
+                        <button id="test-api-btn" class="secondary-btn" onclick="window.testDiscogsAPI(true)" title="Test Discogs API connection">
+                            🔗 Test API Connection
+                        </button>
+                    </div>
+                </div>
+                <div class="scraper-content">
+                    <!-- Scraped Content Display -->
+                    <div class="scraped-content-section">
+                        <h3>📋 Scraped Artists History</h3>
+                        <div class="scraped-artists-history">
+                            <div id="scraped-history-list" class="scraped-history-list">
+                                <div class="empty-state">
+                                    <p>🎭 No artists scraped yet</p>
+                                    <p>Your scraping history will appear here to avoid duplicates.</p>
+                                </div>
+                            </div>
+                            <div class="history-controls">
+                                <button id="clear-history-btn" class="secondary-btn" onclick="window.albumApp.clearScrapedHistory()">
+                                    🗑️ Clear History
+                                </button>
+                                <span class="history-count">
+                                    <span id="history-count">0</span> artists scraped
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="scraper-section">
+                        <h3>Artist Discography Scraper</h3>
+                        <div class="search-container">
+                            <input type="text" id="artist-search" placeholder="Search for an artist...">
+                            <button id="search-artists-btn">Search</button>
+                        </div>
+                        <div id="artist-results" class="search-results"></div>
+                    </div>
+                    
+                    <div class="scraper-section">
+                        <h3>Specific Albums Scraper</h3>
+                        <div class="search-container">
+                            <input type="text" id="album-search" placeholder="Search for albums...">
+                            <button id="search-albums-btn">Search</button>
+                        </div>
+                        <div id="album-results" class="search-results"></div>
+                        <div class="scraper-cart">
+                            <h4>Selected Albums:</h4>
+                            <div id="album-cart" class="cart-items"></div>
+                            <button id="scrape-albums-btn" class="scrape-btn" disabled>Scrape Selected Albums</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-content">
+                <div class="welcome-section">
+                    <h1 class="welcome-title">🎧 Albums Collection</h1>
+                    <p class="welcome-subtitle">Your personal music discovery companion</p>
+                </div>
+                
+                <div class="loading-section">
+                    <div class="spinner"></div>
+                    <p id="loading-text">Initializing application...</p>
+                    <div class="loading-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-details">
+                            <span id="progress-step">Starting up...</span>
+                            <span id="progress-count"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="loading-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">🔍</span>
+                        <span class="feature-text">Discogs API Integration</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">☁️</span>
+                        <span class="feature-text">Cloud Database Storage</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🎭</span>
+                        <span class="feature-text">Smart Role Categorization</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for "More Info" -->
+        <div id="more-info-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Album Details</h3>
+                    <button class="modal-close" id="close-modal">&times;</button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- Album details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- App Configuration and Core -->
+    <script src="src/config.js"></script>
+    <script src="src/data/models.js"></script>
+    <script src="src/api/discogs.js"></script>
+    <script src="src/data/parser.js"></script>
+    <script src="src/utils/roleCategorizer.js"></script>
+    <script src="src/utils/lazyLoadingManager.js"></script>
+    
+    <!-- Services -->
+    <script src="src/services/supabaseService.js"></script>
+    <script src="src/services/imageService.js"></script>
+    
+    <!-- Components -->
+    <script src="src/components/AlbumCard.js"></script>
+    <script src="src/components/ArtistCard.js"></script>
+    
+    <!-- Main Application -->
+    <script src="src/app.js"></script>
+</body>
+</html>
