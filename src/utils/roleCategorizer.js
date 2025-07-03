@@ -24,7 +24,7 @@ class RoleCategorizer {
             // Design & Artwork
             'design', 'cover design', 'art direction', 'artwork', 'artwork by',
             'illustration', 'graphic design', 'layout', 'typography',
-            'creative director', 'sleeve design', 'package design',
+            'creative director', 'sleeve design', 'package design', 'painting',
             
             // Photography
             'photography', 'photography by', 'photographer', 'cover photography',
@@ -165,6 +165,7 @@ class RoleCategorizer {
             /photography/i,
             /photos?/i,
             /artwork/i,
+            /painting/i,
             /mastered?/i,
             /remastering/i,
             /mixed?/i,
