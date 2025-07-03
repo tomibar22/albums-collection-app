@@ -56,7 +56,7 @@ A modern, feature-rich web application for curating and exploring your personal 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/albums-collection-app.git
+   git clone https://github.com/tomibar22/albums-collection-app.git
    cd albums-collection-app
    ```
 
