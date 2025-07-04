@@ -11,6 +11,23 @@ class ArtistCard {
     }
 
     /**
+     * Utility function to escape HTML attributes
+     * @param {string} str - String to escape
+     * @returns {string} Escaped string
+     */
+    escapeHtmlAttribute(str) {
+        if (!str || typeof str !== 'string') {
+            return '';
+        }
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    /**
      * Create and return the artist card HTML element
      * @returns {HTMLElement} Artist card element
      */
@@ -49,7 +66,7 @@ class ArtistCard {
                     </div>
                     <div class="artist-overlay">
                         <div class="artist-actions">
-                            <button class="action-btn view-albums-btn" title="View ${this.artist.name}'s albums">
+                            <button class="action-btn view-albums-btn" title="View ${this.escapeHtmlAttribute(this.artist.name)}'s albums">
                                 <span class="btn-icon">📀</span>
                                 <span class="btn-text">View Albums</span>
                             </button>
@@ -59,13 +76,13 @@ class ArtistCard {
                         <button class="card-edit-btn edit" onclick="window.albumApp.openEditArtistModal('${this.artist.id}')" title="Edit Artist">
                             ✏️
                         </button>
-                        <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteArtist('${this.artist.id}', '${this.artist.name.replace(/'/g, "\\'")}'); event.stopPropagation();" title="Delete Artist">
+                        <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteArtist('${this.artist.id}', '${this.escapeHtmlAttribute(this.artist.name)}'); event.stopPropagation();" title="Delete Artist">
                             🗑️
                         </button>
                     </div>
                 </div>
                 <div class="artist-info">
-                    <h3 class="artist-name" title="${this.artist.name}">${this.artist.name}</h3>
+                    <h3 class="artist-name" title="${this.escapeHtmlAttribute(this.artist.name)}">${this.artist.name}</h3>
                     <p class="artist-album-count">${albumCount} ${albumText}</p>
                     ${rolesDisplay}
                 </div>

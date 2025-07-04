@@ -1096,6 +1096,19 @@ class AlbumCollectionApp {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    // Utility function to escape HTML attributes
+    escapeHtmlAttribute(str) {
+        if (!str || typeof str !== 'string') {
+            return '';
+        }
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
     // Load images for artists in the currently active tab
     async loadImagesForActiveTab(tabType) {
         try {
@@ -1727,7 +1740,7 @@ class AlbumCollectionApp {
             
             // Artist name with all their roles in this category - now clickable
             html += `<div class="credit-line">`;
-            html += `<span class="credit-name clickable-artist-name" data-artist-name="${credit.name}" title="View ${credit.name}'s albums">${credit.name}</span>`;
+            html += `<span class="credit-name clickable-artist-name" data-artist-name="${this.escapeHtmlAttribute(credit.name)}" title="View ${this.escapeHtmlAttribute(credit.name)}'s albums">${credit.name}</span>`;
             html += `<span class="credit-roles-inline">`;
             
             credit.roles.forEach(role => {
@@ -1808,7 +1821,7 @@ class AlbumCollectionApp {
                 // Display album-level roles inline with artist name
                 if (credit.albumRoles && credit.albumRoles.length > 0) {
                     html += `<div class="credit-line">`;
-                    html += `<span class="credit-name clickable-artist-name" data-artist-name="${credit.name}" title="View ${credit.name}'s albums">${credit.name}</span>`;
+                    html += `<span class="credit-name clickable-artist-name" data-artist-name="${this.escapeHtmlAttribute(credit.name)}" title="View ${this.escapeHtmlAttribute(credit.name)}'s albums">${credit.name}</span>`;
                     html += `<span class="credit-roles-inline">`;
                     credit.albumRoles.forEach((role, i) => {
                         html += `<span class="role-tag general-role">${role}</span>`;
@@ -1818,7 +1831,7 @@ class AlbumCollectionApp {
                 } else {
                     // Just the name if no album roles
                     html += `<div class="credit-line">`;
-                    html += `<span class="credit-name clickable-artist-name" data-artist-name="${credit.name}" title="View ${credit.name}'s albums">${credit.name}</span>`;
+                    html += `<span class="credit-name clickable-artist-name" data-artist-name="${this.escapeHtmlAttribute(credit.name)}" title="View ${this.escapeHtmlAttribute(credit.name)}'s albums">${credit.name}</span>`;
                     html += `</div>`;
                 }
                 
@@ -1851,7 +1864,7 @@ class AlbumCollectionApp {
                 // Display general roles compactly inline with name
                 if (parsedRoles.general.length > 0) {
                     html += `<div class="credit-line">`;
-                    html += `<span class="credit-name clickable-artist-name" data-artist-name="${credit.name}" title="View ${credit.name}'s albums">${credit.name}</span>`;
+                    html += `<span class="credit-name clickable-artist-name" data-artist-name="${this.escapeHtmlAttribute(credit.name)}" title="View ${this.escapeHtmlAttribute(credit.name)}'s albums">${credit.name}</span>`;
                     html += `<span class="credit-roles-inline">`;
                     parsedRoles.general.forEach((role, i) => {
                         html += `<span class="role-tag general-role">${role}</span>`;
@@ -4836,19 +4849,19 @@ class AlbumCollectionApp {
                 const albumText = artistInfo.roleSpecificAlbumCount === 1 ? '1 album' : `${artistInfo.roleSpecificAlbumCount} albums`;
                 
                 return `
-                    <div class="role-artist-item clickable-artist-item" data-artist-name="${artistInfo.name}">
+                    <div class="role-artist-item clickable-artist-item" data-artist-name="${this.escapeHtmlAttribute(artistInfo.name)}">
                         <div class="role-artist-image">
                             <div class="placeholder-artist-image">
                                 ${artistInfo.name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase()}
                             </div>
                         </div>
                         <div class="role-artist-details">
-                            <div class="role-artist-name" title="${artistInfo.name}">${artistInfo.name}</div>
+                            <div class="role-artist-name" title="${this.escapeHtmlAttribute(artistInfo.name)}">${artistInfo.name}</div>
                             <div class="role-artist-role">${roleData.name}</div>
                             <div class="role-artist-count">${albumText}</div>
                         </div>
                         <div class="role-artist-actions">
-                            <button class="view-artist-albums-btn" data-artist-name="${artistInfo.name}">
+                            <button class="view-artist-albums-btn" data-artist-name="${this.escapeHtmlAttribute(artistInfo.name)}">
                                 View Albums
                             </button>
                         </div>
@@ -5102,7 +5115,7 @@ class AlbumCollectionApp {
                             </div>
                             <div class="album-info">
                                 <h3 class="album-title" title="${albumData.title}">${albumData.title}</h3>
-                                <p class="album-artist" title="${artistNames}">${artistNames}</p>
+                                <p class="album-artist" title="${this.escapeHtmlAttribute(artistNames)}">${artistNames}</p>
                                 <p class="album-year">${albumData.year}</p>
                                 <div class="album-meta">
                                     <span class="track-count">${albumData.track_count || 0} tracks</span>
