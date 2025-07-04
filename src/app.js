@@ -5906,6 +5906,10 @@ class AlbumCollectionApp {
 
     // Modal methods
     showModal(title, content, isNestedModal = false) {
+        // Debug logging to track modal stack pollution
+        console.log(`🔍 showModal called with title: "${title}", isNestedModal: ${isNestedModal}, current stack size: ${this.modalStack.length}`);
+        console.trace('🔍 showModal call stack');
+        
         // If this is a nested modal (opened from another modal), save current modal state
         if (isNestedModal) {
             const currentTitle = document.getElementById('modal-title').innerHTML;
@@ -5913,13 +5917,22 @@ class AlbumCollectionApp {
             const modalBody = document.getElementById('modal-body');
             const currentScrollPosition = modalBody.scrollTop;
             
-            this.modalStack.push({
-                title: currentTitle,
-                content: currentContent,
-                scrollPosition: currentScrollPosition
-            });
+            // Check if we're about to push a duplicate
+            const lastStackEntry = this.modalStack[this.modalStack.length - 1];
+            const isDuplicate = lastStackEntry && lastStackEntry.title === currentTitle;
             
-            console.log(`📚 Pushed modal to stack: "${currentTitle}" (scroll: ${currentScrollPosition}px, stack size: ${this.modalStack.length})`);
+            if (isDuplicate) {
+                console.warn(`⚠️ DUPLICATE MODAL DETECTED! Not pushing to stack. Current: "${currentTitle}"`);
+                console.warn(`⚠️ Stack contents:`, this.modalStack.map(m => m.title));
+            } else {
+                this.modalStack.push({
+                    title: currentTitle,
+                    content: currentContent,
+                    scrollPosition: currentScrollPosition
+                });
+                
+                console.log(`📚 Pushed modal to stack: "${currentTitle}" (scroll: ${currentScrollPosition}px, stack size: ${this.modalStack.length})`);
+            }
         }
         
         if (title) document.getElementById('modal-title').innerHTML = title;
