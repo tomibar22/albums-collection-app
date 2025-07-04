@@ -455,6 +455,36 @@ class DiscogsDataParser {
     }
 
     /**
+     * Extract year from album title if it contains year patterns
+     */
+    extractYearFromTitle(title, originalYear) {
+        if (!title || typeof title !== 'string') return originalYear;
+        
+        // Extract all 4-digit year patterns from title
+        const yearMatches = title.match(/\b(19[0-9]{2}|20[0-2][0-9])\b/g);
+        
+        if (!yearMatches || yearMatches.length === 0) return originalYear;
+        
+        // Convert to numbers and get the earliest year
+        const years = yearMatches.map(y => parseInt(y)).filter(y => y >= 1900 && y <= 2025);
+        
+        if (years.length === 0) return originalYear;
+        
+        const extractedYear = Math.min(...years);
+        
+        // If original year looks like a reissue (2010+) and extracted year is historical (pre-2000)
+        // prefer the extracted year from the title
+        if (originalYear && originalYear > 2010 && extractedYear < 2000) {
+            if (window.CONFIG.DEBUG.ENABLED) {
+                console.log(`🎭 YEAR EXTRACTED: "${title}" - ${originalYear} → ${extractedYear}`);
+            }
+            return extractedYear;
+        }
+        
+        return originalYear;
+    }
+
+    /**
      * Parse album data from Discogs release
      */
     parseAlbum(releaseData) {
@@ -462,11 +492,15 @@ class DiscogsDataParser {
 
         const tracklist = this.parseTracklist(releaseData.tracklist || []);
         const credits = this.parseComprehensiveCredits(releaseData);
+        
+        // Smart year handling - extract from title if needed
+        const originalYear = releaseData.year || null;
+        const finalYear = this.extractYearFromTitle(releaseData.title, originalYear);
 
         return {
             id: releaseData.id,
             title: releaseData.title || 'Unknown Title',
-            year: releaseData.year || null,
+            year: finalYear,
             artist: this.extractMainArtist(releaseData.artists), // For backward compatibility
             artists: this.extractArtistsArray(releaseData.artists), // For app.js expectations
             role: this.extractMainRole(releaseData.artists),
