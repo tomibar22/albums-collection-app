@@ -3669,10 +3669,13 @@ class AlbumCollectionApp {
                     currentSort = albumsSort.value;
                     console.log(`📋 Preserving albums sort: ${currentSort}`);
                 }
-                this.renderAlbumsGrid();
-                // Reapply sort after refresh
+                
+                // If we have a sort state, apply it directly (which includes rendering)
+                // Otherwise, just render the grid
                 if (currentSort) {
                     this.sortAlbums(currentSort);
+                } else {
+                    this.renderAlbumsGrid();
                 }
                 break;
             case 'artists':
@@ -3682,10 +3685,13 @@ class AlbumCollectionApp {
                     currentSort = artistsSort.value;
                     console.log(`👥 Preserving artists sort: ${currentSort}`);
                 }
-                this.renderArtistsGrid();
-                // Reapply sort after refresh
+                
+                // If we have a sort state, apply it directly (which includes rendering)
+                // Otherwise, just render the grid
                 if (currentSort) {
                     this.sortArtists(currentSort);
+                } else {
+                    this.renderArtistsGrid();
                 }
                 break;
             case 'tracks':
@@ -3695,10 +3701,13 @@ class AlbumCollectionApp {
                     currentSort = tracksSort.value;
                     console.log(`🎵 Preserving tracks sort: ${currentSort}`);
                 }
-                this.renderTracksGrid();
-                // Reapply sort after refresh
+                
+                // If we have a sort state, apply it directly (which includes rendering)
+                // Otherwise, just render the grid
                 if (currentSort) {
                     this.sortTracks(currentSort);
+                } else {
+                    this.renderTracksGrid();
                 }
                 break;
             case 'roles':
@@ -3708,10 +3717,13 @@ class AlbumCollectionApp {
                     currentSort = rolesSort.value;
                     console.log(`🎭 Preserving roles sort: ${currentSort}`);
                 }
-                this.renderRolesGrid();
-                // Reapply sort after refresh
+                
+                // If we have a sort state, apply it directly (which includes rendering)
+                // Otherwise, just render the grid
                 if (currentSort) {
                     this.sortRoles(currentSort);
+                } else {
+                    this.renderRolesGrid();
                 }
                 break;
             default:
