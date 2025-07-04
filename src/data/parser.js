@@ -460,23 +460,49 @@ class DiscogsDataParser {
     extractYearFromTitle(title, originalYear) {
         if (!title || typeof title !== 'string') return originalYear;
         
-        // Extract all 4-digit year patterns from title
-        const yearMatches = title.match(/\b(19[0-9]{2}|20[0-2][0-9])\b/g);
+        let extractedYear = null;
         
-        if (!yearMatches || yearMatches.length === 0) return originalYear;
+        // First, try to extract 4-digit year patterns (1900-2025)
+        const fourDigitMatches = title.match(/\b(19[0-9]{2}|20[0-2][0-9])\b/g);
+        if (fourDigitMatches && fourDigitMatches.length > 0) {
+            const years = fourDigitMatches.map(y => parseInt(y)).filter(y => y >= 1900 && y <= 2025);
+            if (years.length > 0) {
+                extractedYear = Math.min(...years);
+            }
+        }
         
-        // Convert to numbers and get the earliest year
-        const years = yearMatches.map(y => parseInt(y)).filter(y => y >= 1900 && y <= 2025);
+        // If no 4-digit year found, try apostrophe year patterns ('58, '73, etc.)
+        if (!extractedYear) {
+            const apostropheMatches = title.match(/'([0-9]{2})\b/g);
+            if (apostropheMatches && apostropheMatches.length > 0) {
+                const twoDigitYears = apostropheMatches.map(match => {
+                    const twoDigit = parseInt(match.replace("'", ""));
+                    // Convert 2-digit to 4-digit year
+                    // Jazz convention: '30-'99 = 1930-1999, '00-'29 = 2000-2029
+                    return twoDigit >= 30 ? 1900 + twoDigit : 2000 + twoDigit;
+                }).filter(y => y >= 1900 && y <= 2025);
+                
+                if (twoDigitYears.length > 0) {
+                    extractedYear = Math.min(...twoDigitYears);
+                }
+            }
+        }
         
-        if (years.length === 0) return originalYear;
-        
-        const extractedYear = Math.min(...years);
+        if (!extractedYear) return originalYear;
         
         // If original year looks like a reissue (2010+) and extracted year is historical (pre-2000)
         // prefer the extracted year from the title
         if (originalYear && originalYear > 2010 && extractedYear < 2000) {
             if (window.CONFIG.DEBUG.ENABLED) {
                 console.log(`🎭 YEAR EXTRACTED: "${title}" - ${originalYear} → ${extractedYear}`);
+            }
+            return extractedYear;
+        }
+        
+        // Also prefer extracted year if it's much earlier than original (likely original recording vs reissue)
+        if (originalYear && extractedYear && (originalYear - extractedYear) > 20) {
+            if (window.CONFIG.DEBUG.ENABLED) {
+                console.log(`🎭 YEAR EXTRACTED: "${title}" - ${originalYear} → ${extractedYear} (significant gap)`);
             }
             return extractedYear;
         }
