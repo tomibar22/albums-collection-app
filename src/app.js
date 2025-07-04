@@ -5221,6 +5221,18 @@ class AlbumCollectionApp {
     showArtistAlbumsFromRole(artistName) {
         console.log(`🎭 Finding albums for role artist: ${artistName}`);
         
+        // Try to detect the active role filter from the current modal title
+        let activeRole = null;
+        const modalTitle = document.getElementById('modal-title');
+        if (modalTitle) {
+            const titleText = modalTitle.textContent;
+            const roleMatch = titleText.match(/Contributors with role: "([^"]+)"/);
+            if (roleMatch) {
+                activeRole = roleMatch[1];
+                console.log(`🎯 Detected active role filter: ${activeRole}`);
+            }
+        }
+        
         // Find all albums where this artist appears in credits
         const artistAlbums = [];
         this.collection.albums.forEach(album => {
@@ -5234,25 +5246,37 @@ class AlbumCollectionApp {
             }
         });
         
-        console.log(`🎭 Found ${artistAlbums.length} albums for ${artistName}`);
+        console.log(`🎭 Found ${artistAlbums.length} total albums for ${artistName}`);
         
-        if (artistAlbums.length === 0) {
-            console.warn(`⚠️ No albums found for artist "${artistName}"`);
+        // If we have an active role, pre-filter albums to only those where artist had this role
+        let filteredAlbums = artistAlbums;
+        if (activeRole) {
+            filteredAlbums = artistAlbums.filter(album => {
+                return this.artistHasRoleOnAlbum(artistName, activeRole, album);
+            });
+            console.log(`🎯 Filtered to ${filteredAlbums.length} albums where ${artistName} had role "${activeRole}"`);
+        }
+        
+        if (filteredAlbums.length === 0) {
+            const message = activeRole 
+                ? `No albums found where "${artistName}" had the role "${activeRole}"`
+                : `No albums found for artist "${artistName}"`;
+            console.warn(`⚠️ ${message}`);
             return;
         }
         
         // Create a temporary artist object for the modal
         const temporaryArtist = {
             name: artistName,
-            albumCount: artistAlbums.length,
-            albums: artistAlbums,
+            albumCount: filteredAlbums.length,
+            albums: filteredAlbums,  // Use filtered albums
             roles: [],
             id: `temp-artist-${artistName.toLowerCase().replace(/\s+/g, '-')}`
         };
         
         // Collect all roles this artist has across albums
         const rolesSet = new Set();
-        artistAlbums.forEach(album => {
+        artistAlbums.forEach(album => {  // Still use all albums for role collection
             if (album.credits) {
                 album.credits.forEach(credit => {
                     if (credit.name === artistName && credit.role) {
