@@ -6597,7 +6597,12 @@ class AlbumCollectionApp {
             </div>
         `;
         
-        this.showModal('Confirm Deletion', confirmationHtml, true);
+        // Show confirmation directly without outer modal wrapper
+        document.getElementById('modal-title').innerHTML = '';
+        document.getElementById('modal-body').innerHTML = confirmationHtml;
+        document.getElementById('modal-body').scrollTop = 0;
+        document.getElementById('more-info-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
 
     // Delete album
