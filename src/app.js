@@ -5294,15 +5294,19 @@ class AlbumCollectionApp {
         }
         
         // Create a temporary artist object for the modal
+        // IMPORTANT: Use TOTAL album count from main collection, not filtered count
+        const completeArtist = this.collection.artists.find(a => a.name === artistName);
+        const totalAlbumCount = completeArtist ? completeArtist.albumCount : artistAlbums.length;
+        
         const temporaryArtist = {
             name: artistName,
-            albumCount: filteredAlbums.length,
-            albums: filteredAlbums,  // Use filtered albums
+            albumCount: totalAlbumCount,  // Use TOTAL count for consistent modal titles
+            albums: filteredAlbums,       // Use filtered albums for modal content
             roles: [],
             id: `temp-artist-${artistName.toLowerCase().replace(/\s+/g, '-')}`
         };
         
-        console.log(`🎭 Created temporary artist with ${temporaryArtist.albums.length} albums`);
+        console.log(`🎭 Created temporary artist with total count: ${totalAlbumCount} (displaying ${filteredAlbums.length} filtered albums)`);
         
         // Collect all roles this artist has across albums
         const rolesSet = new Set();
