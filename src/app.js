@@ -2455,7 +2455,11 @@ class AlbumCollectionApp {
     
     // Generate artist role tabs HTML with musical/technical separation
     generateArtistRoleTabsHtml(artist, musicalRoles, technicalRoles) {
-        const artistId = artist.id || artist.name.replace(/\s+/g, '-');
+        // Create a JavaScript-safe ID by removing quotes and special characters
+        const artistId = (artist.id || artist.name)
+            .replace(/['"]/g, '') // Remove quotes
+            .replace(/\s+/g, '-') // Replace spaces with dashes
+            .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
         
         // Get ALL actual roles from credits (no filtering)
         const allActualRoles = this.getAllActualRolesFromCredits(artist.name);
