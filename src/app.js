@@ -5917,13 +5917,30 @@ class AlbumCollectionApp {
             const modalBody = document.getElementById('modal-body');
             const currentScrollPosition = modalBody.scrollTop;
             
-            // Check if we're about to push a duplicate
+            // Enhanced duplicate detection for artist modals
             const lastStackEntry = this.modalStack[this.modalStack.length - 1];
-            const isDuplicate = lastStackEntry && lastStackEntry.title === currentTitle;
+            let isDuplicate = false;
+            
+            if (lastStackEntry) {
+                // Exact title match (original detection)
+                if (lastStackEntry.title === currentTitle) {
+                    isDuplicate = true;
+                    console.warn(`⚠️ EXACT DUPLICATE MODAL DETECTED! "${currentTitle}"`);
+                }
+                
+                // Smart artist modal detection (same artist, different album counts)
+                const currentArtistMatch = currentTitle.match(/^(.*?) - Albums \(\d+\)$/);
+                const lastArtistMatch = lastStackEntry.title.match(/^(.*?) - Albums \(\d+\)$/);
+                
+                if (currentArtistMatch && lastArtistMatch && currentArtistMatch[1] === lastArtistMatch[1]) {
+                    isDuplicate = true;
+                    console.warn(`⚠️ ARTIST MODAL DUPLICATE DETECTED! Same artist "${currentArtistMatch[1]}" with different counts`);
+                    console.warn(`⚠️ Previous: "${lastStackEntry.title}", Current: "${currentTitle}"`);
+                }
+            }
             
             if (isDuplicate) {
-                console.warn(`⚠️ DUPLICATE MODAL DETECTED! Not pushing to stack. Current: "${currentTitle}"`);
-                console.warn(`⚠️ Stack contents:`, this.modalStack.map(m => m.title));
+                console.warn(`⚠️ Not pushing duplicate to stack. Stack contents:`, this.modalStack.map(m => m.title));
             } else {
                 this.modalStack.push({
                     title: currentTitle,
