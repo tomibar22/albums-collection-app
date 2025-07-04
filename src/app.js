@@ -2809,6 +2809,11 @@ class AlbumCollectionApp {
                 const cleanedCreditRole = this.cleanRoleName(individualRole);
                 const cleanedSearchRole = this.cleanRoleName(role);
                 
+                // Skip if either role was filtered out (cleanRoleName returns null for company names)
+                if (cleanedCreditRole === null || cleanedSearchRole === null) {
+                    return false;
+                }
+                
                 // Exact match after cleaning
                 if (cleanedCreditRole === cleanedSearchRole) return true;
                 
