@@ -17,6 +17,9 @@ class AlbumCollectionApp {
         // Modal stack for nested modal navigation
         this.modalStack = [];
         
+        // Main page scroll position preservation
+        this.mainPageScrollPosition = 0;
+        
         // Initialize Supabase service
         this.supabaseService = null;
         
@@ -5861,6 +5864,17 @@ class AlbumCollectionApp {
         // Clear any remaining modal stack
         this.modalStack = [];
         
+        // Restore main page scroll position
+        if (this.mainPageScrollPosition > 0) {
+            console.log(`📍 Restoring main page scroll position: ${this.mainPageScrollPosition}px`);
+            setTimeout(() => {
+                window.scrollTo({
+                    top: this.mainPageScrollPosition,
+                    behavior: 'smooth'
+                });
+            }, 100); // Small delay to ensure DOM is ready
+        }
+        
         // Re-attach the main modal event listener after a delay
         setTimeout(() => {
             this.modalClickHandler = (e) => {
@@ -5886,6 +5900,10 @@ class AlbumCollectionApp {
 
     // Open edit album modal
     async openEditAlbumModal(albumId) {
+        // Store current main page scroll position
+        this.mainPageScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+        console.log(`📍 Storing main page scroll position: ${this.mainPageScrollPosition}px`);
+        
         const album = this.collection.albums.find(a => a.id == albumId);
         if (!album) {
             console.error('Album not found:', albumId);
