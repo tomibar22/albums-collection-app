@@ -5119,10 +5119,8 @@ class AlbumCollectionApp {
                 // Look through all albums in the collection for this artist in this role
                 this.collection.albums.forEach(album => {
                     if (album.credits && Array.isArray(album.credits)) {
-                        const hasRoleInAlbum = album.credits.some(credit => 
-                            credit.name === artistInfo.name && 
-                            credit.role === roleData.name
-                        );
+                        // Use the same sophisticated role checking as the filtering logic
+                        const hasRoleInAlbum = this.artistHasRoleOnAlbum(artistInfo.name, roleData.name, album);
                         if (hasRoleInAlbum) {
                             roleSpecificAlbums.add(album.id);
                         }
