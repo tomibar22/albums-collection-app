@@ -83,7 +83,6 @@ class AlbumCollectionApp {
                 this.hideLoadingModal();
                 this.showOfflineNotification();
             }, 1000);
-            }, 2000);
         }
     }
 
