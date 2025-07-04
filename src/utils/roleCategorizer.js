@@ -18,7 +18,7 @@ class RoleCategorizer {
             'engineer', 'recording engineer', 'mixing engineer', 'mastering engineer',
             'sound engineer', 'audio engineer', 'mix engineer', 'master engineer',
             'mixed by', 'mastered by', 'recorded by', 'engineered by',
-            'remastered by', 'remastering by', 'transferred by', 'restoration', 'edited by',
+            'remastered by', 'remastering by', 're-record', 'transferred by', 'restoration', 'edited by',
             'digitally', 'digital remastering', 'digital editing', 'uncredited',
             
             // Design & Artwork
