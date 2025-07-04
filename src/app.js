@@ -5872,7 +5872,7 @@ class AlbumCollectionApp {
                     top: this.mainPageScrollPosition,
                     behavior: 'smooth'
                 });
-            }, 100); // Small delay to ensure DOM is ready
+            }, 300); // Longer delay to ensure grid rendering is complete
         }
         
         // Re-attach the main modal event listener after a delay
@@ -6107,13 +6107,11 @@ class AlbumCollectionApp {
                 }
             }
 
-            // Force close modal FIRST to prevent any interference
-            this.forceCloseModal();
+            // Just refresh the current view instead of reloading all data
+            this.refreshCurrentView();
             
-            // Wait a moment then refresh the view to show updated data
-            setTimeout(() => {
-                this.refreshCurrentView();
-            }, 100);
+            // Force close modal AFTER view refresh and restore scroll position
+            this.forceCloseModal();
             
             console.log('✅ Album updated successfully:', {
                 title: updates.title,
