@@ -4401,14 +4401,14 @@ class AlbumCollectionApp {
             return;
         }
         
-        // Get the data to sort (either filtered by search or full collection)
-        let albumsToSort;
+        // Check if there's an active search filter
         const currentSearchQuery = this.currentSearchQueries.albums;
+        let albumsToDisplay;
         
         if (currentSearchQuery && currentSearchQuery.trim()) {
-            // There's an active search - get filtered results
+            // There's an active search - get filtered results and sort them
             console.log(`🔍 Sorting with active search filter: "${currentSearchQuery}"`);
-            albumsToSort = this.collection.albums.filter(album => {
+            albumsToDisplay = this.collection.albums.filter(album => {
                 const searchText = currentSearchQuery.toLowerCase();
                 return (
                     album.title.toLowerCase().includes(searchText) ||
@@ -4419,21 +4419,21 @@ class AlbumCollectionApp {
                 );
             });
         } else {
-            // No active search - use full collection
-            albumsToSort = [...this.collection.albums]; // Create a copy to sort
+            // No active search - sort the full collection
+            albumsToDisplay = [...this.collection.albums]; // Create a copy to sort
         }
         
-        // Sort the collection
+        // Sort the data to display
         switch(sortType) {
             case 'year-asc':
-                albumsToSort.sort((a, b) => {
+                albumsToDisplay.sort((a, b) => {
                     const yearA = this.isValidYear(a.year) ? a.year : Infinity;
                     const yearB = this.isValidYear(b.year) ? b.year : Infinity;
                     return yearA - yearB;
                 });
                 break;
             case 'year-desc':
-                albumsToSort.sort((a, b) => {
+                albumsToDisplay.sort((a, b) => {
                     const yearA = this.isValidYear(a.year) ? a.year : Infinity;
                     const yearB = this.isValidYear(b.year) ? b.year : Infinity;
                     // For descending, we want valid years first (largest to smallest)
@@ -4445,7 +4445,7 @@ class AlbumCollectionApp {
                 });
                 break;
             case 'recently-added':
-                albumsToSort.sort((a, b) => {
+                albumsToDisplay.sort((a, b) => {
                     // Sort by created_at timestamp (newest first)
                     const dateA = new Date(a.created_at || 0);
                     const dateB = new Date(b.created_at || 0);
@@ -4454,16 +4454,24 @@ class AlbumCollectionApp {
                 break;
             case 'random':
                 // Initial randomization, additional shuffles via shuffle button
-                this.shuffleArray(albumsToSort);
+                this.shuffleArray(albumsToDisplay);
                 break;
             default:
                 console.log(`Unknown sort type: ${sortType}`);
                 break;
         }
         
-        // Update display with sorted results
-        this.lazyLoadingManager.updateGridItems('albums-grid', albumsToSort);
-        console.log(`✅ Sorted and displayed ${albumsToSort.length} albums`);
+        // Temporarily replace collection.albums with sorted/filtered data for rendering
+        const originalAlbums = this.collection.albums;
+        this.collection.albums = albumsToDisplay;
+        
+        // Render the grid with the filtered/sorted data
+        this.renderAlbumsGrid();
+        
+        // Restore original collection
+        this.collection.albums = originalAlbums;
+        
+        console.log(`✅ Sorted and displayed ${albumsToDisplay.length} albums`);
     }
 
     sortArtists(sortType) {
@@ -5604,41 +5612,49 @@ class AlbumCollectionApp {
             return;
         }
         
-        // Get the data to sort (either filtered by search or full collection)
-        let tracksToSort;
+        // Check if there's an active search filter
         const currentSearchQuery = this.currentSearchQueries.tracks;
+        let tracksToDisplay;
         
         if (currentSearchQuery && currentSearchQuery.trim()) {
-            // There's an active search - get filtered results
+            // There's an active search - get filtered results and sort them
             console.log(`🔍 Sorting tracks with active search filter: "${currentSearchQuery}"`);
-            tracksToSort = this.collection.tracks.filter(track => {
+            tracksToDisplay = this.collection.tracks.filter(track => {
                 return track.title.toLowerCase().includes(currentSearchQuery.toLowerCase());
             });
         } else {
-            // No active search - use full collection
-            tracksToSort = [...this.collection.tracks]; // Create a copy to sort
+            // No active search - sort the full collection
+            tracksToDisplay = [...this.collection.tracks]; // Create a copy to sort
         }
         
-        console.log(`🎵 Sorting ${tracksToSort.length} tracks...`);
+        console.log(`🎵 Sorting ${tracksToDisplay.length} tracks...`);
         
         switch(sortType) {
             case 'frequency':
-                tracksToSort.sort((a, b) => b.frequency - a.frequency);
-                console.log(`✅ Sorted by frequency: "${tracksToSort[0]?.title}" (${tracksToSort[0]?.frequency} albums) to "${tracksToSort[tracksToSort.length-1]?.title}" (${tracksToSort[tracksToSort.length-1]?.frequency} albums)`);
+                tracksToDisplay.sort((a, b) => b.frequency - a.frequency);
+                console.log(`✅ Sorted by frequency: "${tracksToDisplay[0]?.title}" (${tracksToDisplay[0]?.frequency} albums) to "${tracksToDisplay[tracksToDisplay.length-1]?.title}" (${tracksToDisplay[tracksToDisplay.length-1]?.frequency} albums)`);
                 break;
             case 'a-z':
-                tracksToSort.sort((a, b) => a.title.localeCompare(b.title));
-                console.log(`✅ Sorted alphabetically: "${tracksToSort[0]?.title}" to "${tracksToSort[tracksToSort.length-1]?.title}"`);
+                tracksToDisplay.sort((a, b) => a.title.localeCompare(b.title));
+                console.log(`✅ Sorted alphabetically: "${tracksToDisplay[0]?.title}" to "${tracksToDisplay[tracksToDisplay.length-1]?.title}"`);
                 break;
             default:
                 console.log(`❌ Unknown sort type: ${sortType}`);
                 return;
         }
         
-        // Update display with sorted results
-        console.log(`🔄 Updating tracks grid with sorted data...`);
-        this.lazyLoadingManager.updateGridItems('tracks-grid', tracksToSort);
-        console.log(`✅ Sorted and displayed ${tracksToSort.length} tracks`);
+        // Temporarily replace collection.tracks with sorted/filtered data for rendering
+        const originalTracks = this.collection.tracks;
+        this.collection.tracks = tracksToDisplay;
+        
+        // Render the grid with the filtered/sorted data
+        console.log(`🔄 Rendering tracks grid with sorted data...`);
+        this.renderTracksGrid();
+        
+        // Restore original collection
+        this.collection.tracks = originalTracks;
+        
+        console.log(`✅ Sorted and displayed ${tracksToDisplay.length} tracks`);
     }
 
     // Force regeneration of tracks from albums
@@ -5709,12 +5725,12 @@ class AlbumCollectionApp {
     shuffleAlbums() {
         console.log('Shuffling albums...');
         
-        // Get the data to shuffle (either filtered by search or full collection)
-        let albumsToShuffle;
+        // Check if there's an active search filter
         const currentSearchQuery = this.currentSearchQueries.albums;
+        let albumsToShuffle;
         
         if (currentSearchQuery && currentSearchQuery.trim()) {
-            // There's an active search - get filtered results
+            // There's an active search - get filtered results and shuffle them
             console.log(`🔍 Shuffling albums with active search filter: "${currentSearchQuery}"`);
             albumsToShuffle = this.collection.albums.filter(album => {
                 const searchText = currentSearchQuery.toLowerCase();
@@ -5727,14 +5743,22 @@ class AlbumCollectionApp {
                 );
             });
         } else {
-            // No active search - use full collection
+            // No active search - shuffle the full collection
             albumsToShuffle = [...this.collection.albums]; // Create a copy to shuffle
         }
         
         this.shuffleArray(albumsToShuffle);
         
-        // Update display with shuffled results
-        this.lazyLoadingManager.updateGridItems('albums-grid', albumsToShuffle);
+        // Temporarily replace collection.albums with shuffled data for rendering
+        const originalAlbums = this.collection.albums;
+        this.collection.albums = albumsToShuffle;
+        
+        // Render the grid with the shuffled data
+        this.renderAlbumsGrid();
+        
+        // Restore original collection
+        this.collection.albums = originalAlbums;
+        
         console.log(`✅ Shuffled and displayed ${albumsToShuffle.length} albums`);
     }
 
@@ -7179,25 +7203,19 @@ class AlbumCollectionApp {
         this.currentSearchQueries.albums = query;
         
         if (!query.trim()) {
-            // Empty search - show all albums with lazy loading
-            this.lazyLoadingManager.updateGridItems('albums-grid', this.collection.albums);
+            // Empty search - re-apply current sort to show all albums
+            const albumsSort = document.getElementById('albums-sort');
+            const currentSortType = albumsSort ? albumsSort.value : 'recently-added';
+            console.log(`🔄 Clearing search, re-applying sort: ${currentSortType}`);
+            this.sortAlbums(currentSortType);
             return;
         }
 
-        const filtered = this.collection.albums.filter(album => {
-            const searchText = query.toLowerCase();
-            return (
-                album.title.toLowerCase().includes(searchText) ||
-                album.artist.toLowerCase().includes(searchText) ||
-                (album.year && album.year.toString().includes(searchText)) ||
-                (album.genres && album.genres.some(genre => genre.toLowerCase().includes(searchText))) ||
-                (album.styles && album.styles.some(style => style.toLowerCase().includes(searchText)))
-            );
-        });
-
-        // Update lazy loading with filtered results
-        this.lazyLoadingManager.updateGridItems('albums-grid', filtered);
-        console.log(`✅ Found ${filtered.length} albums matching "${query}"`);
+        // Apply search filter by re-running current sort (which will now use the search filter)
+        const albumsSort = document.getElementById('albums-sort');
+        const currentSortType = albumsSort ? albumsSort.value : 'recently-added';
+        console.log(`🔍 Applying search filter with current sort: ${currentSortType}`);
+        this.sortAlbums(currentSortType);
     }
 
     searchArtistsCollection(query) {
@@ -7271,18 +7289,19 @@ class AlbumCollectionApp {
         this.currentSearchQueries.tracks = query;
         
         if (!query.trim()) {
-            // Empty search - show all tracks with lazy loading
-            this.lazyLoadingManager.updateGridItems('tracks-grid', this.collection.tracks);
+            // Empty search - re-apply current sort to show all tracks
+            const tracksSort = document.getElementById('tracks-sort');
+            const currentSortType = tracksSort ? tracksSort.value : 'frequency';
+            console.log(`🔄 Clearing search, re-applying sort: ${currentSortType}`);
+            this.sortTracks(currentSortType);
             return;
         }
 
-        const filtered = this.collection.tracks.filter(track => {
-            return track.title.toLowerCase().includes(query.toLowerCase());
-        });
-
-        // Update lazy loading with filtered results
-        this.lazyLoadingManager.updateGridItems('tracks-grid', filtered);
-        console.log(`✅ Found ${filtered.length} tracks matching "${query}"`);
+        // Apply search filter by re-running current sort (which will now use the search filter)
+        const tracksSort = document.getElementById('tracks-sort');
+        const currentSortType = tracksSort ? tracksSort.value : 'frequency';
+        console.log(`🔍 Applying search filter with current sort: ${currentSortType}`);
+        this.sortTracks(currentSortType);
     }
 
     searchRolesCollection(query) {
