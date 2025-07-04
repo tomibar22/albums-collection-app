@@ -4274,8 +4274,9 @@ class AlbumCollectionApp {
                     console.log(`🔄 Auto-applying albums sort: ${albumsSort.value}`);
                     this.sortAlbums(albumsSort.value);
                 } else {
-                    // If no sort is set, render with default sort
-                    this.renderAlbumsGrid();
+                    // If no sort is set, use default sort that matches HTML (recently-added)
+                    console.log(`🔄 No sort selected, applying default sort: recently-added`);
+                    this.sortAlbums('recently-added');
                 }
                 break;
             case 'artists':
@@ -4298,8 +4299,9 @@ class AlbumCollectionApp {
                     console.log(`🔄 Auto-applying tracks sort: ${tracksSort.value}`);
                     this.sortTracks(tracksSort.value);
                 } else {
-                    // If no sort is set, render with default sort
-                    this.renderTracksGrid();
+                    // If no sort is set, use default sort (frequency) for consistency
+                    console.log(`🔄 No sort selected, applying default sort: frequency`);
+                    this.sortTracks('frequency');
                 }
                 break;
             case 'roles':
@@ -4310,8 +4312,9 @@ class AlbumCollectionApp {
                     console.log(`🔄 Auto-applying roles sort: ${rolesSort.value}`);
                     this.sortRoles(rolesSort.value);
                 } else {
-                    // If no sort is set, render with default sort
-                    this.renderRolesGrid();
+                    // If no sort is set, use default sort (frequency) for consistency
+                    console.log(`🔄 No sort selected, applying default sort: frequency`);
+                    this.sortRoles('frequency');
                 }
                 break;
             case 'scraper':
