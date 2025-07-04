@@ -142,9 +142,18 @@ class AlbumCollectionApp {
             // Update collection (faster assignment)
             this.collection.albums = albums;
             this.collection.artists = artists;
-            this.collection.tracks = tracks;
-            this.collection.roles = roles;
+            // Don't use database tracks/roles - generate from albums for rich data
+            // this.collection.tracks = tracks;  
+            // this.collection.roles = roles;
             this.scrapedHistory = fetchedScrapedHistory;
+
+            this.updateLoadingProgress('🎯 Finalizing...', 'Generating relationships...', 85);
+            
+            // Generate tracks and roles from albums to ensure rich relationship data
+            console.log('🔄 Generating tracks and roles from albums (rich data)...');
+            this.collection.tracks = this.generateTracksFromAlbums();
+            this.collection.roles = this.generateRolesFromAlbums();
+            console.log(`✅ Generated ${this.collection.tracks.length} tracks and ${this.collection.roles.length} roles with full relationships`);
 
             this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
 
@@ -4735,17 +4744,6 @@ class AlbumCollectionApp {
     // Generate track data from current album collection
     generateTracksFromAlbums() {
         console.log('🎵 Generating tracks from albums...', this.collection.albums?.length || 0, 'albums');
-        
-        // DEBUG: Log first few albums to see their structure
-        if (this.collection.albums && this.collection.albums.length > 0) {
-            const firstAlbum = this.collection.albums[0];
-            console.log('🔍 DEBUG - First album structure:', {
-                title: firstAlbum.title,
-                tracklist: firstAlbum.tracklist ? `${firstAlbum.tracklist.length} tracks` : 'no tracklist',
-                tracklistSample: firstAlbum.tracklist ? firstAlbum.tracklist.slice(0, 2) : 'none'
-            });
-        }
-        
         const trackMap = new Map();
         
         try {
@@ -4810,13 +4808,6 @@ class AlbumCollectionApp {
         if (tracksArray.length > 0) {
             const sampleTrack = tracksArray[0];
             console.log(`🎵 Sample track: "${sampleTrack.title}" (frequency: ${sampleTrack.frequency}, albums: ${sampleTrack.albums.length})`);
-            
-            // DEBUG: Log first few tracks to verify structure
-            console.log('🔍 DEBUG - First 3 tracks structure:', tracksArray.slice(0, 3).map(t => ({
-                title: t.title,
-                frequency: t.frequency,
-                albumsCount: t.albums ? t.albums.length : 0
-            })));
         }
         
         return tracksArray;
@@ -4824,13 +4815,6 @@ class AlbumCollectionApp {
     
     // Create track card element
     createTrackCard(trackData) {
-        // DEBUG: Log the trackData structure
-        console.log('🔍 DEBUG - Creating track card for:', {
-            title: trackData.title,
-            frequency: trackData.frequency,
-            albumsCount: trackData.albums ? trackData.albums.length : 'no albums property'
-        });
-        
         const card = document.createElement('div');
         card.className = 'track-card';
         card.setAttribute('data-track-id', trackData.id);
@@ -4879,14 +4863,6 @@ class AlbumCollectionApp {
 
     // Create role card element
     createRoleCard(roleData, category = 'musical') {
-        // DEBUG: Log the roleData structure
-        console.log('🔍 DEBUG - Creating role card for:', {
-            name: roleData.name,
-            frequency: roleData.frequency,
-            artistsCount: roleData.artists ? roleData.artists.length : 'no artists property',
-            category: category
-        });
-        
         const card = document.createElement('div');
         card.className = `role-card ${category}-role-card`;
         card.setAttribute('data-role-id', roleData.id);
@@ -5557,15 +5533,6 @@ class AlbumCollectionApp {
         const rolesArray = Array.from(roleMap.values()).sort((a, b) => b.frequency - a.frequency);
         console.log(`🎭 Generated ${rolesArray.length} roles from ${this.collection.albums.length} albums`);
         console.log(`🎭 Top 5 roles:`, rolesArray.slice(0, 5).map(r => `${r.name} (${r.artists?.length || 0} artists, ${r.frequency} albums)`));
-        
-        // DEBUG: Log first few roles to verify structure
-        if (rolesArray.length > 0) {
-            console.log('🔍 DEBUG - First 3 roles structure:', rolesArray.slice(0, 3).map(r => ({
-                name: r.name,
-                frequency: r.frequency,
-                artistsCount: r.artists ? r.artists.length : 0
-            })));
-        }
         
         return rolesArray;
     }
