@@ -3583,28 +3583,23 @@ class AlbumCollectionApp {
     
     async regenerateCollectionData() {
         try {
-            if (this.supabaseService && this.supabaseService.initialized) {
-                // Reload all data from Supabase to get the most current state
-                console.log('🔄 Reloading collection data from Supabase...');
-                await this.loadDataFromSupabase();
-            } else {
-                // Fallback to in-memory regeneration
-                console.log('🔄 Regenerating collection data (in-memory mode)...');
-                
-                // Generate artists from albums
-                this.collection.artists = this.generateArtistsFromAlbums();
-                
-                // Generate tracks from albums
-                this.collection.tracks = this.generateTracksFromAlbums();
-                
-                // Generate roles from albums
-                this.collection.roles = this.generateRolesFromAlbums();
-                
-                console.log(`✅ Collection updated: ${this.collection.albums.length} albums, ${this.collection.artists.length} artists, ${this.collection.tracks.length} tracks, ${this.collection.roles.length} roles`);
-                
-                // Update page title counts
-                this.updatePageTitleCounts();
-            }
+            // Always use in-memory regeneration for local collection updates
+            // This avoids expensive Supabase reloads after album edits/deletions
+            console.log('🔄 Regenerating collection data (in-memory mode)...');
+            
+            // Generate artists from albums
+            this.collection.artists = this.generateArtistsFromAlbums();
+            
+            // Generate tracks from albums
+            this.collection.tracks = this.generateTracksFromAlbums();
+            
+            // Generate roles from albums
+            this.collection.roles = this.generateRolesFromAlbums();
+            
+            console.log(`✅ Collection updated: ${this.collection.albums.length} albums, ${this.collection.artists.length} artists, ${this.collection.tracks.length} tracks, ${this.collection.roles.length} roles`);
+            
+            // Update page title counts
+            this.updatePageTitleCounts();
             
             // Refresh scraped content display after data regeneration
             this.refreshScrapedContentDisplay();
@@ -6610,14 +6605,35 @@ class AlbumCollectionApp {
         const deleteBtn = document.querySelector('.delete-btn');
         const originalText = deleteBtn.innerHTML;
         
+        // Store current scroll position for Albums page
+        this.mainPageScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+        
         try {
             deleteBtn.classList.add('loading');
             deleteBtn.innerHTML = '🗑️ Deleting...';
             
+            // Delete from Supabase
             await this.supabaseService.deleteAlbum(albumId);
+            
+            // Update local collection immediately (no database reload needed)
             this.collection.albums = this.collection.albums.filter(a => a.id != albumId);
-            await this.loadDataFromSupabase();
+            
+            // Regenerate derived data locally (no Supabase reload)
+            this.regenerateCollectionData();
+            
+            // Close modal immediately
             this.closeModal();
+            
+            // Refresh current view to show updated data
+            this.refreshCurrentView();
+            
+            // Restore scroll position after UI update (with small delay)
+            setTimeout(() => {
+                if (this.currentView === 'albums' && this.mainPageScrollPosition) {
+                    window.scrollTo(0, this.mainPageScrollPosition);
+                }
+            }, 100);
+            
             console.log('✅ Album deleted successfully');
             
         } catch (error) {
