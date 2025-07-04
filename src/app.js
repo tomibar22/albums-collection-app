@@ -3658,19 +3658,61 @@ class AlbumCollectionApp {
         // Refresh the current view to show new data
         console.log(`🔄 Refreshing ${this.currentView} view...`);
         
+        // Preserve sort state for each view
+        let currentSort = null;
+        
         switch (this.currentView) {
             case 'albums':
+                // Get current sort selection before refresh
+                const albumsSort = document.getElementById('albums-sort');
+                if (albumsSort) {
+                    currentSort = albumsSort.value;
+                    console.log(`📋 Preserving albums sort: ${currentSort}`);
+                }
                 this.renderAlbumsGrid();
+                // Reapply sort after refresh
+                if (currentSort) {
+                    this.sortAlbums(currentSort);
+                }
                 break;
             case 'artists':
+                // Get current sort selection before refresh  
+                const artistsSort = document.getElementById('artists-sort');
+                if (artistsSort) {
+                    currentSort = artistsSort.value;
+                    console.log(`👥 Preserving artists sort: ${currentSort}`);
+                }
                 this.renderArtistsGrid();
+                // Reapply sort after refresh
+                if (currentSort) {
+                    this.sortArtists(currentSort);
+                }
                 break;
             case 'tracks':
+                // Get current sort selection before refresh
+                const tracksSort = document.getElementById('tracks-sort');
+                if (tracksSort) {
+                    currentSort = tracksSort.value;
+                    console.log(`🎵 Preserving tracks sort: ${currentSort}`);
+                }
                 this.renderTracksGrid();
+                // Reapply sort after refresh
+                if (currentSort) {
+                    this.sortTracks(currentSort);
+                }
                 break;
             case 'roles':
+                // Get current sort selection before refresh
+                const rolesSort = document.getElementById('roles-sort');
+                if (rolesSort) {
+                    currentSort = rolesSort.value;
+                    console.log(`🎭 Preserving roles sort: ${currentSort}`);
+                }
                 this.renderRolesGrid();
-                break;
+                // Reapply sort after refresh
+                if (currentSort) {
+                    this.sortRoles(currentSort);
+                }
                 break;
             default:
                 break;
