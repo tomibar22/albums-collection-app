@@ -2292,24 +2292,32 @@ class AlbumCollectionApp {
         const technicalRolesHtml = actualTechnicalRoles.length > 0 
             ? actualTechnicalRoles.map(role => `<span class="role-tag technical-role clickable-role-filter" data-role="${role}" data-artist="${artist.name}">${role}</span>`).join('')
             : '<p class="no-content">No technical roles found</p>';
+
+        // Determine which tab should be active by default
+        // If artist has no musical roles but has technical roles, default to technical tab
+        const defaultToTechnical = actualMusicalRoles.length === 0 && actualTechnicalRoles.length > 0;
+        const musicalTabActive = !defaultToTechnical;
+        const technicalTabActive = defaultToTechnical;
+
+        console.log(`🎭 Tab selection for ${artist.name}: defaultToTechnical=${defaultToTechnical}, musical=${actualMusicalRoles.length}, technical=${actualTechnicalRoles.length}`);
         
         return `
             <div class="artist-roles-section">
                 <div class="artist-role-tabs">
-                    <button class="role-tab-btn active" 
+                    <button class="role-tab-btn ${musicalTabActive ? 'active' : ''}" 
                             onclick="window.albumApp.switchArtistRoleTab('${artistId}', 'musical')">
                         Musical Roles (${actualMusicalRoles.length})
                     </button>
-                    <button class="role-tab-btn" 
+                    <button class="role-tab-btn ${technicalTabActive ? 'active' : ''}" 
                             onclick="window.albumApp.switchArtistRoleTab('${artistId}', 'technical')">
                         Technical Roles (${actualTechnicalRoles.length})
                     </button>
                 </div>
                 <div class="artist-role-content">
-                    <div id="musical-roles-${artistId}" class="role-tab-content active">
+                    <div id="musical-roles-${artistId}" class="role-tab-content ${musicalTabActive ? 'active' : ''}">
                         ${musicalRolesHtml}
                     </div>
-                    <div id="technical-roles-${artistId}" class="role-tab-content">
+                    <div id="technical-roles-${artistId}" class="role-tab-content ${technicalTabActive ? 'active' : ''}">
                         ${technicalRolesHtml}
                     </div>
                 </div>
