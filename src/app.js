@@ -5226,10 +5226,26 @@ class AlbumCollectionApp {
         const modalTitle = document.getElementById('modal-title');
         if (modalTitle) {
             const titleText = modalTitle.textContent;
-            const roleMatch = titleText.match(/Contributors with role: "([^"]+)"/);
-            if (roleMatch) {
-                activeRole = roleMatch[1];
-                console.log(`🎯 Detected active role filter: ${activeRole}`);
+            console.log(`🔍 Current modal title: "${titleText}"`);
+            
+            // Try multiple patterns to detect the role
+            const patterns = [
+                /Contributors with role: "([^"]+)"/,
+                /Artists with role: "([^"]+)"/,
+                /role: "([^"]+)"/
+            ];
+            
+            for (const pattern of patterns) {
+                const roleMatch = titleText.match(pattern);
+                if (roleMatch) {
+                    activeRole = roleMatch[1];
+                    console.log(`🎯 Detected active role filter: "${activeRole}" using pattern: ${pattern}`);
+                    break;
+                }
+            }
+            
+            if (!activeRole) {
+                console.log(`⚠️ Could not detect role from title: "${titleText}"`);
             }
         }
         
@@ -5252,9 +5268,11 @@ class AlbumCollectionApp {
         let filteredAlbums = artistAlbums;
         if (activeRole) {
             filteredAlbums = artistAlbums.filter(album => {
-                return this.artistHasRoleOnAlbum(artistName, activeRole, album);
+                const hasRole = this.artistHasRoleOnAlbum(artistName, activeRole, album);
+                console.log(`🔍 Album "${album.title}": ${artistName} has role "${activeRole}"? ${hasRole}`);
+                return hasRole;
             });
-            console.log(`🎯 Filtered to ${filteredAlbums.length} albums where ${artistName} had role "${activeRole}"`);
+            console.log(`🎯 After filtering by role "${activeRole}": ${filteredAlbums.length} albums found`);
         }
         
         if (filteredAlbums.length === 0) {
@@ -5273,6 +5291,8 @@ class AlbumCollectionApp {
             roles: [],
             id: `temp-artist-${artistName.toLowerCase().replace(/\s+/g, '-')}`
         };
+        
+        console.log(`🎭 Created temporary artist with ${temporaryArtist.albums.length} albums`);
         
         // Collect all roles this artist has across albums
         const rolesSet = new Set();
