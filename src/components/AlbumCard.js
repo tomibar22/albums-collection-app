@@ -86,7 +86,7 @@ class AlbumCard {
                         </div>
                     </div>
                     <div class="card-edit-overlay">
-                        <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${this.album.id}')" title="Edit Album">
+                        <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${this.album.id}'); event.stopPropagation();" title="Edit Album">
                             ✏️
                         </button>
                         <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${this.album.id}', '${this.escapeAttributeValue(this.album.title)}'); event.stopPropagation();" title="Delete Album">
@@ -134,8 +134,11 @@ class AlbumCard {
         });
 
         // Optional: Make entire card clickable for "More Info"
-        this.element.addEventListener('click', () => {
-            this.handleMoreInfoClick();
+        this.element.addEventListener('click', (e) => {
+            // Don't trigger if clicking on action buttons or edit buttons
+            if (!e.target.closest('.action-btn, .card-edit-btn')) {
+                this.handleMoreInfoClick();
+            }
         });
     }
 

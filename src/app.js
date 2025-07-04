@@ -5913,22 +5913,6 @@ class AlbumCollectionApp {
                         </div>
                     </div>
 
-                    <!-- Tracklist Section -->
-                    <div class="edit-section">
-                        <h4 class="edit-section-title">🎵 Tracklist</h4>
-                        <div id="tracklist-edit-container">
-                            ${tracklistHtml}
-                        </div>
-                        <button type="button" class="add-track-btn" onclick="window.albumApp.addTrackRow()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="8" x2="12" y2="16"></line>
-                                <line x1="8" y1="12" x2="16" y2="12"></line>
-                            </svg>
-                            Add Track
-                        </button>
-                    </div>
-
                     <!-- Credits Section -->
                     <div class="edit-section">
                         <h4 class="edit-section-title">👥 Credits</h4>
@@ -5942,6 +5926,22 @@ class AlbumCollectionApp {
                                 <line x1="8" y1="12" x2="16" y2="12"></line>
                             </svg>
                             Add Credit
+                        </button>
+                    </div>
+
+                    <!-- Tracklist Section -->
+                    <div class="edit-section">
+                        <h4 class="edit-section-title">🎵 Tracklist</h4>
+                        <div id="tracklist-edit-container">
+                            ${tracklistHtml}
+                        </div>
+                        <button type="button" class="add-track-btn" onclick="window.albumApp.addTrackRow()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                            </svg>
+                            Add Track
                         </button>
                     </div>
                     
