@@ -40,66 +40,212 @@ class AlbumCollectionApp {
 
     async init() {
         try {
-            // Show loading modal immediately
-            this.showLoadingModal('Initializing application...', 'Starting up...', 0);
+            // Show loading modal immediately with better messaging
+            this.showLoadingModal('🎧 Albums Collection', 'Starting your music library...', 0);
             
-            // Initialize Supabase service
+            // Start Supabase initialization immediately (non-blocking)
             console.log('🔧 Initializing Supabase service...');
-            this.updateLoadingProgress('Connecting to database...', 'Establishing connection...', 10);
-            this.supabaseService = new SupabaseService();
+            this.updateLoadingProgress('🔗 Connecting to database...', 'Establishing secure connection...', 5);
             
-            // Wait for Supabase to initialize
-            while (!this.supabaseService.initialized) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
+            // Initialize Supabase and UI setup in parallel
+            const supabasePromise = this.initializeSupabase();
+            const uiPromise = this.initializeUIComponents();
             
-            console.log('✅ Supabase service initialized');
-            this.updateLoadingProgress('Database connected successfully', 'Setting up interface...', 25);
+            // Wait for both to complete
+            await Promise.all([supabasePromise, uiPromise]);
             
-            // Setup UI
-            this.setupEventListeners();
-            this.setupAlbumCardEvents();
-            this.setupArtistCardEvents();
-            this.setupScraperEvents();
-            this.initializeSortControls();
+            this.updateLoadingProgress('🎯 Interface ready', 'Loading your music collection...', 25);
             
-            this.updateLoadingProgress('Interface ready', 'Loading your collection...', 40);
+            // Enhanced data loading with granular progress
+            await this.loadDataFromSupabaseEnhanced();
             
-            // Load data from Supabase
-            await this.loadDataFromSupabase();
+            this.updateLoadingProgress('🎉 Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
             
-            // Load scraped artists history
-            // this.scrapedHistory = [];
-            // await this.loadScrapedHistory();
-            
-            this.updateLoadingProgress('Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
-            
-            // Hide loading modal after a brief delay
+            // Hide loading modal with shorter delay for faster UX
             setTimeout(() => {
                 this.hideLoadingModal();
-            }, 1500);
+            }, 800); // Reduced from 1500ms
             
-            console.log('🎧 Albums Collection App initialized with Supabase data');
+            console.log('🎧 Albums Collection App initialized successfully');
         } catch (error) {
             console.error('❌ Failed to initialize app:', error);
             
-            // Show error state
-            this.updateLoadingProgress('Connection failed', 'Loading in offline mode...', 50);
+            // Enhanced error handling with recovery options
+            this.updateLoadingProgress('⚠️ Connection failed', 'Starting in offline mode...', 60);
             
-            // Fallback to in-memory mode if Supabase fails
-            console.log('⚠️ Falling back to in-memory mode');
-            this.setupEventListeners();
-            this.setupAlbumCardEvents();
-            this.setupArtistCardEvents();
-            this.setupScraperEvents();
-            this.initializeSortControls();
-            this.loadInitialView(); // In fallback mode, we need this since no data will be loaded
+            // Fallback to in-memory mode
+            console.log('⚠️ Falling back to offline mode');
+            await this.initializeUIComponents();
+            this.loadInitialView();
             
             // Hide loading modal
             setTimeout(() => {
                 this.hideLoadingModal();
+                this.showOfflineNotification();
+            }, 1000);
             }, 2000);
         }
+    }
+
+    // Enhanced Supabase initialization with better error handling
+    async initializeSupabase() {
+        this.supabaseService = new SupabaseService();
+        
+        // Progressive wait with timeout
+        const maxWaitTime = 5000; // 5 seconds max
+        const startTime = Date.now();
+        
+        while (!this.supabaseService.initialized && (Date.now() - startTime) < maxWaitTime) {
+            await new Promise(resolve => setTimeout(resolve, 50)); // Check every 50ms
+        }
+        
+        if (!this.supabaseService.initialized) {
+            throw new Error('Supabase initialization timeout');
+        }
+        
+        console.log('✅ Supabase service initialized');
+        this.updateLoadingProgress('✅ Database connected', 'Setting up interface...', 15);
+    }
+
+    // UI initialization separated for parallel loading
+    async initializeUIComponents() {
+        this.updateLoadingProgress('🎨 Setting up interface...', 'Initializing components...', 20);
+        
+        // Setup all UI components
+        this.setupEventListeners();
+        this.setupAlbumCardEvents();
+        this.setupArtistCardEvents();
+        this.setupScraperEvents();
+        this.initializeSortControls();
+        
+        console.log('✅ UI components initialized');
+    }
+
+    // Enhanced data loading with granular progress tracking
+    async loadDataFromSupabaseEnhanced() {
+        try {
+            console.log('📊 Loading data from Supabase...');
+            this.updateLoadingProgress('📚 Loading albums...', 'Fetching album database...', 30);
+
+            // Load data with individual progress tracking
+            const albums = await this.loadAlbumsWithProgress();
+            this.updateLoadingProgress('👥 Loading artists...', 'Fetching artist information...', 55);
+            
+            const [artists, tracks, roles, fetchedScrapedHistory] = await Promise.all([
+                this.supabaseService.getArtists(),
+                this.supabaseService.getTracks(), 
+                this.supabaseService.getRoles(),
+                this.supabaseService.getScrapedArtistsHistory()
+            ]);
+
+            this.updateLoadingProgress('🔄 Processing data...', 'Organizing your collection...', 80);
+
+            // Update collection (faster assignment)
+            this.collection.albums = albums;
+            this.collection.artists = artists;
+            this.collection.tracks = tracks;
+            this.collection.roles = roles;
+            this.scrapedHistory = fetchedScrapedHistory;
+
+            this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
+
+            // Generate collection statistics (moved to after loading)
+            this.generateCollectionStats();
+            
+            // Update UI elements
+            this.updatePageTitleCounts();
+            this.loadInitialView();
+            
+            console.log(`✅ Data loaded: ${albums.length} albums, ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
+            
+        } catch (error) {
+            console.error('❌ Failed to load data from Supabase:', error);
+            throw error;
+        }
+    }
+
+    // Enhanced album loading with real-time progress
+    async loadAlbumsWithProgress() {
+        if (!this.supabaseService?.initialized) {
+            throw new Error('Supabase service not initialized');
+        }
+
+        let allAlbums = [];
+        let start = 0;
+        const batchSize = 1000;
+        let hasMore = true;
+        let batchCount = 0;
+
+        while (hasMore) {
+            batchCount++;
+            
+            // Update progress during batch loading
+            const batchProgress = 30 + (batchCount * 20); // 30-50% range for album loading
+            this.updateLoadingProgress(
+                `📚 Loading albums batch ${batchCount}...`, 
+                `${allAlbums.length} albums loaded so far...`, 
+                Math.min(batchProgress, 50)
+            );
+
+            const { data: batch, error } = await this.supabaseService.client
+                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                .select('*')
+                .order('year', { ascending: true })
+                .range(start, start + batchSize - 1);
+
+            if (error) throw error;
+
+            if (batch && batch.length > 0) {
+                allAlbums = allAlbums.concat(batch);
+                start += batchSize;
+                hasMore = batch.length === batchSize;
+                
+                console.log(`📚 Loaded batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`);
+            } else {
+                hasMore = false;
+            }
+        }
+
+        return allAlbums;
+    }
+
+    // Optimized collection stats (moved out of critical loading path) 
+    generateCollectionStats() {
+        if (this.collection.albums.length === 0) return;
+
+        // Basic year analysis (much faster)
+        const years = this.collection.albums
+            .filter(album => album.year)
+            .map(album => album.year);
+        
+        if (years.length > 0) {
+            const minYear = Math.min(...years);
+            const maxYear = Math.max(...years);
+            const post1994Count = years.filter(year => year > 1994).length;
+            
+            console.log(`📊 Collection stats: ${this.collection.albums.length} albums (${minYear}-${maxYear}), ${post1994Count} modern albums`);
+        }
+    }
+
+    // Offline notification for failed connections
+    showOfflineNotification() {
+        const notification = document.createElement('div');
+        notification.className = 'offline-notification';
+        notification.innerHTML = `
+            <div class="offline-content">
+                <span class="offline-icon">📡</span>
+                <span class="offline-text">Running in offline mode</span>
+                <button class="offline-retry" onclick="location.reload()">🔄 Retry</button>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
     }
 
     // Loading Modal Control Methods
