@@ -4,6 +4,7 @@ class AlbumCollectionApp {
         this.currentView = 'albums';
         this.currentRolesTab = 'musical'; // Default to musical roles tab
         this.currentArtistsTab = 'musical'; // Default to musical artists tab
+        this.savingInProgress = false; // Flag to prevent modal opening during save
         this.collection = {
             albums: [],
             artists: [],  
@@ -5844,11 +5845,29 @@ class AlbumCollectionApp {
     // Force close modal entirely (for after saving edits)
     forceCloseModal() {
         console.log('🚫 Force closing modal entirely (bypassing stack)');
-        document.getElementById('more-info-modal').classList.add('hidden');
+        const modal = document.getElementById('more-info-modal');
+        
+        // Remove any event listeners that might interfere
+        modal.removeEventListener('click', this.modalClickHandler);
+        
+        // Hide modal immediately
+        modal.classList.add('hidden');
         document.body.style.overflow = '';
+        
+        // Clear modal content to prevent any issues
+        document.getElementById('modal-title').innerHTML = '';
+        document.getElementById('modal-body').innerHTML = '';
         
         // Clear any remaining modal stack
         this.modalStack = [];
+        
+        // Re-attach the main modal event listener after a delay
+        setTimeout(() => {
+            this.modalClickHandler = (e) => {
+                if (e.target === modal) this.closeModal();
+            };
+            modal.addEventListener('click', this.modalClickHandler);
+        }, 200);
     }
 
     // Loading state methods
@@ -6070,11 +6089,13 @@ class AlbumCollectionApp {
                 }
             }
 
-            // Just refresh the current view instead of reloading all data
-            this.refreshCurrentView();
-            
-            // Force close modal entirely instead of returning to stack
+            // Force close modal FIRST to prevent any interference
             this.forceCloseModal();
+            
+            // Wait a moment then refresh the view to show updated data
+            setTimeout(() => {
+                this.refreshCurrentView();
+            }, 100);
             
             console.log('✅ Album updated successfully:', {
                 title: updates.title,

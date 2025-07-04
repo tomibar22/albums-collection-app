@@ -613,6 +613,49 @@ async ensureRole(roleName) {
                 console.log('📝 Updating album in Supabase:', albumId, updates);
             }
 
+            // For performance, just update the main album record
+            // Skip expensive relationship processing for basic edits
+            const { data, error } = await this.client
+                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                .update({
+                    title: updates.title,
+                    year: updates.year,
+                    artist: updates.artist,
+                    genres: updates.genres || [],
+                    styles: updates.styles || [],
+                    tracklist: updates.tracklist || [],
+                    track_count: updates.trackCount || 0,
+                    credits: updates.credits || [],
+                    cover_image: updates.coverImage || null,
+                    formatted_year: updates.year?.toString() || null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', albumId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (this.debug) {
+                console.log('✅ Album updated in Supabase:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('❌ Failed to update album:', error);
+            throw error;
+        }
+    }
+
+    // Heavy relationship processing (for new albums only)
+    async updateAlbumWithRelationships(albumId, updates) {
+        if (!this.initialized) throw new Error('Supabase service not initialized');
+
+        try {
+            if (this.debug) {
+                console.log('📝 Updating album with full relationships:', albumId, updates);
+            }
+
             // First update the main album record
             const { data, error } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
@@ -648,12 +691,12 @@ async ensureRole(roleName) {
             }
 
             if (this.debug) {
-                console.log('✅ Album updated in Supabase:', data);
+                console.log('✅ Album updated with relationships:', data);
             }
 
             return data;
         } catch (error) {
-            console.error('❌ Failed to update album:', error);
+            console.error('❌ Failed to update album with relationships:', error);
             throw error;
         }
     }
