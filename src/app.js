@@ -169,20 +169,39 @@ class AlbumCollectionApp {
             throw new Error('Supabase service not initialized');
         }
 
+        // First, get the total count to calculate expected batches
+        this.updateLoadingProgress('📊 Calculating collection size...', 'Checking album count...', 32);
+        
+        const { count: totalCount, error: countError } = await this.supabaseService.client
+            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+            .select('*', { count: 'exact', head: true });
+
+        if (countError) {
+            console.warn('⚠️ Could not get exact count, proceeding with estimation');
+        }
+
+        const batchSize = 1000;
+        const estimatedBatches = totalCount ? Math.ceil(totalCount / batchSize) : '?';
+        
+        console.log(`📊 Total albums: ${totalCount || 'unknown'}, Expected batches: ${estimatedBatches}`);
+
         let allAlbums = [];
         let start = 0;
-        const batchSize = 1000;
         let hasMore = true;
         let batchCount = 0;
 
         while (hasMore) {
             batchCount++;
             
-            // Update progress during batch loading
-            const batchProgress = 30 + (batchCount * 20); // 30-50% range for album loading
+            // Enhanced progress with batch X/Y format
+            const batchProgress = 30 + (batchCount * 15); // More conservative progress increment
+            const batchText = estimatedBatches !== '?' 
+                ? `📚 Loading batch ${batchCount}/${estimatedBatches}...`
+                : `📚 Loading batch ${batchCount}...`;
+            
             this.updateLoadingProgress(
-                `📚 Loading albums batch ${batchCount}...`, 
-                `${allAlbums.length} albums loaded so far...`, 
+                batchText,
+                `${allAlbums.length} albums loaded so far...`,
                 Math.min(batchProgress, 50)
             );
 
@@ -199,10 +218,19 @@ class AlbumCollectionApp {
                 start += batchSize;
                 hasMore = batch.length === batchSize;
                 
-                console.log(`📚 Loaded batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`);
+                const progressText = estimatedBatches !== '?' 
+                    ? `📚 Loaded batch ${batchCount}/${estimatedBatches}: ${batch.length} albums (total: ${allAlbums.length})`
+                    : `📚 Loaded batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`;
+                    
+                console.log(progressText);
             } else {
                 hasMore = false;
             }
+        }
+
+        // Final confirmation with exact totals
+        if (estimatedBatches !== '?' && batchCount !== estimatedBatches) {
+            console.log(`📊 Actual batches: ${batchCount} (estimated: ${estimatedBatches})`);
         }
 
         return allAlbums;
