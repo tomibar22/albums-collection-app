@@ -2805,19 +2805,15 @@ class AlbumCollectionApp {
                 // EXACT match first - preserves full specificity
                 if (individualRole === role) return true;
                 
-                // CONTAINS match - allows "piano" to match "piano [grand]"
-                // Convert to lowercase for case-insensitive matching
-                const lowerRole = role.toLowerCase();
-                const lowerIndividualRole = individualRole.toLowerCase();
+                // For role filtering, be more strict - clean both roles and compare exactly
+                const cleanedCreditRole = this.cleanRoleName(individualRole);
+                const cleanedSearchRole = this.cleanRoleName(role);
                 
-                if (lowerIndividualRole.includes(lowerRole)) return true;
+                // Exact match after cleaning
+                if (cleanedCreditRole === cleanedSearchRole) return true;
                 
-                // Fallback: cleaned matching for backward compatibility (only if no brackets in search)
-                if (!role.includes('[') && !role.includes(']')) {
-                    const cleanedCreditRole = this.cleanRoleName(individualRole);
-                    const cleanedSearchRole = this.cleanRoleName(role);
-                    return cleanedCreditRole === cleanedSearchRole;
-                }
+                // Case-insensitive exact match after cleaning
+                if (cleanedCreditRole.toLowerCase() === cleanedSearchRole.toLowerCase()) return true;
                 
                 return false;
             });
