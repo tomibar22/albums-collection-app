@@ -5841,6 +5841,16 @@ class AlbumCollectionApp {
         this.modalStack = [];
     }
 
+    // Force close modal entirely (for after saving edits)
+    forceCloseModal() {
+        console.log('🚫 Force closing modal entirely (bypassing stack)');
+        document.getElementById('more-info-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+        
+        // Clear any remaining modal stack
+        this.modalStack = [];
+    }
+
     // Loading state methods
     showLoading(message = 'Loading...') {
         document.getElementById('loading-text').textContent = message;
@@ -6042,7 +6052,7 @@ class AlbumCollectionApp {
             // Update album in Supabase
             await this.supabaseService.updateAlbum(albumId, updates);
             
-            // Update local collection
+            // Update local collection efficiently (no need to reload everything)
             const albumIndex = this.collection.albums.findIndex(a => a.id == albumId);
             if (albumIndex !== -1) {
                 const album = this.collection.albums[albumIndex];
@@ -6060,9 +6070,11 @@ class AlbumCollectionApp {
                 }
             }
 
-            // Reload data from Supabase to ensure consistency
-            await this.loadDataFromSupabase();
-            this.closeModal();
+            // Just refresh the current view instead of reloading all data
+            this.refreshCurrentView();
+            
+            // Force close modal entirely instead of returning to stack
+            this.forceCloseModal();
             
             console.log('✅ Album updated successfully:', {
                 title: updates.title,
