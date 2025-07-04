@@ -1295,6 +1295,18 @@ class AlbumCollectionApp {
             .replace(/>/g, '&gt;');
     }
 
+    unescapeHtmlAttribute(str) {
+        if (!str || typeof str !== 'string') {
+            return '';
+        }
+        return str
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&');
+    }
+
     // Load images for artists in the currently active tab
     async loadImagesForActiveTab(tabType) {
         try {
@@ -2472,11 +2484,11 @@ class AlbumCollectionApp {
         });
 
         const musicalRolesHtml = actualMusicalRoles.length > 0 
-            ? actualMusicalRoles.map(role => `<span class="role-tag musical-role clickable-role-filter" data-role="${role}" data-artist="${artist.name}">${role}</span>`).join('')
+            ? actualMusicalRoles.map(role => `<span class="role-tag musical-role clickable-role-filter" data-role="${role}" data-artist="${this.escapeHtmlAttribute(artist.name)}">${role}</span>`).join('')
             : '<p class="no-content">No musical roles found</p>';
             
         const technicalRolesHtml = actualTechnicalRoles.length > 0 
-            ? actualTechnicalRoles.map(role => `<span class="role-tag technical-role clickable-role-filter" data-role="${role}" data-artist="${artist.name}">${role}</span>`).join('')
+            ? actualTechnicalRoles.map(role => `<span class="role-tag technical-role clickable-role-filter" data-role="${role}" data-artist="${this.escapeHtmlAttribute(artist.name)}">${role}</span>`).join('')
             : '<p class="no-content">No technical roles found</p>';
 
         // Determine which tab should be active by default
@@ -2644,7 +2656,9 @@ class AlbumCollectionApp {
     
     // Filter albums in artist modal by specific role
     filterAlbumsByRole(artistName, role) {
-        console.log(`🎭 Filtering albums for ${artistName} by role: ${role}`);
+        // Unescape the artist name since it comes from an HTML attribute
+        const unescapedArtistName = this.unescapeHtmlAttribute(artistName);
+        console.log(`🎭 Filtering albums for ${unescapedArtistName} by role: ${role}`);
         
         const albumsGrid = document.getElementById('artist-albums-grid');
         if (!albumsGrid) {
@@ -2662,7 +2676,7 @@ class AlbumCollectionApp {
             
             if (album) {
                 // Check if this artist had the specific role on this album
-                const hasRole = this.artistHasRoleOnAlbum(artistName, role, album);
+                const hasRole = this.artistHasRoleOnAlbum(unescapedArtistName, role, album);
                 
                 if (hasRole) {
                     card.style.display = 'block';
