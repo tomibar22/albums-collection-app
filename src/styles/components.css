@@ -1062,6 +1062,40 @@
     transform: scale(1.05);
 }
 
+/* Artist placeholder for cards without images (technical contributors after 2nd row) */
+.artist-image.no-image {
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    height: 140px; /* Slightly smaller than normal aspect-ratio */
+}
+
+.artist-placeholder-only {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    border-radius: 12px;
+    position: relative;
+}
+
+.artist-placeholder-only .placeholder-icon {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.artist-image.no-image .artist-overlay {
+    background: rgba(0, 0, 0, 0.6); /* Slightly more opaque for better contrast */
+}
+
+.artist-card:hover .artist-image.no-image {
+    border-color: var(--accent-color);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
 .artist-overlay {
     position: absolute;
     top: 0;

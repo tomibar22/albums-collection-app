@@ -819,7 +819,7 @@ class AlbumCollectionApp {
         
         // Initialize lazy loading for artists grid
         const artistRenderFunction = (artistData, index) => {
-            const artistCard = new ArtistCard(artistData, activeTab); // Pass tab context for specific album counts
+            const artistCard = new ArtistCard(artistData, activeTab, index); // Pass tab context and position for image optimization
             const cardElement = artistCard.render();
             cardElement.classList.add('grid-item');
             return cardElement;

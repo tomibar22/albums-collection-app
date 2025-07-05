@@ -5,10 +5,25 @@
  */
 
 class ArtistCard {
-    constructor(artistData, tabContext = null) {
+    constructor(artistData, tabContext = null, position = 0) {
         this.artist = artistData;
         this.tabContext = tabContext; // 'musical', 'technical', or null for default behavior
+        this.position = position; // Position in the grid (0-based index)
         this.element = null;
+    }
+
+    /**
+     * Determine if image should be shown based on tab context and position
+     * @returns {boolean} Whether to show the image
+     */
+    shouldShowImage() {
+        // Always show images for musical artists
+        if (this.tabContext !== 'technical') {
+            return true;
+        }
+        
+        // For technical contributors, only show images for first 2 rows (8 cards: 0-7)
+        return this.position < 8;
     }
 
     /**
@@ -62,19 +77,28 @@ class ArtistCard {
             `;
         }
 
+        // Check if we should show image based on tab context and position
+        const shouldShowImage = this.shouldShowImage();
+        
         this.element.innerHTML = `
             <div class="artist-card-inner">
-                <div class="artist-image">
-                    <img 
-                        src="${this.getArtistImageUrl()}" 
-                        alt="Photo of ${this.artist.name}"
-                        class="artist-photo"
-                        loading="lazy"
-                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                    />
-                    <div class="artist-placeholder" style="display: none;">
-                        <div class="placeholder-icon">${this.getInitials()}</div>
-                    </div>
+                <div class="artist-image${!shouldShowImage ? ' no-image' : ''}">
+                    ${shouldShowImage ? `
+                        <img 
+                            src="${this.getArtistImageUrl()}" 
+                            alt="Photo of ${this.artist.name}"
+                            class="artist-photo"
+                            loading="lazy"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                        />
+                        <div class="artist-placeholder" style="display: none;">
+                            <div class="placeholder-icon">${this.getInitials()}</div>
+                        </div>
+                    ` : `
+                        <div class="artist-placeholder-only">
+                            <div class="placeholder-icon">${this.getInitials()}</div>
+                        </div>
+                    `}
                     <div class="artist-overlay">
                         <div class="artist-actions">
                             <button class="action-btn view-albums-btn" title="View ${this.escapeHtmlAttribute(this.artist.name)}'s albums">
@@ -102,10 +126,12 @@ class ArtistCard {
 
         this.attachEventListeners();
         
-        // Initialize lazy image loading after a short delay to avoid blocking render
-        setTimeout(() => {
-            this.initializeLazyImageLoading();
-        }, 100);
+        // Initialize lazy image loading only if image should be shown
+        if (this.shouldShowImage()) {
+            setTimeout(() => {
+                this.initializeLazyImageLoading();
+            }, 100);
+        }
         
         return this.element;
     }
