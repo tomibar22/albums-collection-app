@@ -2975,6 +2975,16 @@ class AlbumCollectionApp {
         const albumsGrid = document.getElementById('artist-albums-grid');
         const filterStatus = document.getElementById('role-filter-status');
         
+        // IMPORTANT: Clear the filter UI state FIRST before sorting
+        if (filterStatus) {
+            filterStatus.style.display = 'none';
+        }
+        
+        // Remove active filter styling from all role tags
+        document.querySelectorAll('.clickable-role-filter').forEach(role => {
+            role.classList.remove('active-filter');
+        });
+        
         if (albumsGrid) {
             // Get all albums data
             const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
@@ -2986,7 +2996,7 @@ class AlbumCollectionApp {
                     const sortSelect = document.getElementById('artist-albums-sort');
                     const currentSort = sortSelect ? sortSelect.value : 'year-asc';
                     
-                    // Apply the current sort to all albums (no filtering)
+                    // Apply the current sort to all albums (now that filter state is cleared)
                     this.sortArtistAlbums(artistName, currentSort);
                     
                 } catch (e) {
@@ -2999,15 +3009,6 @@ class AlbumCollectionApp {
                 }
             }
         }
-        
-        if (filterStatus) {
-            filterStatus.style.display = 'none';
-        }
-        
-        // Remove active filter styling from all role tags
-        document.querySelectorAll('.clickable-role-filter').forEach(role => {
-            role.classList.remove('active-filter');
-        });
         
         console.log(`✅ Role filter cleared, showing all albums with current sort`);
     }
