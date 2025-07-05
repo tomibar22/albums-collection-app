@@ -149,11 +149,29 @@ class LazyLoadingManager {
         sentinel.className = 'lazy-loading-sentinel';
         sentinel.style.height = '1px';
         sentinel.style.visibility = 'hidden';
-        sentinel.style.clear = 'both'; // Ensure proper positioning after grid items
+        sentinel.style.width = '100%';
+        sentinel.style.clear = 'both';
         
-        // Insert sentinel directly at the end of the grid container (not parent)
-        // This ensures each tab has its own sentinel within its grid
-        gridElement.appendChild(sentinel);
+        // Find the correct container for the sentinel
+        // Place OUTSIDE the grid to avoid disrupting grid layout
+        let sentinelContainer;
+        
+        if (gridId === 'musical-artists-grid') {
+            sentinelContainer = document.getElementById('musical-artists-tab');
+        } else if (gridId === 'technical-artists-grid') {
+            sentinelContainer = document.getElementById('technical-artists-tab');
+        } else {
+            // For albums, tracks, roles grids - use view container
+            sentinelContainer = gridElement.closest('.view-container') || gridElement.parentElement;
+        }
+        
+        if (sentinelContainer) {
+            // Place sentinel at the end of the container, AFTER the grid
+            sentinelContainer.appendChild(sentinel);
+        } else {
+            // Fallback: place after the grid element
+            gridElement.parentElement.appendChild(sentinel);
+        }
         
         // Create intersection observer
         const observer = new IntersectionObserver((entries) => {
@@ -174,24 +192,9 @@ class LazyLoadingManager {
         observer.observe(sentinel);
         this.observers.set(gridId, observer);
         
-        console.log(`👁️ Infinite scroll setup for ${gridId} - sentinel placed in grid`);
+        console.log(`👁️ Infinite scroll setup for ${gridId} - sentinel placed outside grid`);
     }
-                    if (state && !state.isLoading && !state.allLoaded) {
-                        this.loadNextBatch(gridId);
-                    }
-                }
-            });
-        }, {
-            root: null,
-            rootMargin: `${this.loadingBufferDistance}px`,
-            threshold: 0.1
-        });
-        
-        observer.observe(sentinel);
-        this.observers.set(gridId, observer);
-        
-        console.log(`👁️ Infinite scroll setup for ${gridId}`);
-    }
+
     
     /**
      * Show loading indicator
