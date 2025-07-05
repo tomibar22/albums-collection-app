@@ -1097,6 +1097,32 @@
     background: var(--card-background);
 }
 
+/* Stylized collage with visual effects for less distraction */
+.stylized-collage {
+    position: relative;
+}
+
+.stylized-collage::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.3) 0%, 
+        rgba(30, 41, 59, 0.2) 50%, 
+        rgba(15, 23, 42, 0.4) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.stylized-collage img {
+    opacity: 0.6 !important;
+    filter: grayscale(30%) blur(0.5px) contrast(0.9) !important;
+    transition: all 0.3s ease;
+}
+
 /* Single album cover - full size */
 .collage-single {
     width: 100%;
@@ -1111,7 +1137,49 @@
     object-fit: cover;
 }
 
-/* Dual album covers - split vertically */
+/* 2x2 Grid layout for 2-4 albums */
+.collage-grid-2x2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    gap: 1px;
+}
+
+.collage-grid-2x2 img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 3x3 Grid layout for 5+ albums (creates texture effect) */
+.collage-grid-3x3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    gap: 1px;
+}
+
+.collage-grid-3x3 img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Empty slots for incomplete grids */
+.collage-empty-slot {
+    background: var(--bg-tertiary);
+    opacity: 0.3;
+}
+
+/* Dual album covers - split vertically (legacy support) */
 .collage-dual {
     display: flex;
     width: 100%;
@@ -1126,7 +1194,7 @@
     object-fit: cover;
 }
 
-/* Triple album covers - one large, two small */
+/* Triple album covers - one large, two small (legacy support) */
 .collage-triple {
     display: flex;
     width: 100%;
@@ -1154,7 +1222,7 @@
     object-fit: cover;
 }
 
-/* Quad album covers - 2x2 grid */
+/* Quad album covers - 2x2 grid (legacy support) */
 .collage-quad {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1163,6 +1231,12 @@
     height: 100%;
     border-radius: 12px;
     overflow: hidden;
+}
+
+.collage-quad img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .collage-quad img {
@@ -1210,6 +1284,18 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Enhanced overlay for stylized collages */
+.enhanced-overlay {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    border: 2.5px solid var(--accent-color);
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(59, 130, 246, 0.2);
+    width: 45px;
+    height: 45px;
+}
+
 .initials-text {
     font-size: 1rem;
     font-weight: 700;
@@ -1218,11 +1304,39 @@
     letter-spacing: 0.5px;
 }
 
+/* Hover effects for collages */
+.artist-card:hover .album-collage {
+    transform: scale(1.02);
+    transition: transform 0.3s ease;
+}
+
+.artist-card:hover .stylized-collage img {
+    opacity: 0.8 !important;
+    filter: grayscale(15%) blur(0px) contrast(1.1) !important;
+}
+
+.artist-card:hover .stylized-collage::after {
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.2) 0%, 
+        rgba(30, 41, 59, 0.1) 50%, 
+        rgba(15, 23, 42, 0.3) 100%);
+}
+
 /* Hover effects for initials overlay */
 .artist-card:hover .initials-overlay {
     background: rgba(59, 130, 246, 0.9);
     border-color: #ffffff;
     transform: translate(-50%, -50%) scale(1.1);
+}
+
+.artist-card:hover .enhanced-overlay {
+    background: rgba(59, 130, 246, 0.95);
+    border-color: #ffffff;
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 
+        0 6px 20px rgba(59, 130, 246, 0.4),
+        0 0 0 2px rgba(255, 255, 255, 0.3);
+}
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 

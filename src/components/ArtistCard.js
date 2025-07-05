@@ -227,7 +227,7 @@ class ArtistCard {
         // Get albums with valid cover images
         const albumsWithCovers = (this.artist.albums || [])
             .filter(album => album.cover_image && album.cover_image.trim() !== '')
-            .slice(0, 4); // Limit to 4 albums for the collage
+            .slice(0, 9); // Increased to 9 albums for denser, less distractive collage
 
         if (albumsWithCovers.length === 0) {
             // Fallback to initials if no album covers available
@@ -235,10 +235,10 @@ class ArtistCard {
         }
 
         // Create collage based on number of available covers
-        let collageHtml = '<div class="album-collage">';
+        let collageHtml = '<div class="album-collage stylized-collage">';
         
         if (albumsWithCovers.length === 1) {
-            // Single album cover
+            // Single album cover with effects
             collageHtml += `
                 <div class="collage-single">
                     <img src="${albumsWithCovers[0].cover_image}" 
@@ -247,30 +247,10 @@ class ArtistCard {
                          onerror="this.parentElement.innerHTML='<div class=\\"placeholder-icon\\">${this.getInitials()}</div>';">
                 </div>
             `;
-        } else if (albumsWithCovers.length === 2) {
-            // Two album covers - side by side
-            collageHtml += '<div class="collage-dual">';
-            albumsWithCovers.forEach(album => {
-                collageHtml += `
-                    <img src="${album.cover_image}" 
-                         alt="${this.escapeHtmlAttribute(album.title)}"
-                         loading="lazy"
-                         onerror="this.style.display='none';">
-                `;
-            });
-            collageHtml += '</div>';
-        } else if (albumsWithCovers.length === 3) {
-            // Three album covers - one large, two small
-            collageHtml += '<div class="collage-triple">';
-            collageHtml += `
-                <img src="${albumsWithCovers[0].cover_image}" 
-                     alt="${this.escapeHtmlAttribute(albumsWithCovers[0].title)}"
-                     class="collage-main"
-                     loading="lazy"
-                     onerror="this.style.display='none';">
-                <div class="collage-side">
-            `;
-            for (let i = 1; i < 3; i++) {
+        } else if (albumsWithCovers.length <= 4) {
+            // 2x2 grid for 2-4 albums
+            collageHtml += '<div class="collage-grid-2x2">';
+            for (let i = 0; i < Math.min(4, albumsWithCovers.length); i++) {
                 collageHtml += `
                     <img src="${albumsWithCovers[i].cover_image}" 
                          alt="${this.escapeHtmlAttribute(albumsWithCovers[i].title)}"
@@ -278,24 +258,32 @@ class ArtistCard {
                          onerror="this.style.display='none';">
                 `;
             }
-            collageHtml += '</div></div>';
+            // Fill empty slots if less than 4 albums
+            for (let i = albumsWithCovers.length; i < 4; i++) {
+                collageHtml += '<div class="collage-empty-slot"></div>';
+            }
+            collageHtml += '</div>';
         } else {
-            // Four or more album covers - 2x2 grid
-            collageHtml += '<div class="collage-quad">';
-            for (let i = 0; i < 4; i++) {
+            // 3x3 grid for 5+ albums (creates more texture, less individual focus)
+            collageHtml += '<div class="collage-grid-3x3">';
+            for (let i = 0; i < Math.min(9, albumsWithCovers.length); i++) {
                 collageHtml += `
                     <img src="${albumsWithCovers[i].cover_image}" 
                          alt="${this.escapeHtmlAttribute(albumsWithCovers[i].title)}"
                          loading="lazy"
                          onerror="this.style.display='none';">
                 `;
+            }
+            // Fill empty slots if less than 9 albums
+            for (let i = albumsWithCovers.length; i < 9; i++) {
+                collageHtml += '<div class="collage-empty-slot"></div>';
             }
             collageHtml += '</div>';
         }
         
-        // Add stylistic initials overlay
+        // Add stylistic initials overlay with enhanced styling
         collageHtml += `
-            <div class="initials-overlay">
+            <div class="initials-overlay enhanced-overlay">
                 <span class="initials-text">${this.getInitials()}</span>
             </div>
         `;
