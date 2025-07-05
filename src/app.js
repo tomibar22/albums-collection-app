@@ -5598,7 +5598,8 @@ class AlbumCollectionApp {
         
         try {
             const modalContent = this.generateTrackAlbumsModalContent(trackData);
-            const modalTitle = `Albums containing "${trackData.title}"`;
+            const albumCount = trackData.albums ? trackData.albums.length : 0;
+            const modalTitle = `Albums containing "${trackData.title}" (${albumCount} album${albumCount !== 1 ? 's' : ''})`;
             
             if (modalContent) {
                 // Use the proper showModal method to ensure event listeners are set up
@@ -5788,9 +5789,6 @@ class AlbumCollectionApp {
                                 </select>
                                 <button class="shuffle-btn hidden" id="track-albums-shuffle" data-track="${trackData.title}">🔀 Shuffle</button>
                             </div>
-                        </div>
-                        <div class="track-albums-header">
-                            <p>This track appears in <strong>${uniqueAlbumCount}</strong> album${uniqueAlbumCount !== 1 ? 's' : ''}:</p>
                         </div>
                         <div class="albums-grid" id="track-albums-grid" data-track="${trackData.title}" data-all-albums='${this.escapeJsonForAttribute(sortedAlbums)}'>
                             ${albumsHtml}
