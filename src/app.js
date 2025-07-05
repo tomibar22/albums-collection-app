@@ -869,8 +869,19 @@ class AlbumCollectionApp {
         // Render the new active tab
         this.renderActiveArtistsTab();
         
+        // Ensure intersection observer is set up after tab becomes visible
+        // Small delay to allow CSS transitions to complete
+        setTimeout(() => {
+            const activeGridId = tabType === 'musical' ? 'musical-artists-grid' : 'technical-artists-grid';
+            
+            if (this.lazyLoadingManager) {
+                // Use the new reinitializeObserver method for clean re-setup
+                this.lazyLoadingManager.reinitializeObserver(activeGridId);
+            }
+        }, 100);
+        
         // Load images for newly visible artists in the active tab
-        this.loadImagesForActiveTab(tab);
+        this.loadImagesForActiveTab(tabType);
     }
     
     // Helper function to clean role names by removing brackets and filtering invalid roles

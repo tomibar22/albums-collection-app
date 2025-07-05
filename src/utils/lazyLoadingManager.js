@@ -329,6 +329,30 @@ class LazyLoadingManager {
     }
     
     /**
+     * Re-setup intersection observer for a specific grid (useful for tabs)
+     */
+    reinitializeObserver(gridId) {
+        const state = this.loadingStates.get(gridId);
+        if (!state) {
+            console.warn(`⚠️ No loading state found for ${gridId}`);
+            return;
+        }
+        
+        console.log(`🔄 Reinitializing intersection observer for ${gridId}`);
+        
+        // Remove existing observer
+        if (this.observers.has(gridId)) {
+            this.observers.get(gridId).disconnect();
+            this.observers.delete(gridId);
+        }
+        
+        // Setup intersection observer again
+        if (state.config.enableInfiniteScroll !== false) {
+            this.setupInfiniteScroll(gridId);
+        }
+    }
+    
+    /**
      * Cleanup all observers and states
      */
     cleanup() {
