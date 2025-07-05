@@ -1802,12 +1802,28 @@ class AlbumCollectionApp {
                         }
                     </div>
                     <div class="album-modal-info">
-                        <h3 class="modal-album-title">${album.title}</h3>
-                        <p class="modal-album-artist">${artistsDisplay}</p>
-                        <p class="modal-album-year">${album.year || 'Unknown Year'}</p>
-                        <div class="modal-album-meta">
-                            <span class="modal-track-count">${album.track_count || album.trackCount || 0} tracks</span>
-                            <div class="modal-genres">${genresHtml}</div>
+                        <div class="modal-info-main">
+                            <h3 class="modal-album-title">${album.title}</h3>
+                            <p class="modal-album-artist">${artistsDisplay}</p>
+                            <p class="modal-album-year">${album.year || 'Unknown Year'}</p>
+                            <div class="modal-album-meta">
+                                <span class="modal-track-count">${album.track_count || album.trackCount || 0} tracks</span>
+                                <div class="modal-genres">${genresHtml}</div>
+                            </div>
+                        </div>
+                        <div class="modal-header-actions">
+                            <button class="modal-header-btn spotify-btn" data-search-query="${artistsDisplay} ${album.title}" title="Open in Spotify">
+                                🎵
+                            </button>
+                            <button class="modal-header-btn youtube-btn" data-search-query="${artistsDisplay} ${album.title}" title="Open in YouTube">
+                                📺
+                            </button>
+                            <button class="modal-header-btn edit-btn" onclick="window.albumApp.openEditAlbumModal('${album.id}')" title="Edit Album">
+                                ✏️
+                            </button>
+                            <button class="modal-header-btn delete-btn" onclick="window.albumApp.confirmDeleteAlbum('${album.id}', '${this.escapeAttributeValue(album.title)}')" title="Delete Album">
+                                🗑️
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1837,21 +1853,6 @@ class AlbumCollectionApp {
                             ${tracklistHtml}
                         </div>
                     </div>
-                </div>
-                
-                <div class="modal-actions">
-                    <button class="modal-action-btn spotify-btn" data-search-query="${artistsDisplay} ${album.title}">
-                        🎵 Open in Spotify
-                    </button>
-                    <button class="modal-action-btn youtube-btn" data-search-query="${artistsDisplay} ${album.title}">
-                        📺 Open in YouTube
-                    </button>
-                    <button class="modal-action-btn edit-btn" onclick="window.albumApp.openEditAlbumModal('${album.id}')">
-                        ✏️ Edit Album
-                    </button>
-                    <button class="modal-action-btn delete-btn" onclick="window.albumApp.confirmDeleteAlbum('${album.id}', '${this.escapeAttributeValue(album.title)}')">
-                        🗑️ Delete Album
-                    </button>
                 </div>
             </div>
         `;

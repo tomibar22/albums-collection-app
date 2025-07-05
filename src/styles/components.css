@@ -640,9 +640,99 @@
 .album-modal-info {
     flex: 1;
     display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    padding: 0.5rem 0;
+    align-items: flex-start;
+}
+
+.modal-info-main {
+    flex: 1;
+    display: flex;
     flex-direction: column;
     gap: 1rem;
+}
+
+.modal-header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    align-self: flex-start;
     padding: 0.5rem 0;
+}
+
+.modal-header-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-color);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.modal-header-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.modal-header-btn:active {
+    transform: scale(0.95);
+}
+
+/* Specific button colors */
+.modal-header-btn.spotify-btn:hover {
+    background: rgba(30, 215, 96, 0.2);
+    color: #1ed760;
+    box-shadow: 0 4px 12px rgba(30, 215, 96, 0.3);
+}
+
+.modal-header-btn.youtube-btn:hover {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff0000;
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+}
+
+.modal-header-btn.edit-btn:hover {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.modal-header-btn.delete-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .album-modal-info {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .modal-header-actions {
+        flex-direction: row;
+        justify-content: center;
+        order: -1;
+    }
+    
+    .modal-header-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
 }
 
 .modal-album-title {
@@ -857,46 +947,6 @@
     margin: 0;
 }
 
-.modal-actions {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    padding: 2rem;
-    margin-top: 1rem;
-    border-top: 2px solid var(--border-color);
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.02), rgba(79, 70, 229, 0.02));
-    border-radius: 16px;
-}
-
-.modal-action-btn {
-    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 1rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
-    min-width: 160px;
-    justify-content: center;
-}
-
-.modal-action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
-    filter: brightness(1.1);
-}
-
-.modal-action-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-}
-
 /* Responsive Modal Styles */
 @media (max-width: 768px) {
     .modal-content {
@@ -966,11 +1016,6 @@
         flex-direction: column;
         gap: 1rem;
         padding: 1.5rem;
-    }
-    
-    .modal-action-btn {
-        width: 100%;
-        min-width: auto;
     }
 }
     
@@ -1528,18 +1573,6 @@
 /* Artist Albums Modal now uses standard .album-card styling */
 
 /* Modal Action Button Styles */
-.modal-action-btn.youtube-btn {
-    background: var(--accent-color);
-    color: white;
-    border: 2px solid var(--accent-color);
-}
-
-.modal-action-btn.youtube-btn:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
-    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
-}
-
 /* Album Card Action Button Styles */
 .action-btn.youtube-btn {
     background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
@@ -3815,33 +3848,6 @@
 /* ===============================
    EDIT/DELETE FUNCTIONALITY
    =============================== */
-
-/* Edit and Delete Buttons */
-.modal-action-btn.edit-btn {
-    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-    color: white;
-    border: none;
-    transition: all 0.3s ease;
-}
-
-.modal-action-btn.edit-btn:hover {
-    background: linear-gradient(135deg, #047857 0%, #059669 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.modal-action-btn.delete-btn {
-    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-    color: white;
-    border: none;
-    transition: all 0.3s ease;
-}
-
-.modal-action-btn.delete-btn:hover {
-    background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
 
 /* Edit Forms */
 .edit-form {
