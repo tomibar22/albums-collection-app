@@ -42,15 +42,14 @@ class ArtistCard {
         
         if (this.tabContext === 'musical' && this.artist.musicalAlbumCount !== undefined) {
             albumCount = this.artist.musicalAlbumCount || 0;
-            albumText = albumCount === 1 ? 'musical album' : 'musical albums';
         } else if (this.tabContext === 'technical' && this.artist.technicalAlbumCount !== undefined) {
             albumCount = this.artist.technicalAlbumCount || 0;
-            albumText = albumCount === 1 ? 'technical album' : 'technical albums';
         } else {
             // Default: show total album count
             albumCount = this.artist.albumCount || 0;
-            albumText = albumCount === 1 ? 'album' : 'albums';
         }
+        
+        albumText = albumCount === 1 ? 'album' : 'albums';
 
         // Format roles display (show only the most frequent role)
         let rolesDisplay = '';
