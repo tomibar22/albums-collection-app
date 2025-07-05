@@ -5,8 +5,9 @@
  */
 
 class ArtistCard {
-    constructor(artistData) {
+    constructor(artistData, tabContext = null) {
         this.artist = artistData;
+        this.tabContext = tabContext; // 'musical', 'technical', or null for default behavior
         this.element = null;
     }
 
@@ -36,9 +37,20 @@ class ArtistCard {
         this.element.className = 'artist-card';
         this.element.setAttribute('data-artist-id', this.artist.id);
 
-        // Format album count display
-        const albumCount = this.artist.albumCount || 0;
-        const albumText = albumCount === 1 ? 'album' : 'albums';
+        // Format album count display based on tab context
+        let albumCount, albumText;
+        
+        if (this.tabContext === 'musical' && this.artist.musicalAlbumCount !== undefined) {
+            albumCount = this.artist.musicalAlbumCount || 0;
+            albumText = albumCount === 1 ? 'musical album' : 'musical albums';
+        } else if (this.tabContext === 'technical' && this.artist.technicalAlbumCount !== undefined) {
+            albumCount = this.artist.technicalAlbumCount || 0;
+            albumText = albumCount === 1 ? 'technical album' : 'technical albums';
+        } else {
+            // Default: show total album count
+            albumCount = this.artist.albumCount || 0;
+            albumText = albumCount === 1 ? 'album' : 'albums';
+        }
 
         // Format roles display (show only the most frequent role)
         let rolesDisplay = '';

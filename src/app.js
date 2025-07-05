@@ -801,7 +801,7 @@ class AlbumCollectionApp {
         
         // Initialize lazy loading for artists grid
         const artistRenderFunction = (artistData, index) => {
-            const artistCard = new ArtistCard(artistData);
+            const artistCard = new ArtistCard(artistData, activeTab); // Pass tab context for specific album counts
             const cardElement = artistCard.render();
             cardElement.classList.add('grid-item');
             return cardElement;
@@ -1053,16 +1053,31 @@ class AlbumCollectionApp {
                 if (artistName && allRoles.length > 0) {
                     console.log(`   🎵 Found artist: ${artistName} (${allRoles.join(', ')})`);
                     
+                    // Categorize roles on this album for this artist
+                    const musicalRolesOnAlbum = allRoles.filter(role => window.roleCategorizer.categorizeRole(role) === 'musical');
+                    const technicalRolesOnAlbum = allRoles.filter(role => window.roleCategorizer.categorizeRole(role) === 'technical');
+                    
                     if (artistMap.has(artistName)) {
                         // Update existing artist
                         const existingArtist = artistMap.get(artistName);
                         
-                        // Only increment album count if this album isn't already counted for this artist
+                        // Only increment album counts if this album isn't already counted for this artist
                         const albumAlreadyExists = existingArtist.albums.some(existingAlbum => existingAlbum.id === album.id);
                         if (!albumAlreadyExists) {
                             existingArtist.albumCount++;
                             existingArtist.albums.push(album);
-                            console.log(`     📈 Added new album for ${artistName} (now ${existingArtist.albumCount} albums)`);
+                            
+                            // Calculate separate counts based on role types on this album
+                            if (musicalRolesOnAlbum.length > 0) {
+                                existingArtist.musicalAlbumCount++;
+                                existingArtist.musicalAlbums.push(album);
+                            }
+                            if (technicalRolesOnAlbum.length > 0) {
+                                existingArtist.technicalAlbumCount++;
+                                existingArtist.technicalAlbums.push(album);
+                            }
+                            
+                            console.log(`     📈 Added new album for ${artistName} (total: ${existingArtist.albumCount}, musical: ${existingArtist.musicalAlbumCount}, technical: ${existingArtist.technicalAlbumCount})`);
                         } else {
                             console.log(`     🔄 Album "${album.title}" already counted for ${artistName}, adding only role`);
                         }
@@ -1085,23 +1100,34 @@ class AlbumCollectionApp {
                         
                         console.log(`     🎭 Roles by frequency: ${sortedRoles.slice(0, 3).join(', ')}${sortedRoles.length > 3 ? ` (+${sortedRoles.length - 3} more)` : ''}`);
                     } else {
-                        // Create new artist entry with role frequency tracking
+                        // Create new artist entry with role frequency tracking and separate album counts
                         const roleFrequency = new Map();
                         allRoles.forEach(role => {
                             roleFrequency.set(role, 1);
                         });
                         
-                        artistMap.set(artistName, {
+                        // Categorize roles for separate counting
+                        const musicalRolesOnAlbum = allRoles.filter(role => window.roleCategorizer.categorizeRole(role) === 'musical');
+                        const technicalRolesOnAlbum = allRoles.filter(role => window.roleCategorizer.categorizeRole(role) === 'technical');
+                        
+                        const newArtist = {
                             id: `artist-${artistName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
                             name: artistName,
                             albumCount: 1,
                             albums: [album],
+                            // NEW: Separate counts for musical vs technical contributions
+                            musicalAlbumCount: musicalRolesOnAlbum.length > 0 ? 1 : 0,
+                            technicalAlbumCount: technicalRolesOnAlbum.length > 0 ? 1 : 0,
+                            musicalAlbums: musicalRolesOnAlbum.length > 0 ? [album] : [],
+                            technicalAlbums: technicalRolesOnAlbum.length > 0 ? [album] : [],
                             roles: allRoles, // Use all roles (cleaned + specific instruments)
                             roleFrequency: roleFrequency, // Track frequency for sorting
                             image: null,
                             discogsId: credit.id || null
-                        });
-                        console.log(`     ✨ Created new artist ${artistName} (${cleanRole})`);
+                        };
+                        
+                        artistMap.set(artistName, newArtist);
+                        console.log(`     ✨ Created new artist ${artistName} (musical: ${newArtist.musicalAlbumCount}, technical: ${newArtist.technicalAlbumCount})`);
                     }
                 } else {
                     console.log(`   ⚠️ Skipping incomplete credit: ${artistName || 'No name'} (${cleanRole || 'No role'})`);
