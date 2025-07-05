@@ -6065,8 +6065,11 @@ class AlbumCollectionApp {
             return;
         }
         
-        // Update the data attribute with new sorted albums
-        albumsGrid.setAttribute('data-all-albums', JSON.stringify(albums));
+        // Only update data-all-albums if this is NOT a filtered view
+        // (preserve the original complete album list for future filtering)
+        if (!activeRoleFilter) {
+            albumsGrid.setAttribute('data-all-albums', JSON.stringify(albums));
+        }
         
         // Generate albums HTML
         const albumsHtml = albums.map(album => {
