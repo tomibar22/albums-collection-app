@@ -71,14 +71,14 @@ class AlbumCard {
                     </div>
                     <div class="album-overlay">
                         <div class="album-actions">
-                            <button class="overlay-action-btn more-info-btn" title="More Info">
-                                ℹ️ More Info
+                            <button class="overlay-circle-btn more-info-btn" title="More Info">
+                                ℹ️
                             </button>
-                            <button class="overlay-action-btn spotify-btn" title="Spotify">
-                                🎵 Spotify
+                            <button class="overlay-circle-btn spotify-btn" title="Spotify">
+                                🎵
                             </button>
-                            <button class="overlay-action-btn youtube-btn" title="YouTube">
-                                📺 YouTube
+                            <button class="overlay-circle-btn youtube-btn" title="YouTube">
+                                📺
                             </button>
                         </div>
                     </div>
@@ -133,7 +133,7 @@ class AlbumCard {
         // Optional: Make entire card clickable for "More Info"
         this.element.addEventListener('click', (e) => {
             // Don't trigger if clicking on action buttons or edit buttons
-            if (!e.target.closest('.overlay-action-btn, .card-edit-btn')) {
+            if (!e.target.closest('.overlay-circle-btn, .card-edit-btn')) {
                 this.handleMoreInfoClick();
             }
         });
@@ -449,7 +449,7 @@ class AlbumCard {
         
         // Also allow clicking on the card itself in selection mode
         this.element.addEventListener('click', (e) => {
-            if (this.selectionMode && !e.target.closest('.overlay-action-btn, .card-edit-btn')) {
+            if (this.selectionMode && !e.target.closest('.overlay-circle-btn, .card-edit-btn')) {
                 e.preventDefault();
                 e.stopPropagation();
                 this.toggleSelection();
