@@ -475,8 +475,8 @@
 }
 
 .modal-title-image {
-    width: 48px;
-    height: 48px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--accent-color);
