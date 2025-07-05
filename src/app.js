@@ -7000,6 +7000,20 @@ class AlbumCollectionApp {
                 }
                 return;
             }
+            
+            // Handle album card clicks (click anywhere on card to open "More Info")
+            const albumCard = event.target.closest('.album-card');
+            if (albumCard) {
+                // Don't trigger if clicking on action buttons or edit buttons
+                if (!event.target.closest('.overlay-circle-btn, .card-edit-btn')) {
+                    const albumId = albumCard.getAttribute('data-album-id');
+                    console.log('Album card clicked, opening details for album ID:', albumId);
+                    if (albumId) {
+                        this.handleAlbumMoreInfo(albumId);
+                    }
+                }
+                return;
+            }
         };
         
         modalBody.addEventListener('click', this.handleModalClick);
