@@ -5484,6 +5484,83 @@
     font-weight: 600;
 }
 
+/* Modal Sort Controls */
+.modal-sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.modal-sort-controls label {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.modal-sort-controls select {
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 14px;
+    min-width: 180px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-sort-controls select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.modal-sort-controls select:hover {
+    border-color: var(--accent-color);
+}
+
+.modal-sort-controls .shuffle-btn {
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.modal-sort-controls .shuffle-btn:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+.modal-sort-controls .shuffle-btn.hidden {
+    display: none;
+}
+
+/* Responsive adjustments for modal controls */
+@media (max-width: 768px) {
+    .albums-section-header {
+        gap: 12px;
+    }
+    
+    .modal-sort-controls {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .modal-sort-controls select {
+        min-width: 140px;
+        flex: 1;
+    }
+}
+
 /* Responsive adjustments for modal search */
 @media (max-width: 768px) {
     .modal-search-container {

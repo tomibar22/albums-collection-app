@@ -2459,6 +2459,18 @@ class AlbumCollectionApp {
                                 ${sortedAlbums.length} album${sortedAlbums.length !== 1 ? 's' : ''}
                             </div>
                         </div>
+                        <div class="modal-sort-controls">
+                            <label>Sort by:</label>
+                            <select id="artist-albums-sort" data-artist="${artist.name}">
+                                <option value="year-asc" selected>Year (Ascending)</option>
+                                <option value="year-desc">Year (Descending)</option>
+                                <option value="title-asc">Title (A-Z)</option>
+                                <option value="title-desc">Title (Z-A)</option>
+                                <option value="random">Random</option>
+                            </select>
+                            <button class="shuffle-btn hidden" id="artist-albums-shuffle" data-artist="${artist.name}">🔀 Shuffle</button>
+                        </div>
+                    </div>
                         <div class="role-filter-status" id="role-filter-status" style="display: none;">
                             <span class="filter-text">Filtered by role: <strong id="current-role-filter"></strong></span>
                             <button class="clear-filter-btn" onclick="window.albumApp.clearRoleFilter('${artist.name}')">Clear Filter</button>
@@ -5892,6 +5904,175 @@ class AlbumCollectionApp {
         this.renderActiveArtistsTab();
     }
 
+    // Sort artist albums in modal
+    sortArtistAlbums(artistName, sortType) {
+        console.log(`Sorting albums for ${artistName} by: ${sortType}`);
+        
+        // Show/hide shuffle button based on sort type
+        const shuffleBtn = document.getElementById('artist-albums-shuffle');
+        if (shuffleBtn) {
+            if (sortType === 'random') {
+                shuffleBtn.classList.remove('hidden');
+            } else {
+                shuffleBtn.classList.add('hidden');
+            }
+        }
+        
+        // Get the albums data from the modal
+        const albumsGrid = document.getElementById('artist-albums-grid');
+        if (!albumsGrid) {
+            console.error('Artist albums grid not found');
+            return;
+        }
+        
+        const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+        if (!allAlbumsData) {
+            console.error('No albums data found in grid');
+            return;
+        }
+        
+        let albums;
+        try {
+            albums = JSON.parse(allAlbumsData);
+        } catch (e) {
+            console.error('Error parsing albums data:', e);
+            return;
+        }
+        
+        // Sort the albums
+        let sortedAlbums = [...albums]; // Create a copy to sort
+        
+        switch(sortType) {
+            case 'year-asc':
+                sortedAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : Infinity;
+                    return yearA - yearB;
+                });
+                break;
+            case 'year-desc':
+                sortedAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : -Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : -Infinity;
+                    return yearB - yearA;
+                });
+                break;
+            case 'title-asc':
+                sortedAlbums.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'title-desc':
+                sortedAlbums.sort((a, b) => b.title.localeCompare(a.title));
+                break;
+            case 'random':
+                this.shuffleArray(sortedAlbums);
+                break;
+            default:
+                console.warn(`Unknown sort type: ${sortType}`);
+                return;
+        }
+        
+        // Re-render the albums grid with sorted data
+        this.renderArtistAlbumsGrid(artistName, sortedAlbums);
+        
+        console.log(`✅ Sorted ${sortedAlbums.length} albums by ${sortType}`);
+    }
+
+    // Shuffle artist albums in modal
+    shuffleArtistAlbums(artistName) {
+        console.log(`Shuffling albums for ${artistName}...`);
+        this.sortArtistAlbums(artistName, 'random');
+    }
+
+    // Render artist albums grid with sorted data
+    renderArtistAlbumsGrid(artistName, albums) {
+        const albumsGrid = document.getElementById('artist-albums-grid');
+        if (!albumsGrid) {
+            console.error('Artist albums grid not found');
+            return;
+        }
+        
+        // Update the data attribute with new sorted albums
+        albumsGrid.setAttribute('data-all-albums', JSON.stringify(albums));
+        
+        // Generate albums HTML
+        const albumsHtml = albums.map(album => {
+            // Get formatted artists display (same as main collection view)
+            const artistsDisplay = this.getAlbumArtistsDisplay(album);
+            
+            // Get cover image URL with fallback logic
+            const coverImageUrl = album.images && album.images[0] ? album.images[0].uri : '';
+            
+            // Generate genre and style tags (same as main album cards)
+            const tags = [];
+            if (album.genres && Array.isArray(album.genres)) {
+                tags.push(...album.genres);
+            }
+            if (album.styles && Array.isArray(album.styles)) {
+                tags.push(...album.styles);
+            }
+            const uniqueTags = [...new Set(tags)].slice(0, 4);
+            const genreStyleTagsHtml = uniqueTags.length > 0 
+                ? `<div class="genre-tags-container">${uniqueTags.map(tag => 
+                    `<span class="genre-tag" title="${tag}">${tag}</span>`
+                ).join('')}</div>` 
+                : '';
+            
+            return `
+                <div class="album-card" data-album-id="${album.id}">
+                    <div class="album-card-inner">
+                        <div class="album-cover">
+                            <img 
+                                src="${coverImageUrl}" 
+                                alt="${this.escapeAttributeValue('Cover art for ' + album.title)}"
+                                class="cover-image"
+                                loading="lazy"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            />
+                            <div class="album-placeholder" style="display: none;">
+                                <div class="placeholder-icon">🎵</div>
+                                <div class="placeholder-text">No Cover</div>
+                            </div>
+                            <div class="album-overlay">
+                                <div class="album-actions">
+                                    <button class="action-btn more-info-btn" data-album-id="${album.id}" title="View album details">
+                                        <span class="btn-icon">ℹ️</span>
+                                        <span class="btn-text">More Info</span>
+                                    </button>
+                                    <button class="action-btn spotify-btn" data-search-query="${artistsDisplay} ${album.title}" title="Open in Spotify">
+                                        <span class="btn-icon">🎵</span>
+                                        <span class="btn-text">Spotify</span>
+                                    </button>
+                                    <button class="action-btn youtube-btn" data-search-query="${artistsDisplay} ${album.title}" title="Open in YouTube">
+                                        <span class="btn-icon">📺</span>
+                                        <span class="btn-text">YouTube</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="album-info">
+                            <h3 class="album-title" title="${album.title}">${album.title}</h3>
+                            <p class="album-artist" title="${artistsDisplay}">${artistsDisplay}</p>
+                            <p class="album-year">${album.year || 'Unknown Year'}</p>
+                            <div class="album-meta">
+                                <span class="track-count">${album.track_count || album.trackCount || 0} tracks</span>
+                                ${genreStyleTagsHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Update the grid HTML
+        albumsGrid.innerHTML = albumsHtml;
+        
+        // Update album count
+        const resultsCount = document.getElementById('search-results-count');
+        if (resultsCount) {
+            resultsCount.textContent = `${albums.length} album${albums.length !== 1 ? 's' : ''}`;
+        }
+    }
+
     // Helper method to check if a year is valid
     isValidYear(year) {
         return year && year !== 0 && year !== '0' && !isNaN(year) && year > 1800 && year <= new Date().getFullYear() + 5;
@@ -6065,6 +6246,48 @@ class AlbumCollectionApp {
         
         modalBody.addEventListener('click', this.handleModalClick);
         console.log('Modal event listeners set up successfully');
+        
+        // Set up modal sort controls event listeners
+        this.setupModalSortListeners();
+    }
+
+    setupModalSortListeners() {
+        // Set up event listeners for modal sorting controls
+        const sortSelect = document.getElementById('artist-albums-sort');
+        const shuffleBtn = document.getElementById('artist-albums-shuffle');
+        
+        if (sortSelect) {
+            // Remove existing listener if any
+            sortSelect.removeEventListener('change', sortSelect.sortHandler);
+            
+            // Create new event handler
+            sortSelect.sortHandler = (e) => {
+                const artistName = e.target.getAttribute('data-artist');
+                const sortType = e.target.value;
+                console.log(`Modal sort change: ${artistName} by ${sortType}`);
+                if (artistName) {
+                    this.sortArtistAlbums(artistName, sortType);
+                }
+            };
+            
+            sortSelect.addEventListener('change', sortSelect.sortHandler);
+        }
+        
+        if (shuffleBtn) {
+            // Remove existing listener if any
+            shuffleBtn.removeEventListener('click', shuffleBtn.shuffleHandler);
+            
+            // Create new event handler
+            shuffleBtn.shuffleHandler = (e) => {
+                const artistName = e.target.getAttribute('data-artist');
+                console.log(`Modal shuffle clicked for: ${artistName}`);
+                if (artistName) {
+                    this.shuffleArtistAlbums(artistName);
+                }
+            };
+            
+            shuffleBtn.addEventListener('click', shuffleBtn.shuffleHandler);
+        }
     }
 
     handleAlbumMoreInfo(albumId) {
