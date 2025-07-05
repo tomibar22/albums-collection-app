@@ -1814,7 +1814,6 @@ class AlbumCollectionApp {
                 
                 <div class="album-modal-sections">
                     <div class="modal-section">
-                        <h4>Musical Credits</h4>
                         <div class="credits musical-credits">
                             ${musicalCreditsHtml}
                         </div>
