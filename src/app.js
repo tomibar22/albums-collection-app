@@ -3345,14 +3345,21 @@ class AlbumCollectionApp {
                     const releaseProgress = `${totalProcessed}`;
                     const totalText = progressState.totalReleases > 0 ? `/${progressState.totalReleases}` : '';
                     
-                    // Update progress every release with cleaner formatting
-                    this.updateLoadingText(
-                        `🎵 ${artistName} ${pageProgress}\n\n` +
-                        `Processing: ${releaseProgress}${totalText} releases ${overallProgress > 0 ? `(${overallProgress}%)` : ''}\n\n` +
-                        `✅ Added: ${totalAdded}  |  ⏭️ Skipped: ${totalSkipped}  |  ❌ Errors: ${totalErrors}\n` +
-                        `🎭 Musical Role Filtered: ${progressState.musicalRoleFiltered}\n\n` +
-                        `Current: ${release.title}`
-                    );
+                    // Adaptive progress updates - less frequent in background tabs
+                    const shouldUpdateProgress = !window.tabVisibility || window.tabVisibility.shouldUpdateProgress() || 
+                        (totalProcessed % 5 === 0); // Every 5th album in background
+                    
+                    if (shouldUpdateProgress) {
+                        // Update progress every release with cleaner formatting
+                        this.updateLoadingText(
+                            `🎵 ${artistName} ${pageProgress}\n\n` +
+                            `Processing: ${releaseProgress}${totalText} releases ${overallProgress > 0 ? `(${overallProgress}%)` : ''}\n\n` +
+                            `✅ Added: ${totalAdded}  |  ⏭️ Skipped: ${totalSkipped}  |  ❌ Errors: ${totalErrors}\n` +
+                            `🎭 Musical Role Filtered: ${progressState.musicalRoleFiltered}\n\n` +
+                            `Current: ${release.title}` +
+                            (!window.tabVisibility?.isVisible ? '\n\n🔍 Background tab detected' : '')
+                        );
+                    }
                     
                     try {
                         // Check if this release should be processed
@@ -3446,8 +3453,17 @@ class AlbumCollectionApp {
                             console.log(`✅ Added: ${album.title} (${album.year})`);
                         }
                         
-                        // Rate limiting delay - more conservative
-                        await this.sleep(window.CONFIG.DISCOGS.RATE_LIMIT.SCRAPER_DELAY);
+                        // Adaptive rate limiting delay based on tab visibility
+                        const baseDelay = window.CONFIG.DISCOGS.RATE_LIMIT.SCRAPER_DELAY;
+                        const adaptiveDelay = window.tabVisibility ? 
+                            window.tabVisibility.getOptimalDelay(baseDelay) : baseDelay;
+                        
+                        await this.sleep(adaptiveDelay);
+                        
+                        // Log tab visibility impact on delay
+                        if (window.CONFIG.DEBUG.ENABLED && window.tabVisibility && !window.tabVisibility.isVisible) {
+                            console.log(`🔍 Background tab detected: Using ${adaptiveDelay}ms delay instead of ${baseDelay}ms`);
+                        }
                         
                     } catch (releaseError) {
                         consecutiveErrors++;
@@ -3470,7 +3486,17 @@ class AlbumCollectionApp {
                 const pagination = releasesData.pagination;
                 if (pagination && pagination.urls && pagination.urls.next) {
                     page++;
-                    await this.sleep(window.CONFIG.DISCOGS.RATE_LIMIT.PAGE_DELAY); // More conservative page delay
+                    
+                    // Adaptive page delay based on tab visibility
+                    const basePageDelay = window.CONFIG.DISCOGS.RATE_LIMIT.PAGE_DELAY;
+                    const adaptivePageDelay = window.tabVisibility ? 
+                        window.tabVisibility.getOptimalDelay(basePageDelay) : basePageDelay;
+                    
+                    await this.sleep(adaptivePageDelay);
+                    
+                    if (window.CONFIG.DEBUG.ENABLED && window.tabVisibility && !window.tabVisibility.isVisible) {
+                        console.log(`🔍 Background tab: Page delay ${adaptivePageDelay}ms (normal: ${basePageDelay}ms)`);
+                    }
                 } else {
                     hasMorePages = false;
                 }
@@ -4250,13 +4276,20 @@ class AlbumCollectionApp {
                 // Calculate progress percentage
                 const progress = Math.round((progressState.processed / progressState.total) * 100);
                 
-                // Enhanced progress display with better spacing
-                this.updateLoadingText(
-                    `🎵 Batch Album Scraping\n\n` +
-                    `Progress: ${progressState.processed}/${progressState.total} (${progress}%)\n\n` +
-                    `✅ Added: ${successCount}  |  🔄 Duplicates: ${duplicateCount}  |  ❌ Errors: ${errorCount}\n\n` +
-                    `Current: ${albumInfo.title} by ${albumInfo.artist}`
-                );
+                // Adaptive progress updates - less frequent in background tabs
+                const shouldUpdateProgress = !window.tabVisibility || window.tabVisibility.shouldUpdateProgress() || 
+                    (i % 3 === 0); // Every 3rd album in background
+                
+                if (shouldUpdateProgress) {
+                    // Enhanced progress display with better spacing
+                    this.updateLoadingText(
+                        `🎵 Batch Album Scraping\n\n` +
+                        `Progress: ${progressState.processed}/${progressState.total} (${progress}%)\n\n` +
+                        `✅ Added: ${successCount}  |  🔄 Duplicates: ${duplicateCount}  |  ❌ Errors: ${errorCount}\n\n` +
+                        `Current: ${albumInfo.title} by ${albumInfo.artist}` +
+                        (!window.tabVisibility?.isVisible ? '\n\n🔍 Background tab detected' : '')
+                    );
+                }
 
                 try {
                     console.log(`📀 Processing ${i + 1}/${albumCount}: ${albumInfo.title} by ${albumInfo.artist} (ID: ${albumInfo.id})`);
@@ -4319,8 +4352,17 @@ class AlbumCollectionApp {
                         console.log(`✅ Added: ${album.title} (${album.year})`);
                     }
 
-                    // Rate limiting delay
-                    await this.sleep(window.CONFIG.DISCOGS.RATE_LIMIT.SCRAPER_DELAY);
+                    // Adaptive rate limiting delay based on tab visibility
+                    const baseDelay = window.CONFIG.DISCOGS.RATE_LIMIT.SCRAPER_DELAY;
+                    const adaptiveDelay = window.tabVisibility ? 
+                        window.tabVisibility.getOptimalDelay(baseDelay) : baseDelay;
+                    
+                    await this.sleep(adaptiveDelay);
+                    
+                    // Log tab visibility impact
+                    if (window.CONFIG.DEBUG.ENABLED && window.tabVisibility && !window.tabVisibility.isVisible) {
+                        console.log(`🔍 Background tab: Using ${adaptiveDelay}ms delay instead of ${baseDelay}ms`);
+                    }
 
                 } catch (albumError) {
                     errorCount++;
