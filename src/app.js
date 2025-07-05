@@ -2689,7 +2689,7 @@ class AlbumCollectionApp {
         }
     }
     
-    // Filter albums in artist modal by specific role
+    // Filter albums in artist modal by specific role (integrates with sorting)
     filterAlbumsByRole(artistName, role) {
         // Unescape the artist name since it comes from an HTML attribute
         const unescapedArtistName = this.unescapeHtmlAttribute(artistName);
@@ -2701,31 +2701,68 @@ class AlbumCollectionApp {
             return;
         }
         
-        // Get all album cards in the current modal
-        const allAlbumCards = albumsGrid.querySelectorAll('.album-card');
-        let visibleCount = 0;
+        // Get all albums data
+        const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+        if (!allAlbumsData) {
+            console.error('❌ No albums data found');
+            return;
+        }
         
-        allAlbumCards.forEach(card => {
-            const albumId = card.getAttribute('data-album-id');
-            const album = this.collection.albums.find(a => a.id == albumId);
-            
-            if (album) {
-                // Check if this artist had the specific role on this album
-                const hasRole = this.artistHasRoleOnAlbum(unescapedArtistName, role, album);
-                
-                if (hasRole) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            }
+        let allAlbums;
+        try {
+            allAlbums = JSON.parse(allAlbumsData);
+        } catch (e) {
+            console.error('❌ Error parsing albums data:', e);
+            return;
+        }
+        
+        // Filter albums where artist had this specific role
+        const filteredAlbums = allAlbums.filter(album => {
+            return this.artistHasRoleOnAlbum(unescapedArtistName, role, album);
         });
         
-        console.log(`🎯 Filter result: ${visibleCount} albums visible out of ${allAlbumCards.length} total`);
+        console.log(`🎯 Filter result: ${filteredAlbums.length} albums visible out of ${allAlbums.length} total`);
+        
+        // Get current sort setting and apply it to filtered albums
+        const sortSelect = document.getElementById('artist-albums-sort');
+        const currentSort = sortSelect ? sortSelect.value : 'year-asc';
+        
+        // Sort the filtered albums according to current sort setting
+        let sortedFilteredAlbums = [...filteredAlbums];
+        
+        switch(currentSort) {
+            case 'year-asc':
+                sortedFilteredAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : Infinity;
+                    return yearA - yearB;
+                });
+                break;
+            case 'year-desc':
+                sortedFilteredAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : -Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : -Infinity;
+                    return yearB - yearA;
+                });
+                break;
+            case 'title-asc':
+                sortedFilteredAlbums.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'title-desc':
+                sortedFilteredAlbums.sort((a, b) => b.title.localeCompare(a.title));
+                break;
+            case 'random':
+                this.shuffleArray(sortedFilteredAlbums);
+                break;
+        }
+        
+        // Re-render grid with filtered and sorted albums
+        this.renderArtistAlbumsGrid(unescapedArtistName, sortedFilteredAlbums, role);
         
         // Show filter status
-        this.showRoleFilterStatus(role, visibleCount);
+        this.showRoleFilterStatus(role, sortedFilteredAlbums.length);
+        
+        console.log(`✅ Filtered to ${sortedFilteredAlbums.length} albums with role "${role}" (sorted by ${currentSort})`);
     }
     
     // Extract roles by removing brackets and splitting bracketed content
@@ -2862,7 +2899,7 @@ class AlbumCollectionApp {
         }
     }
     
-    // Clear role filter
+    // Clear role filter (maintains current sort order)
     clearRoleFilter(artistName) {
         console.log(`🎭 Clearing role filter for ${artistName}`);
         
@@ -2870,11 +2907,28 @@ class AlbumCollectionApp {
         const filterStatus = document.getElementById('role-filter-status');
         
         if (albumsGrid) {
-            // Show all album cards
-            const allAlbumCards = albumsGrid.querySelectorAll('.album-card');
-            allAlbumCards.forEach(card => {
-                card.style.display = 'block';
-            });
+            // Get all albums data
+            const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+            if (allAlbumsData) {
+                try {
+                    const allAlbums = JSON.parse(allAlbumsData);
+                    
+                    // Get current sort setting and apply it to all albums
+                    const sortSelect = document.getElementById('artist-albums-sort');
+                    const currentSort = sortSelect ? sortSelect.value : 'year-asc';
+                    
+                    // Apply the current sort to all albums (no filtering)
+                    this.sortArtistAlbums(artistName, currentSort);
+                    
+                } catch (e) {
+                    console.error('❌ Error parsing albums data while clearing filter:', e);
+                    // Fallback: show all album cards
+                    const allAlbumCards = albumsGrid.querySelectorAll('.album-card');
+                    allAlbumCards.forEach(card => {
+                        card.style.display = 'block';
+                    });
+                }
+            }
         }
         
         if (filterStatus) {
@@ -2885,6 +2939,8 @@ class AlbumCollectionApp {
         document.querySelectorAll('.clickable-role-filter').forEach(role => {
             role.classList.remove('active-filter');
         });
+        
+        console.log(`✅ Role filter cleared, showing all albums with current sort`);
     }
 
     // ============================================
@@ -5904,7 +5960,7 @@ class AlbumCollectionApp {
         this.renderActiveArtistsTab();
     }
 
-    // Sort artist albums in modal
+    // Sort artist albums in modal (respects active role filtering)
     sortArtistAlbums(artistName, sortType) {
         console.log(`Sorting albums for ${artistName} by: ${sortType}`);
         
@@ -5939,8 +5995,21 @@ class AlbumCollectionApp {
             return;
         }
         
-        // Sort the albums
-        let sortedAlbums = [...albums]; // Create a copy to sort
+        // Check if there's an active role filter
+        const currentRoleFilter = this.getCurrentRoleFilter();
+        let albumsToSort = [...albums]; // Start with all albums
+        
+        // If role filtering is active, apply filter first
+        if (currentRoleFilter) {
+            console.log(`🎭 Applying role filter "${currentRoleFilter}" before sorting`);
+            albumsToSort = albums.filter(album => {
+                return this.artistHasRoleOnAlbum(artistName, currentRoleFilter, album);
+            });
+            console.log(`🎯 Filtered to ${albumsToSort.length} albums with role "${currentRoleFilter}"`);
+        }
+        
+        // Sort the albums (filtered or all)
+        let sortedAlbums = [...albumsToSort]; // Create a copy to sort
         
         switch(sortType) {
             case 'year-asc':
@@ -5972,9 +6041,14 @@ class AlbumCollectionApp {
         }
         
         // Re-render the albums grid with sorted data
-        this.renderArtistAlbumsGrid(artistName, sortedAlbums);
+        this.renderArtistAlbumsGrid(artistName, sortedAlbums, currentRoleFilter);
         
-        console.log(`✅ Sorted ${sortedAlbums.length} albums by ${sortType}`);
+        // Update role filter status if active
+        if (currentRoleFilter) {
+            this.showRoleFilterStatus(currentRoleFilter, sortedAlbums.length);
+        }
+        
+        console.log(`✅ Sorted ${sortedAlbums.length} albums by ${sortType}${currentRoleFilter ? ` (filtered by "${currentRoleFilter}")` : ''}`);
     }
 
     // Shuffle artist albums in modal
@@ -5983,8 +6057,8 @@ class AlbumCollectionApp {
         this.sortArtistAlbums(artistName, 'random');
     }
 
-    // Render artist albums grid with sorted data
-    renderArtistAlbumsGrid(artistName, albums) {
+    // Render artist albums grid with sorted data (respects role filtering)
+    renderArtistAlbumsGrid(artistName, albums, activeRoleFilter = null) {
         const albumsGrid = document.getElementById('artist-albums-grid');
         if (!albumsGrid) {
             console.error('Artist albums grid not found');
@@ -6069,8 +6143,21 @@ class AlbumCollectionApp {
         // Update album count
         const resultsCount = document.getElementById('search-results-count');
         if (resultsCount) {
-            resultsCount.textContent = `${albums.length} album${albums.length !== 1 ? 's' : ''}`;
+            const countText = activeRoleFilter 
+                ? `${albums.length} album${albums.length !== 1 ? 's' : ''} (filtered by "${activeRoleFilter}")`
+                : `${albums.length} album${albums.length !== 1 ? 's' : ''}`;
+            resultsCount.textContent = countText;
         }
+    }
+
+    // Get current role filter if active
+    getCurrentRoleFilter() {
+        const filterStatus = document.getElementById('role-filter-status');
+        if (filterStatus && filterStatus.style.display !== 'none') {
+            const roleElement = filterStatus.querySelector('strong');
+            return roleElement ? roleElement.textContent : null;
+        }
+        return null;
     }
 
     // Helper method to check if a year is valid
