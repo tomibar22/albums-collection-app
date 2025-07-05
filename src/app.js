@@ -5215,14 +5215,6 @@ class AlbumCollectionApp {
                         View Albums
                     </button>
                 </div>
-                <div class="card-edit-overlay">
-                    <button class="card-edit-btn edit" onclick="window.albumApp.openEditTrackModal('${trackData.id}')" title="Edit Track">
-                        ✏️
-                    </button>
-                    <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteTrack('${trackData.id}', '${trackData.title.replace(/'/g, "\\'")}'); event.stopPropagation();" title="Delete Track">
-                        🗑️
-                    </button>
-                </div>
             </div>
         `;
         
@@ -5282,14 +5274,6 @@ class AlbumCollectionApp {
                 <div class="role-actions">
                     <button class="role-view-artists-btn ${category}-action-btn" data-role-id="${roleData.id}">
                         ${buttonText}
-                    </button>
-                </div>
-                <div class="card-edit-overlay">
-                    <button class="card-edit-btn edit" onclick="window.albumApp.openEditRoleModal('${roleData.id}')" title="Edit Role">
-                        ✏️
-                    </button>
-                    <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteRole('${roleData.id}', '${roleData.name.replace(/'/g, "\\'")}'); event.stopPropagation();" title="Delete Role">
-                        🗑️
                     </button>
                 </div>
             </div>

@@ -107,14 +107,7 @@ class ArtistCard {
                             </button>
                         </div>
                     </div>
-                    <div class="card-edit-overlay">
-                        <button class="card-edit-btn edit" onclick="window.albumApp.openEditArtistModal('${this.artist.id}')" title="Edit Artist">
-                            ✏️
-                        </button>
-                        <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteArtist('${this.artist.id}', '${this.escapeHtmlAttribute(this.artist.name)}'); event.stopPropagation();" title="Delete Artist">
-                            🗑️
-                        </button>
-                    </div>
+
                 </div>
                 <div class="artist-info">
                     <h3 class="artist-name" title="${this.escapeHtmlAttribute(this.artist.name)}">${this.artist.name}</h3>
