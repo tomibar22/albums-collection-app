@@ -1216,7 +1216,8 @@ class AlbumCollectionApp {
         const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(artists);
         
         console.log(`🎵 Musical artists: ${musicalArtists.length} (have at least one musical role)`);
-        console.log(`🔧 Technical artists: ${technicalArtists.length} (have only technical roles)`);
+        console.log(`🔧 Technical contributors: ${technicalArtists.length} (have at least one technical role)`);
+        console.log(`👥 Note: Artists with both role types appear in both tabs`);
         
         // Store categorized artists
         this.musicalArtists = musicalArtists;
@@ -1548,23 +1549,31 @@ class AlbumCollectionApp {
                 }
             });
             
-            // Determine final category - if ANY musical roles exist, artist is musical
+            // NEW LOGIC: Artists can appear in both tabs based on their roles
             const hasMusicalRole = musicalRoles.length > 0;
+            const hasTechnicalRole = technicalRoles.length > 0;
             
             if (isPatMetheny) {
                 console.log(`🎵 [DEBUG] Musical roles (${musicalRoles.length}):`, musicalRoles);
                 console.log(`🔧 [DEBUG] Technical roles (${technicalRoles.length}):`, technicalRoles);
-                console.log(`📋 [DEBUG] Final category: ${hasMusicalRole ? 'MUSICAL' : 'TECHNICAL'}`);
+                console.log(`📋 [DEBUG] Final categories: ${hasMusicalRole ? 'MUSICAL' : ''} ${hasTechnicalRole ? 'TECHNICAL' : ''}`);
             }
             
+            // Add to musical tab if they have any musical roles
             if (hasMusicalRole) {
-                // Musical artist: has at least one musical role (may also have technical roles)
                 musicalArtists.push(artist);
-                console.log(`🎵 ${artist.name} → Musical (${musicalRoles.length} musical, ${technicalRoles.length} technical roles)`);
-            } else {
-                // Technical artist: only has technical roles
+                console.log(`🎵 ${artist.name} → Musical tab (${musicalRoles.length} musical, ${technicalRoles.length} technical roles)`);
+            }
+            
+            // Add to technical tab if they have any technical roles
+            if (hasTechnicalRole) {
                 technicalArtists.push(artist);
-                console.log(`🔧 ${artist.name} → Technical (${technicalRoles.length} technical roles only)`);
+                console.log(`🔧 ${artist.name} → Technical tab (${technicalRoles.length} technical, ${musicalRoles.length} musical roles)`);
+            }
+            
+            // Log cross-tab appearances for transparency
+            if (hasMusicalRole && hasTechnicalRole) {
+                console.log(`👥 ${artist.name} → Appears in BOTH tabs (${musicalRoles.length} musical + ${technicalRoles.length} technical roles)`);
             }
         });
         
