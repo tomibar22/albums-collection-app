@@ -30,6 +30,9 @@ class AlbumCollectionApp {
         this.lastArtistRenderTime = 0;
         this.artistRenderDebounceMs = 100; // 100ms debounce
         
+        // Performance optimization flags
+        this.artistsNeedRegeneration = true; // Flag to track when artists need to be regenerated
+        
         // Selection mode state
         this.selectionMode = false;
         this.selectedAlbums = new Set(); // Store selected album IDs
@@ -155,13 +158,21 @@ class AlbumCollectionApp {
             // this.collection.roles = roles;
             this.scrapedHistory = fetchedScrapedHistory;
 
-            this.updateLoadingProgress('🎯 Finalizing...', 'Generating relationships...', 85);
+            this.updateLoadingProgress('📊 Generating tracks...', 'Processing album tracklists...', 85);
             
-            // Generate tracks and roles from albums to ensure rich relationship data
+            // Generate tracks and roles from albums with progress updates
             console.log('🔄 Generating tracks and roles from albums (rich data)...');
-            this.collection.tracks = this.generateTracksFromAlbums();
-            this.collection.roles = this.generateRolesFromAlbums();
-            console.log(`✅ Generated ${this.collection.tracks.length} tracks and ${this.collection.roles.length} roles with full relationships`);
+            this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+            
+            this.updateLoadingProgress('🎭 Generating roles...', 'Processing album credits...', 88);
+            this.collection.roles = await this.generateRolesFromAlbumsAsync();
+            
+            this.updateLoadingProgress('👥 Generating artists...', 'Processing artist relationships...', 92);
+            // Generate and cache artists during startup for better performance
+            this.collection.artists = this.generateArtistsFromAlbums();
+            this.artistsNeedRegeneration = false; // Mark as freshly generated
+            
+            console.log(`✅ Generated ${this.collection.tracks.length} tracks, ${this.collection.roles.length} roles, and ${this.collection.artists.length} artists with full relationships`);
 
             this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
 
@@ -733,8 +744,15 @@ class AlbumCollectionApp {
     
     // Artist Card Rendering and Management with Tabs
     renderArtistsGrid() {
-        // Generate and categorize artists from current albums
-        this.collection.artists = this.generateArtistsFromAlbums();;
+        // Check if artists need to be regenerated
+        if (!this.collection.artists || this.collection.artists.length === 0 || this.artistsNeedRegeneration) {
+            console.log('🎭 Generating artists from albums (first time or flagged for regeneration)...');
+            // Generate and categorize artists from current albums
+            this.collection.artists = this.generateArtistsFromAlbums();
+            this.artistsNeedRegeneration = false; // Reset flag
+        } else {
+            console.log('🎭 Using cached artists for performance');
+        }
         
         if (this.collection.artists.length === 0) {
             this.displayEmptyState('artists');
@@ -3772,6 +3790,9 @@ class AlbumCollectionApp {
             // This avoids expensive Supabase reloads after album edits/deletions
             console.log('🔄 Regenerating collection data (in-memory mode)...');
             
+            // Flag that artists need regeneration for next Artists page visit
+            this.artistsNeedRegeneration = true;
+            
             // Generate artists from albums
             this.collection.artists = this.generateArtistsFromAlbums();
             
@@ -5076,6 +5097,88 @@ class AlbumCollectionApp {
         
         return tracksArray;
     }
+
+    // Async version with progress updates - optimized for performance
+    async generateTracksFromAlbumsAsync() {
+        console.log('🎵 Generating tracks from albums (async)...', this.collection.albums?.length || 0, 'albums');
+        const trackMap = new Map();
+        const totalAlbums = this.collection.albums?.length || 0;
+        let processedAlbums = 0;
+        
+        try {
+            // Process albums in batches to avoid blocking the UI
+            const batchSize = 100;
+            for (let i = 0; i < totalAlbums; i += batchSize) {
+                const albumBatch = this.collection.albums.slice(i, i + batchSize);
+                
+                // Process batch synchronously for performance
+                albumBatch.forEach(album => {
+                    try {
+                        if (album.tracklist && Array.isArray(album.tracklist)) {
+                            album.tracklist.forEach(track => {
+                                const trackTitle = track.title;
+                                if (trackTitle) {
+                                    // Safely get album artists
+                                    const albumArtists = Array.isArray(album.artists) ? album.artists : 
+                                                       (album.artist ? [album.artist] : ['Unknown Artist']);
+                                    
+                                    if (trackMap.has(trackTitle)) {
+                                        // Increment frequency for existing track
+                                        const existingTrack = trackMap.get(trackTitle);
+                                        existingTrack.frequency++;
+                                        existingTrack.albums.push({
+                                            albumId: album.id,
+                                            albumTitle: album.title,
+                                            albumYear: album.year,
+                                            albumArtists: albumArtists,
+                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null,
+                                            trackPosition: track.position,
+                                            trackDuration: track.duration
+                                        });
+                                    } else {
+                                        // Create new track entry
+                                        trackMap.set(trackTitle, {
+                                            id: `track-${trackTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                            title: trackTitle,
+                                            frequency: 1,
+                                            albums: [{
+                                                albumId: album.id,
+                                                albumTitle: album.title,
+                                                albumYear: album.year,
+                                                albumArtists: albumArtists,
+                                                albumImage: album.images && album.images[0] ? album.images[0].uri : null,
+                                                trackPosition: track.position,
+                                                trackDuration: track.duration
+                                            }]
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    } catch (albumError) {
+                        // Minimal logging for performance
+                        console.warn(`⚠️ Error processing tracks for album "${album.title}"`);
+                    }
+                });
+                
+                processedAlbums += albumBatch.length;
+                
+                // Yield control to prevent UI blocking - only every few batches
+                if (i % (batchSize * 3) === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1));
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error generating tracks from albums:', error);
+            return []; // Return empty array on error
+        }
+        
+        // Convert map to array
+        const tracksArray = Array.from(trackMap.values());
+        console.log(`🎵 Generated ${tracksArray.length} tracks from ${processedAlbums} albums`);
+        
+        return tracksArray;
+    }
     
     // Create track card element
     createTrackCard(trackData) {
@@ -5703,32 +5806,20 @@ class AlbumCollectionApp {
         try {
             // Extract roles from all albums' credits
             this.collection.albums.forEach((album, albumIndex) => {
-                console.log(`🎵 Processing album ${albumIndex + 1}: ${album.title}`);
-                console.log(`   Credits found:`, album.credits?.length || 0);
-                
                 try {
                     if (album.credits && Array.isArray(album.credits)) {
                         album.credits.forEach((credit, creditIndex) => {
-                            console.log(`   🎭 Processing credit ${creditIndex + 1}:`, {
-                                name: credit.name,
-                                role: credit.role,
-                                albumRoles: credit.albumRoles,
-                                trackRoles: credit.trackRoles
-                            });
-                            
                             // Collect all role names from this credit
                             let roleNames = [];
                             
                             // Handle new structured format
                             if (credit.albumRoles && Array.isArray(credit.albumRoles)) {
                                 roleNames.push(...credit.albumRoles);
-                                console.log(`     Added ${credit.albumRoles.length} album roles:`, credit.albumRoles);
                             }
                             
                             if (credit.trackRoles && Array.isArray(credit.trackRoles)) {
                                 const trackRoleNames = credit.trackRoles.map(tr => tr.role).filter(r => r);
                                 roleNames.push(...trackRoleNames);
-                                console.log(`     Added ${trackRoleNames.length} track roles:`, trackRoleNames);
                             }
                             
                             // Handle legacy single role format - keep original roles intact for proper categorization
@@ -5762,19 +5853,236 @@ class AlbumCollectionApp {
                                 }
                                 
                                 roleNames.push(...legacyRoles.filter(r => r));
-                                console.log(`     Added ${legacyRoles.length} legacy roles:`, legacyRoles);
                             }
-                            
-                            console.log(`     Total roles for this credit: ${roleNames.length}`, roleNames);
                             
                             // Process each role name
                             roleNames.forEach(roleName => {
                                 if (roleName && typeof roleName === 'string') {
                                     // Clean role name by removing brackets and their contents
                                     const cleanRoleName = this.cleanRoleName(roleName);
-                                    console.log(`     Processing role: "${roleName}" → "${cleanRoleName}"`);
                                     
                                     if (cleanRoleName) {
+                                        if (roleMap.has(cleanRoleName)) {
+                                            const existingRole = roleMap.get(cleanRoleName);
+                                            existingRole.frequency++;
+                                            
+                                            // Add unique artist to this role
+                                            const existingArtist = existingRole.artists.find(a => a.name === credit.name);
+                                            if (existingArtist) {
+                                                existingArtist.albumCount++;
+                                                if (!existingArtist.albums.some(a => a.albumId === album.id)) {
+                                                    existingArtist.albums.push({
+                                                        albumId: album.id,
+                                                        albumTitle: album.title,
+                                                        albumYear: album.year,
+                                                        albumImage: album.images && album.images[0] ? album.images[0].uri : null
+                                                    });
+                                                }
+                                            } else {
+                                                existingRole.artists.push({
+                                                    id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                    name: credit.name,
+                                                    image: null,
+                                                    albumCount: 1,
+                                                    albums: [{
+                                                        albumId: album.id,
+                                                        albumTitle: album.title,
+                                                        albumYear: album.year,
+                                                        albumImage: album.images && album.images[0] ? album.images[0].uri : null
+                                                    }]
+                                                });
+                                            }
+                                        } else {
+                                            // Create new role entry
+                                            roleMap.set(cleanRoleName, {
+                                                id: `role-${cleanRoleName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                name: cleanRoleName,
+                                                frequency: 1,
+                                                artists: [{
+                                                    id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                    name: credit.name,
+                                                    image: null,
+                                                    albumCount: 1,
+                                                    albums: [{
+                                                        albumId: album.id,
+                                                        albumTitle: album.title,
+                                                        albumYear: album.year,
+                                                        albumImage: album.images && album.images[0] ? album.images[0].uri : null
+                                                    }]
+                                                }]
+                                            });
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                } catch (creditError) {
+                    console.warn(`⚠️ Error processing credits for album "${album.title}":`, creditError);
+                }
+            });
+        } catch (error) {
+            console.error('❌ Error generating roles from albums:', error);
+            return []; // Return empty array on error
+        }
+        
+        // Convert map to array and sort by frequency
+        const rolesArray = Array.from(roleMap.values()).sort((a, b) => b.frequency - a.frequency);
+        console.log(`🎭 Generated ${rolesArray.length} roles from ${this.collection.albums.length} albums`);
+        
+        return rolesArray;
+    }
+
+    // Async version with progress updates - optimized for performance (removed excessive logging)
+    async generateRolesFromAlbumsAsync() {
+        console.log('🎭 Starting generateRolesFromAlbumsAsync...');
+        const roleMap = new Map();
+        const totalAlbums = this.collection.albums?.length || 0;
+        let processedAlbums = 0;
+        
+        try {
+            // Process albums in batches to avoid blocking the UI
+            const batchSize = 50; // Smaller batches for credit processing
+            for (let i = 0; i < totalAlbums; i += batchSize) {
+                const albumBatch = this.collection.albums.slice(i, i + batchSize);
+                
+                // Process batch synchronously for performance
+                albumBatch.forEach((album, albumIndex) => {
+                    try {
+                        if (album.credits && Array.isArray(album.credits)) {
+                            album.credits.forEach((credit, creditIndex) => {
+                                // Collect all role names from this credit
+                                let roleNames = [];
+                                
+                                // Handle new structured format
+                                if (credit.albumRoles && Array.isArray(credit.albumRoles)) {
+                                    roleNames.push(...credit.albumRoles);
+                                }
+                                
+                                if (credit.trackRoles && Array.isArray(credit.trackRoles)) {
+                                    const trackRoleNames = credit.trackRoles.map(tr => tr.role).filter(r => r);
+                                    roleNames.push(...trackRoleNames);
+                                }
+                                
+                                // Handle legacy single role format - keep original roles intact for proper categorization
+                                if (credit.role && typeof credit.role === 'string') {
+                                    // Split only by top-level commas, preserve brackets for role categorizer
+                                    const legacyRoles = [];
+                                    let current = '';
+                                    let bracketDepth = 0;
+                                    
+                                    for (let i = 0; i < credit.role.length; i++) {
+                                        const char = credit.role[i];
+                                        
+                                        if (char === '[') {
+                                            bracketDepth++;
+                                            current += char;
+                                        } else if (char === ']') {
+                                            bracketDepth--;
+                                            current += char;
+                                        } else if (char === ',' && bracketDepth === 0) {
+                                            if (current.trim()) {
+                                                legacyRoles.push(current.trim());
+                                            }
+                                            current = '';
+                                        } else {
+                                            current += char;
+                                        }
+                                    }
+                                    
+                                    if (current.trim()) {
+                                        legacyRoles.push(current.trim());
+                                    }
+                                    
+                                    roleNames.push(...legacyRoles.filter(r => r));
+                                }
+                                
+                                // Process each role name
+                                roleNames.forEach(roleName => {
+                                    if (roleName && typeof roleName === 'string') {
+                                        // Clean role name by removing brackets and their contents
+                                        const cleanRoleName = this.cleanRoleName(roleName);
+                                        
+                                        if (cleanRoleName) {
+                                            if (roleMap.has(cleanRoleName)) {
+                                                const existingRole = roleMap.get(cleanRoleName);
+                                                existingRole.frequency++;
+                                                
+                                                // Add unique artist to this role
+                                                const existingArtist = existingRole.artists.find(a => a.name === credit.name);
+                                                if (existingArtist) {
+                                                    existingArtist.albumCount++;
+                                                    if (!existingArtist.albums.some(a => a.albumId === album.id)) {
+                                                        existingArtist.albums.push({
+                                                            albumId: album.id,
+                                                            albumTitle: album.title,
+                                                            albumYear: album.year,
+                                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null
+                                                        });
+                                                    }
+                                                } else {
+                                                    existingRole.artists.push({
+                                                        id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                        name: credit.name,
+                                                        image: null,
+                                                        albumCount: 1,
+                                                        albums: [{
+                                                            albumId: album.id,
+                                                            albumTitle: album.title,
+                                                            albumYear: album.year,
+                                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null
+                                                        }]
+                                                    });
+                                                }
+                                            } else {
+                                                // Create new role entry
+                                                roleMap.set(cleanRoleName, {
+                                                    id: `role-${cleanRoleName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                    name: cleanRoleName,
+                                                    frequency: 1,
+                                                    artists: [{
+                                                        id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                        name: credit.name,
+                                                        image: null,
+                                                        albumCount: 1,
+                                                        albums: [{
+                                                            albumId: album.id,
+                                                            albumTitle: album.title,
+                                                            albumYear: album.year,
+                                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null
+                                                        }]
+                                                    }]
+                                                });
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+                        }
+                    } catch (creditError) {
+                        // Minimal logging for performance
+                        console.warn(`⚠️ Error processing credits for album "${album.title}"`);
+                    }
+                });
+                
+                processedAlbums += albumBatch.length;
+                
+                // Yield control to prevent UI blocking - only every few batches
+                if (i % (batchSize * 2) === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1));
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error generating roles from albums:', error);
+            return []; // Return empty array on error
+        }
+        
+        // Convert map to array and sort by frequency
+        const rolesArray = Array.from(roleMap.values()).sort((a, b) => b.frequency - a.frequency);
+        console.log(`🎭 Generated ${rolesArray.length} roles from ${processedAlbums} albums`);
+        
+        return rolesArray;
+    }
                                         const roleKey = cleanRoleName.toLowerCase();
                                         const artistName = credit.name || 'Unknown Artist';
                                         
