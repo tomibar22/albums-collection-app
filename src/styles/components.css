@@ -830,7 +830,7 @@
 }
 
 .credit-name {
-    font-size: 1.125rem;
+    font-size: 1rem;
     color: var(--text-primary);
     font-weight: 600;
     cursor: pointer;
@@ -2807,9 +2807,9 @@
     flex-wrap: wrap;
 }
 
-.credit-name {
+.organized-credit-item .credit-name {
     font-weight: 500;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     color: var(--text-primary);
     margin: 0;
     flex-shrink: 0;
