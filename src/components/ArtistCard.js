@@ -99,14 +99,7 @@ class ArtistCard {
                             ${this.createAlbumCollage()}
                         </div>
                     `}
-                    <div class="artist-overlay">
-                        <div class="artist-actions">
-                            <button class="action-btn view-albums-btn" title="View ${this.escapeHtmlAttribute(this.artist.name)}'s albums">
-                                <span class="btn-icon">📀</span>
-                                <span class="btn-text">View Albums</span>
-                            </button>
-                        </div>
-                    </div>
+
 
                 </div>
                 <div class="artist-info">
@@ -293,20 +286,8 @@ class ArtistCard {
 
         // Main card click handler
         this.element.addEventListener('click', (e) => {
-            // Don't trigger if clicking action buttons
-            if (e.target.closest('.action-btn')) return;
-            
             this.handleCardClick(e);
         });
-
-        // View Albums button
-        const viewAlbumsBtn = this.element.querySelector('.view-albums-btn');
-        if (viewAlbumsBtn) {
-            viewAlbumsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.handleViewAlbums(e);
-            });
-        }
     }
 
     /**
@@ -316,27 +297,7 @@ class ArtistCard {
     handleCardClick(event) {
         console.log(`🎤 Artist card clicked: ${this.artist.name}`);
         
-        // Dispatch custom event for artist card click
-        const customEvent = new CustomEvent('artistCardClick', {
-            detail: {
-                artist: this.artist,
-                element: this.element,
-                originalEvent: event
-            },
-            bubbles: true
-        });
-        
-        this.element.dispatchEvent(customEvent);
-    }
-
-    /**
-     * Handle view albums button click
-     * @param {Event} event - Click event
-     */
-    handleViewAlbums(event) {
-        console.log(`📀 View albums clicked for: ${this.artist.name}`);
-        
-        // Dispatch custom event for view albums action
+        // Dispatch custom event for view albums action (since that's what clicking the card should do)
         const customEvent = new CustomEvent('artistViewAlbums', {
             detail: {
                 artist: this.artist,
@@ -348,6 +309,7 @@ class ArtistCard {
         
         this.element.dispatchEvent(customEvent);
     }
+
 
     /**
      * Update artist data and re-render if needed
