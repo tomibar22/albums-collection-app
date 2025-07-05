@@ -71,17 +71,14 @@ class AlbumCard {
                     </div>
                     <div class="album-overlay">
                         <div class="album-actions">
-                            <button class="action-btn more-info-btn" title="View album details">
-                                <span class="btn-icon">ℹ️</span>
-                                <span class="btn-text">More Info</span>
+                            <button class="overlay-action-btn more-info-btn" title="More Info">
+                                ℹ️ More Info
                             </button>
-                            <button class="action-btn spotify-btn" title="Open in Spotify">
-                                <span class="btn-icon">🎵</span>
-                                <span class="btn-text">Spotify</span>
+                            <button class="overlay-action-btn spotify-btn" title="Spotify">
+                                🎵 Spotify
                             </button>
-                            <button class="action-btn youtube-btn" title="Open in YouTube">
-                                <span class="btn-icon">📺</span>
-                                <span class="btn-text">YouTube</span>
+                            <button class="overlay-action-btn youtube-btn" title="YouTube">
+                                📺 YouTube
                             </button>
                         </div>
                     </div>
@@ -136,7 +133,7 @@ class AlbumCard {
         // Optional: Make entire card clickable for "More Info"
         this.element.addEventListener('click', (e) => {
             // Don't trigger if clicking on action buttons or edit buttons
-            if (!e.target.closest('.action-btn, .card-edit-btn')) {
+            if (!e.target.closest('.overlay-action-btn, .card-edit-btn')) {
                 this.handleMoreInfoClick();
             }
         });
@@ -452,7 +449,7 @@ class AlbumCard {
         
         // Also allow clicking on the card itself in selection mode
         this.element.addEventListener('click', (e) => {
-            if (this.selectionMode && !e.target.closest('.action-btn, .card-edit-btn')) {
+            if (this.selectionMode && !e.target.closest('.overlay-action-btn, .card-edit-btn')) {
                 e.preventDefault();
                 e.stopPropagation();
                 this.toggleSelection();

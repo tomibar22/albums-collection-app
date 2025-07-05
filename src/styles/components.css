@@ -46,12 +46,14 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7));
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: all 0.3s ease;
+    border-radius: 12px;
 }
 
 .album-card:hover .album-overlay {
@@ -63,32 +65,49 @@
     gap: 0.75rem;
     flex-direction: column;
     align-items: center;
+    padding: 1rem;
 }
 
-.action-btn {
-    background: var(--accent-color);
-    color: var(--text-primary);
+.overlay-action-btn {
+    background: linear-gradient(135deg, #4F86F7, #3B82F6);
+    color: white;
     border: none;
-    border-radius: var(--radius-md);
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    border-radius: 25px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-width: 120px;
     justify-content: center;
+    min-width: 140px;
+    gap: 0.5rem;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.action-btn:hover {
-    background: var(--accent-hover);
-    transform: scale(1.05);
+.overlay-action-btn:hover {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
 }
 
-.action-btn .btn-icon {
-    font-size: 1rem;
+.overlay-action-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Specific button styling */
+.overlay-action-btn.spotify-btn:hover {
+    background: linear-gradient(135deg, #1ED760, #1DB954);
+    box-shadow: 0 8px 20px rgba(30, 215, 96, 0.4);
+}
+
+.overlay-action-btn.youtube-btn:hover {
+    background: linear-gradient(135deg, #FF4444, #FF0000);
+    box-shadow: 0 8px 20px rgba(255, 68, 68, 0.4);
 }
 
 .album-info {
@@ -181,10 +200,10 @@
         gap: 0.5rem;
     }
     
-    .action-btn {
-        min-width: 80px;
-        padding: 0.375rem 0.75rem;
-        font-size: 0.75rem;
+    .overlay-action-btn {
+        min-width: 120px;
+        padding: 0.625rem 1.25rem;
+        font-size: 0.875rem;
     }
     
     .album-info {
@@ -197,13 +216,11 @@
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
     
-    .action-btn .btn-text {
-        display: none;
+    .overlay-action-btn {
+        min-width: 100px;
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
     }
-    
-    .action-btn {
-        min-width: 40px;
-        padding: 0.5rem;
     }
 }
 
