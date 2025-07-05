@@ -293,6 +293,13 @@ class ArtistCard {
             collageHtml += '</div>';
         }
         
+        // Add stylistic initials overlay
+        collageHtml += `
+            <div class="initials-overlay">
+                <span class="initials-text">${this.getInitials()}</span>
+            </div>
+        `;
+        
         collageHtml += '</div>';
         return collageHtml;
     }

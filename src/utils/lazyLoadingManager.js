@@ -137,22 +137,45 @@ class LazyLoadingManager {
             this.observers.get(gridId).disconnect();
         }
         
+        // Remove existing sentinel if any
+        const existingSentinel = document.getElementById(`${gridId}-sentinel`);
+        if (existingSentinel) {
+            existingSentinel.remove();
+        }
+        
         // Create scroll sentinel element
         const sentinel = document.createElement('div');
         sentinel.id = `${gridId}-sentinel`;
         sentinel.className = 'lazy-loading-sentinel';
         sentinel.style.height = '1px';
         sentinel.style.visibility = 'hidden';
+        sentinel.style.clear = 'both'; // Ensure proper positioning after grid items
         
-        // Insert sentinel at the end of grid container's parent
-        const viewContainer = gridElement.closest('.view-container') || gridElement.parentElement;
-        viewContainer.appendChild(sentinel);
+        // Insert sentinel directly at the end of the grid container (not parent)
+        // This ensures each tab has its own sentinel within its grid
+        gridElement.appendChild(sentinel);
         
         // Create intersection observer
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const state = this.loadingStates.get(gridId);
+                    if (state && !state.isLoading && !state.allLoaded) {
+                        this.loadNextBatch(gridId);
+                    }
+                }
+            });
+        }, {
+            root: null,
+            rootMargin: `${this.loadingBufferDistance}px`,
+            threshold: 0.1
+        });
+        
+        observer.observe(sentinel);
+        this.observers.set(gridId, observer);
+        
+        console.log(`👁️ Infinite scroll setup for ${gridId} - sentinel placed in grid`);
+    }
                     if (state && !state.isLoading && !state.allLoaded) {
                         this.loadNextBatch(gridId);
                     }
