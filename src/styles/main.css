@@ -238,6 +238,7 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
+    padding-top: 1rem; /* Add top padding to accommodate hover transform */
 }
 
 /* Loading and Empty States */
