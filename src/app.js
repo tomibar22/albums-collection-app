@@ -5609,10 +5609,8 @@ class AlbumCollectionApp {
                 }
             });
             
-            // Convert grouped albums to HTML
-            const albumsHtml = Array.from(albumsMap.values()).map(albumInfo => {
-                console.log('🎵 Processing consolidated album:', albumInfo);
-                
+            // Convert map to array for sorting and searching
+            const albumsArray = Array.from(albumsMap.values()).map(albumInfo => {
                 // Find the full album data from collection
                 const fullAlbum = this.collection.albums.find(album => 
                     album.id === albumInfo.albumId || 
@@ -5630,8 +5628,26 @@ class AlbumCollectionApp {
                     styles: albumInfo.styles || []
                 };
                 
-                const artistNames = albumInfo.albumArtists && Array.isArray(albumInfo.albumArtists) 
-                    ? albumInfo.albumArtists.map(artist => typeof artist === 'string' ? artist : artist.name).join(', ')
+                // Add track position data to album data
+                albumData.trackPositions = albumInfo.trackPositions;
+                albumData.albumArtists = albumInfo.albumArtists;
+                
+                return albumData;
+            });
+            
+            // Sort albums by year ascending (default)
+            const sortedAlbums = [...albumsArray].sort((a, b) => {
+                const yearA = a.year || 0;
+                const yearB = b.year || 0;
+                return yearA - yearB;
+            });
+            
+            // Convert sorted albums to HTML
+            const albumsHtml = sortedAlbums.map(albumData => {
+                console.log('🎵 Processing consolidated album:', albumData);
+                
+                const artistNames = albumData.albumArtists && Array.isArray(albumData.albumArtists) 
+                    ? albumData.albumArtists.map(artist => typeof artist === 'string' ? artist : artist.name).join(', ')
                     : 'Unknown Artist';
 
                 // Get cover image URL with fallback logic
@@ -5653,8 +5669,8 @@ class AlbumCollectionApp {
                     : '';
 
                 // Generate track positions display for track context
-                const trackPositionsHtml = albumInfo.trackPositions.length > 0 
-                    ? `<div class="track-positions">Track positions: ${albumInfo.trackPositions.map(track => track.position).join(', ')}</div>`
+                const trackPositionsHtml = albumData.trackPositions && albumData.trackPositions.length > 0 
+                    ? `<div class="track-positions">Track positions: ${albumData.trackPositions.map(track => track.position).join(', ')}</div>`
                     : '';
 
                 return `
@@ -5704,14 +5720,39 @@ class AlbumCollectionApp {
                 `;
             }).join('');
             
-            const uniqueAlbumCount = albumsMap.size;
+            const uniqueAlbumCount = sortedAlbums.length;
             const result = `
-                <div class="track-albums-content">
-                    <div class="track-albums-header">
-                        <p>This track appears in <strong>${uniqueAlbumCount}</strong> album${uniqueAlbumCount !== 1 ? 's' : ''}:</p>
-                    </div>
-                    <div class="albums-grid">
-                        ${albumsHtml}
+                <div class="track-albums-modal">
+                    <div class="modal-section">
+                        <div class="albums-section-header">
+                            <div class="modal-search-container">
+                                <input type="text" 
+                                       id="track-albums-search" 
+                                       placeholder="🔍 Search by title, artist, year, genre..." 
+                                       class="modal-search-input"
+                                       data-track="${trackData.title}">
+                                <div class="search-results-count" id="track-search-results-count">
+                                    ${uniqueAlbumCount} album${uniqueAlbumCount !== 1 ? 's' : ''}
+                                </div>
+                            </div>
+                            <div class="modal-sort-controls">
+                                <label>Sort by:</label>
+                                <select id="track-albums-sort" data-track="${trackData.title}">
+                                    <option value="year-asc" selected>Year (Ascending)</option>
+                                    <option value="year-desc">Year (Descending)</option>
+                                    <option value="title-asc">Title (A-Z)</option>
+                                    <option value="title-desc">Title (Z-A)</option>
+                                    <option value="random">Random</option>
+                                </select>
+                                <button class="shuffle-btn hidden" id="track-albums-shuffle" data-track="${trackData.title}">🔀 Shuffle</button>
+                            </div>
+                        </div>
+                        <div class="track-albums-header">
+                            <p>This track appears in <strong>${uniqueAlbumCount}</strong> album${uniqueAlbumCount !== 1 ? 's' : ''}:</p>
+                        </div>
+                        <div class="albums-grid" id="track-albums-grid" data-track="${trackData.title}" data-all-albums='${this.escapeJsonForAttribute(sortedAlbums)}'>
+                            ${albumsHtml}
+                        </div>
                     </div>
                 </div>
             `;
@@ -6335,7 +6376,312 @@ class AlbumCollectionApp {
             this.showRoleFilterStatus(currentRoleFilter, sortedAlbums.length);
         }
         
-        console.log(`✅ Sorted ${sortedAlbums.length} albums by ${sortType}${currentRoleFilter ? ` (filtered by "${currentRoleFilter}")` : ''}`);
+    }
+
+    // Sort track albums in modal
+    sortTrackAlbums(trackTitle, sortType) {
+        console.log(`Sorting albums for track "${trackTitle}" by: ${sortType}`);
+        
+        // Show/hide shuffle button based on sort type
+        const shuffleBtn = document.getElementById('track-albums-shuffle');
+        if (shuffleBtn) {
+            if (sortType === 'random') {
+                shuffleBtn.classList.remove('hidden');
+            } else {
+                shuffleBtn.classList.add('hidden');
+            }
+        }
+        
+        // Get the albums data from the modal
+        const albumsGrid = document.getElementById('track-albums-grid');
+        if (!albumsGrid) {
+            console.error('Track albums grid not found');
+            return;
+        }
+        
+        const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+        if (!allAlbumsData) {
+            console.error('No albums data found in grid');
+            return;
+        }
+        
+        let albums;
+        try {
+            albums = JSON.parse(allAlbumsData);
+        } catch (e) {
+            console.error('Error parsing albums data:', e);
+            return;
+        }
+        
+        // Sort the albums
+        let sortedAlbums = [...albums]; // Create a copy to sort
+        
+        switch(sortType) {
+            case 'year-asc':
+                sortedAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : Infinity;
+                    return yearA - yearB;
+                });
+                break;
+            case 'year-desc':
+                sortedAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : -Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : -Infinity;
+                    return yearB - yearA;
+                });
+                break;
+            case 'title-asc':
+                sortedAlbums.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'title-desc':
+                sortedAlbums.sort((a, b) => b.title.localeCompare(a.title));
+                break;
+            case 'random':
+                this.shuffleArray(sortedAlbums);
+                break;
+            default:
+                console.warn(`Unknown sort type: ${sortType}`);
+                return;
+        }
+        
+        // Re-render the albums grid with sorted data
+        this.renderTrackAlbumsGrid(trackTitle, sortedAlbums);
+        
+        console.log(`✅ Sorted ${sortedAlbums.length} albums by ${sortType}`);
+    }
+
+    // Shuffle track albums in modal
+    shuffleTrackAlbums(trackTitle) {
+        console.log(`Shuffling albums for track: ${trackTitle}`);
+        
+        // Get the albums data from the modal
+        const albumsGrid = document.getElementById('track-albums-grid');
+        if (!albumsGrid) {
+            console.error('Track albums grid not found');
+            return;
+        }
+        
+        const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+        if (!allAlbumsData) {
+            console.error('No albums data found in grid');
+            return;
+        }
+        
+        let albums;
+        try {
+            albums = JSON.parse(allAlbumsData);
+        } catch (e) {
+            console.error('Error parsing albums data:', e);
+            return;
+        }
+        
+        // Shuffle the albums
+        const shuffledAlbums = [...albums]; // Create a copy to shuffle
+        this.shuffleArray(shuffledAlbums);
+        
+        // Re-render the albums grid with shuffled data
+        this.renderTrackAlbumsGrid(trackTitle, shuffledAlbums);
+        
+        console.log(`✅ Shuffled ${shuffledAlbums.length} albums for track "${trackTitle}"`);
+    }
+
+    // Render track albums grid with provided data
+    renderTrackAlbumsGrid(trackTitle, albums) {
+        const albumsGrid = document.getElementById('track-albums-grid');
+        if (!albumsGrid) {
+            console.error('Track albums grid not found');
+            return;
+        }
+        
+        // Generate HTML for albums
+        const albumsHtml = albums.map(albumData => {
+            const artistNames = albumData.albumArtists && Array.isArray(albumData.albumArtists) 
+                ? albumData.albumArtists.map(artist => typeof artist === 'string' ? artist : artist.name).join(', ')
+                : 'Unknown Artist';
+
+            // Get cover image URL with fallback logic
+            const coverImageUrl = albumData.images && albumData.images[0] ? albumData.images[0].uri : '';
+            
+            // Generate genre and style tags
+            const tags = [];
+            if (albumData.genres && Array.isArray(albumData.genres)) {
+                tags.push(...albumData.genres);
+            }
+            if (albumData.styles && Array.isArray(albumData.styles)) {
+                tags.push(...albumData.styles);
+            }
+            const uniqueTags = [...new Set(tags)].slice(0, 4);
+            const genreStyleTagsHtml = uniqueTags.length > 0 
+                ? `<div class="genre-tags-container">${uniqueTags.map(tag => 
+                    `<span class="genre-tag" title="${tag}">${tag}</span>`
+                ).join('')}</div>` 
+                : '';
+
+            // Generate track positions display for track context
+            const trackPositionsHtml = albumData.trackPositions && albumData.trackPositions.length > 0 
+                ? `<div class="track-positions">Track positions: ${albumData.trackPositions.map(track => track.position).join(', ')}</div>`
+                : '';
+
+            return `
+                <div class="album-card" data-album-id="${albumData.id}">
+                    <div class="album-card-inner">
+                        <div class="album-cover">
+                            <img 
+                                src="${coverImageUrl}" 
+                                alt="${this.escapeAttributeValue('Cover art for ' + albumData.title)}"
+                                class="cover-image"
+                                loading="lazy"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            />
+                            <div class="album-placeholder" style="display: none;">
+                                <div class="placeholder-icon">🎵</div>
+                                <div class="placeholder-text">No Cover</div>
+                            </div>
+                            <div class="album-overlay">
+                                <div class="album-actions">
+                                    <button class="action-btn more-info-btn" data-album-id="${albumData.id}" title="View album details">
+                                        <span class="btn-icon">ℹ️</span>
+                                        <span class="btn-text">More Info</span>
+                                    </button>
+                                    <button class="action-btn spotify-btn" data-search-query="${artistNames} ${albumData.title}" title="Open in Spotify">
+                                        <span class="btn-icon">🎵</span>
+                                        <span class="btn-text">Spotify</span>
+                                    </button>
+                                    <button class="action-btn youtube-btn" data-search-query="${artistNames} ${albumData.title}" title="Open in YouTube">
+                                        <span class="btn-icon">📺</span>
+                                        <span class="btn-text">YouTube</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="album-info">
+                            <h3 class="album-title" title="${albumData.title}">${albumData.title}</h3>
+                            <p class="album-artist" title="${this.escapeHtmlAttribute(artistNames)}">${artistNames}</p>
+                            <p class="album-year">${albumData.year}</p>
+                            <div class="album-meta">
+                                <span class="track-count">${albumData.track_count || 0} tracks</span>
+                                ${genreStyleTagsHtml}
+                            </div>
+                            ${trackPositionsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Update the grid content
+        albumsGrid.innerHTML = albumsHtml;
+        
+        // Update search results count
+        const resultsCount = document.getElementById('track-search-results-count');
+        if (resultsCount) {
+            resultsCount.textContent = `${albums.length} album${albums.length !== 1 ? 's' : ''}`;
+        }
+        
+        console.log(`✅ Rendered ${albums.length} albums in track albums grid`);
+    }
+
+    // Search track albums in modal
+    searchTrackAlbums(trackTitle, searchTerm) {
+        console.log(`Searching albums for track "${trackTitle}" with term: "${searchTerm}"`);
+        
+        // Get the albums data from the modal
+        const albumsGrid = document.getElementById('track-albums-grid');
+        if (!albumsGrid) {
+            console.error('Track albums grid not found');
+            return;
+        }
+        
+        const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+        if (!allAlbumsData) {
+            console.error('No albums data found in grid');
+            return;
+        }
+        
+        let albums;
+        try {
+            albums = JSON.parse(allAlbumsData);
+        } catch (e) {
+            console.error('Error parsing albums data:', e);
+            return;
+        }
+        
+        // Filter albums based on search term
+        let filteredAlbums = albums;
+        
+        if (searchTerm) {
+            filteredAlbums = albums.filter(album => {
+                // Search in album title
+                const titleMatch = album.title && album.title.toLowerCase().includes(searchTerm);
+                
+                // Search in artist names
+                let artistMatch = false;
+                if (album.albumArtists && Array.isArray(album.albumArtists)) {
+                    artistMatch = album.albumArtists.some(artist => {
+                        const artistName = typeof artist === 'string' ? artist : artist.name;
+                        return artistName && artistName.toLowerCase().includes(searchTerm);
+                    });
+                }
+                
+                // Search in year
+                const yearMatch = album.year && album.year.toString().includes(searchTerm);
+                
+                // Search in genres
+                let genreMatch = false;
+                if (album.genres && Array.isArray(album.genres)) {
+                    genreMatch = album.genres.some(genre => 
+                        genre && genre.toLowerCase().includes(searchTerm)
+                    );
+                }
+                
+                // Search in styles
+                let styleMatch = false;
+                if (album.styles && Array.isArray(album.styles)) {
+                    styleMatch = album.styles.some(style => 
+                        style && style.toLowerCase().includes(searchTerm)
+                    );
+                }
+                
+                return titleMatch || artistMatch || yearMatch || genreMatch || styleMatch;
+            });
+        }
+        
+        // Apply current sort to filtered albums
+        const sortSelect = document.getElementById('track-albums-sort');
+        const currentSort = sortSelect ? sortSelect.value : 'year-asc';
+        
+        // Sort the filtered albums
+        switch(currentSort) {
+            case 'year-asc':
+                filteredAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : Infinity;
+                    return yearA - yearB;
+                });
+                break;
+            case 'year-desc':
+                filteredAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : -Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : -Infinity;
+                    return yearB - yearA;
+                });
+                break;
+            case 'title-asc':
+                filteredAlbums.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'title-desc':
+                filteredAlbums.sort((a, b) => b.title.localeCompare(a.title));
+                break;
+            case 'random':
+                this.shuffleArray(filteredAlbums);
+                break;
+        }
+        
+        // Re-render the albums grid with filtered and sorted data
+        this.renderTrackAlbumsGrid(trackTitle, filteredAlbums);
+        
+        console.log(`✅ Search completed: ${filteredAlbums.length} of ${albums.length} albums match "${searchTerm}"`);
     }
 
     // Shuffle artist albums in modal
@@ -6629,41 +6975,95 @@ class AlbumCollectionApp {
     }
 
     setupModalSortListeners() {
-        // Set up event listeners for modal sorting controls
-        const sortSelect = document.getElementById('artist-albums-sort');
-        const shuffleBtn = document.getElementById('artist-albums-shuffle');
+        // Set up event listeners for artist albums modal sorting controls
+        const artistSortSelect = document.getElementById('artist-albums-sort');
+        const artistShuffleBtn = document.getElementById('artist-albums-shuffle');
         
-        if (sortSelect) {
+        if (artistSortSelect) {
             // Remove existing listener if any
-            sortSelect.removeEventListener('change', sortSelect.sortHandler);
+            artistSortSelect.removeEventListener('change', artistSortSelect.sortHandler);
             
             // Create new event handler
-            sortSelect.sortHandler = (e) => {
+            artistSortSelect.sortHandler = (e) => {
                 const artistName = e.target.getAttribute('data-artist');
                 const sortType = e.target.value;
-                console.log(`Modal sort change: ${artistName} by ${sortType}`);
+                console.log(`Artist modal sort change: ${artistName} by ${sortType}`);
                 if (artistName) {
                     this.sortArtistAlbums(artistName, sortType);
                 }
             };
             
-            sortSelect.addEventListener('change', sortSelect.sortHandler);
+            artistSortSelect.addEventListener('change', artistSortSelect.sortHandler);
         }
         
-        if (shuffleBtn) {
+        if (artistShuffleBtn) {
             // Remove existing listener if any
-            shuffleBtn.removeEventListener('click', shuffleBtn.shuffleHandler);
+            artistShuffleBtn.removeEventListener('click', artistShuffleBtn.shuffleHandler);
             
             // Create new event handler
-            shuffleBtn.shuffleHandler = (e) => {
+            artistShuffleBtn.shuffleHandler = (e) => {
                 const artistName = e.target.getAttribute('data-artist');
-                console.log(`Modal shuffle clicked for: ${artistName}`);
+                console.log(`Artist modal shuffle clicked for: ${artistName}`);
                 if (artistName) {
                     this.shuffleArtistAlbums(artistName);
                 }
             };
             
-            shuffleBtn.addEventListener('click', shuffleBtn.shuffleHandler);
+            artistShuffleBtn.addEventListener('click', artistShuffleBtn.shuffleHandler);
+        }
+        
+        // Set up event listeners for track albums modal sorting controls
+        const trackSortSelect = document.getElementById('track-albums-sort');
+        const trackShuffleBtn = document.getElementById('track-albums-shuffle');
+        const trackSearchInput = document.getElementById('track-albums-search');
+        
+        if (trackSortSelect) {
+            // Remove existing listener if any
+            trackSortSelect.removeEventListener('change', trackSortSelect.sortHandler);
+            
+            // Create new event handler
+            trackSortSelect.sortHandler = (e) => {
+                const trackTitle = e.target.getAttribute('data-track');
+                const sortType = e.target.value;
+                console.log(`Track modal sort change: ${trackTitle} by ${sortType}`);
+                if (trackTitle) {
+                    this.sortTrackAlbums(trackTitle, sortType);
+                }
+            };
+            
+            trackSortSelect.addEventListener('change', trackSortSelect.sortHandler);
+        }
+        
+        if (trackShuffleBtn) {
+            // Remove existing listener if any
+            trackShuffleBtn.removeEventListener('click', trackShuffleBtn.shuffleHandler);
+            
+            // Create new event handler
+            trackShuffleBtn.shuffleHandler = (e) => {
+                const trackTitle = e.target.getAttribute('data-track');
+                console.log(`Track modal shuffle clicked for: ${trackTitle}`);
+                if (trackTitle) {
+                    this.shuffleTrackAlbums(trackTitle);
+                }
+            };
+            
+            trackShuffleBtn.addEventListener('click', trackShuffleBtn.shuffleHandler);
+        }
+        
+        // Set up search functionality for track albums
+        if (trackSearchInput) {
+            // Remove existing listener if any
+            trackSearchInput.removeEventListener('input', trackSearchInput.searchHandler);
+            
+            // Create new event handler
+            trackSearchInput.searchHandler = (e) => {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                const trackTitle = e.target.getAttribute('data-track');
+                console.log(`Track modal search: "${searchTerm}" for track "${trackTitle}"`);
+                this.searchTrackAlbums(trackTitle, searchTerm);
+            };
+            
+            trackSearchInput.addEventListener('input', trackSearchInput.searchHandler);
         }
     }
 
