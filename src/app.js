@@ -4737,11 +4737,14 @@ class AlbumCollectionApp {
             return;
         }
         
-        // Sort both musical and technical artists
-        const sortFunction = (a, b) => {
+        // Define sort functions for different contexts
+        const musicalSortFunction = (a, b) => {
             switch(sortType) {
                 case 'most-albums':
-                    return (b.albumCount || 0) - (a.albumCount || 0);
+                    // For musical tab, use musical album count if available, otherwise total
+                    const aCount = a.musicalAlbumCount !== undefined ? a.musicalAlbumCount : (a.albumCount || 0);
+                    const bCount = b.musicalAlbumCount !== undefined ? b.musicalAlbumCount : (b.albumCount || 0);
+                    return bCount - aCount;
                 case 'a-z':
                     return (a.name || '').localeCompare(b.name || '');
                 case 'random':
@@ -4751,12 +4754,36 @@ class AlbumCollectionApp {
             }
         };
         
-        // Apply sorting to both arrays
-        this.musicalArtists.sort(sortFunction);
-        this.technicalArtists.sort(sortFunction);
+        const technicalSortFunction = (a, b) => {
+            switch(sortType) {
+                case 'most-albums':
+                    // For technical tab, use technical album count if available, otherwise total
+                    const aCount = a.technicalAlbumCount !== undefined ? a.technicalAlbumCount : (a.albumCount || 0);
+                    const bCount = b.technicalAlbumCount !== undefined ? b.technicalAlbumCount : (b.albumCount || 0);
+                    return bCount - aCount;
+                case 'a-z':
+                    return (a.name || '').localeCompare(b.name || '');
+                case 'random':
+                    return Math.random() - 0.5;
+                default:
+                    return 0;
+            }
+        };
         
-        // Update the main collection for backward compatibility
-        this.collection.artists = [...this.musicalArtists, ...this.technicalArtists];
+        // Apply tab-specific sorting to both arrays
+        this.musicalArtists.sort(musicalSortFunction);
+        this.technicalArtists.sort(technicalSortFunction);
+        
+        // Create unique combined array for backward compatibility (removing duplicates)
+        const uniqueArtistsMap = new Map();
+        [...this.musicalArtists, ...this.technicalArtists].forEach(artist => {
+            uniqueArtistsMap.set(artist.name, artist);
+        });
+        this.collection.artists = Array.from(uniqueArtistsMap.values());
+        
+        console.log(`🎵 Sorted ${this.musicalArtists.length} musical artists`);
+        console.log(`🔧 Sorted ${this.technicalArtists.length} technical artists`);
+        console.log(`📋 Combined unique collection: ${this.collection.artists.length} artists`);
         
         // Update tab counts
         document.getElementById('musical-artists-count').textContent = `(${this.musicalArtists.length})`;
@@ -6269,8 +6296,14 @@ class AlbumCollectionApp {
             this.shuffleArray(this.technicalArtists);
         }
         
-        // Update the main collection for backward compatibility
-        this.collection.artists = [...(this.musicalArtists || []), ...(this.technicalArtists || [])];
+        // Create unique combined array for backward compatibility (removing duplicates)
+        const uniqueArtistsMap = new Map();
+        [...(this.musicalArtists || []), ...(this.technicalArtists || [])].forEach(artist => {
+            uniqueArtistsMap.set(artist.name, artist);
+        });
+        this.collection.artists = Array.from(uniqueArtistsMap.values());
+        
+        console.log(`🔀 Shuffled ${this.musicalArtists?.length || 0} musical + ${this.technicalArtists?.length || 0} technical artists`);
         
         // Re-render the active tab
         this.renderActiveArtistsTab();
