@@ -1087,6 +1087,109 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
+/* Album collage styles */
+.album-collage {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: var(--card-background);
+}
+
+/* Single album cover - full size */
+.collage-single {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.collage-single img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Dual album covers - split vertically */
+.collage-dual {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.collage-dual img {
+    width: 50%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Triple album covers - one large, two small */
+.collage-triple {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.collage-main {
+    width: 60%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.collage-side {
+    display: flex;
+    flex-direction: column;
+    width: 40%;
+    height: 100%;
+}
+
+.collage-side img {
+    width: 100%;
+    height: 50%;
+    object-fit: cover;
+}
+
+/* Quad album covers - 2x2 grid */
+.collage-quad {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.collage-quad img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Fallback placeholder icon styling */
+.placeholder-icon {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    user-select: none;
+}
+
+/* Hover effects for collages */
+.artist-card:hover .album-collage {
+    transform: scale(1.02);
+    transition: transform 0.3s ease;
+}
+
+.artist-card:hover .album-collage img {
+    opacity: 0.9;
+}
+
 .artist-image.no-image .artist-overlay {
     background: rgba(0, 0, 0, 0.6); /* Slightly more opaque for better contrast */
 }

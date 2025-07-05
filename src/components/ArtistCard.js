@@ -92,11 +92,11 @@ class ArtistCard {
                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                         />
                         <div class="artist-placeholder" style="display: none;">
-                            <div class="placeholder-icon">${this.getInitials()}</div>
+                            ${this.createAlbumCollage()}
                         </div>
                     ` : `
                         <div class="artist-placeholder-only">
-                            <div class="placeholder-icon">${this.getInitials()}</div>
+                            ${this.createAlbumCollage()}
                         </div>
                     `}
                     <div class="artist-overlay">
@@ -217,6 +217,84 @@ class ArtistCard {
         }
         
         return words.slice(0, 2).map(word => word[0]).join('').toUpperCase();
+    }
+
+    /**
+     * Create an album cover collage for artists without photos
+     * @returns {string} HTML string for album collage or initials fallback
+     */
+    createAlbumCollage() {
+        // Get albums with valid cover images
+        const albumsWithCovers = (this.artist.albums || [])
+            .filter(album => album.cover_image && album.cover_image.trim() !== '')
+            .slice(0, 4); // Limit to 4 albums for the collage
+
+        if (albumsWithCovers.length === 0) {
+            // Fallback to initials if no album covers available
+            return `<div class="placeholder-icon">${this.getInitials()}</div>`;
+        }
+
+        // Create collage based on number of available covers
+        let collageHtml = '<div class="album-collage">';
+        
+        if (albumsWithCovers.length === 1) {
+            // Single album cover
+            collageHtml += `
+                <div class="collage-single">
+                    <img src="${albumsWithCovers[0].cover_image}" 
+                         alt="${this.escapeHtmlAttribute(albumsWithCovers[0].title)}"
+                         loading="lazy"
+                         onerror="this.parentElement.innerHTML='<div class=\\"placeholder-icon\\">${this.getInitials()}</div>';">
+                </div>
+            `;
+        } else if (albumsWithCovers.length === 2) {
+            // Two album covers - side by side
+            collageHtml += '<div class="collage-dual">';
+            albumsWithCovers.forEach(album => {
+                collageHtml += `
+                    <img src="${album.cover_image}" 
+                         alt="${this.escapeHtmlAttribute(album.title)}"
+                         loading="lazy"
+                         onerror="this.style.display='none';">
+                `;
+            });
+            collageHtml += '</div>';
+        } else if (albumsWithCovers.length === 3) {
+            // Three album covers - one large, two small
+            collageHtml += '<div class="collage-triple">';
+            collageHtml += `
+                <img src="${albumsWithCovers[0].cover_image}" 
+                     alt="${this.escapeHtmlAttribute(albumsWithCovers[0].title)}"
+                     class="collage-main"
+                     loading="lazy"
+                     onerror="this.style.display='none';">
+                <div class="collage-side">
+            `;
+            for (let i = 1; i < 3; i++) {
+                collageHtml += `
+                    <img src="${albumsWithCovers[i].cover_image}" 
+                         alt="${this.escapeHtmlAttribute(albumsWithCovers[i].title)}"
+                         loading="lazy"
+                         onerror="this.style.display='none';">
+                `;
+            }
+            collageHtml += '</div></div>';
+        } else {
+            // Four or more album covers - 2x2 grid
+            collageHtml += '<div class="collage-quad">';
+            for (let i = 0; i < 4; i++) {
+                collageHtml += `
+                    <img src="${albumsWithCovers[i].cover_image}" 
+                         alt="${this.escapeHtmlAttribute(albumsWithCovers[i].title)}"
+                         loading="lazy"
+                         onerror="this.style.display='none';">
+                `;
+            }
+            collageHtml += '</div>';
+        }
+        
+        collageHtml += '</div>';
+        return collageHtml;
     }
 
     /**
