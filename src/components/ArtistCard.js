@@ -22,8 +22,8 @@ class ArtistCard {
             return true;
         }
         
-        // For technical contributors, only show images for first 15 cards (0-14)
-        return this.position < 15;
+        // For technical contributors, only show images for first 10 cards (0-9)
+        return this.position < 10;
     }
 
     /**
