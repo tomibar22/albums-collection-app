@@ -220,33 +220,6 @@ body {
     transform: translateY(-1px);
 }
 
-.load-images-btn {
-    background-color: #059669;
-    border: none;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: var(--font-family);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.load-images-btn:hover {
-    background-color: #047857;
-    transform: translateY(-1px);
-}
-
-.load-images-btn:disabled {
-    background-color: #6b7280;
-    cursor: not-allowed;
-    transform: none;
-}
-
 /* Grid Layouts */
 .albums-grid {
     display: grid;
