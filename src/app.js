@@ -932,8 +932,20 @@ class AlbumCollectionApp {
         while ((match = bracketRegex.exec(roleName)) !== null) {
             const bracketContent = match[1].trim();
             
-            // Skip non-instrument brackets
-            const skipWords = ['uncredited', 'recording', 'additional', 'overdubs', 'solo', 'backing'];
+            // Skip non-instrument brackets - enhanced filtering
+            const skipWords = [
+                'uncredited', 'recording', 'additional', 'overdubs', 'solo', 'backing',
+                'album', 'track', 'side', 'disc', 'cd', 'lp', 'ep', 'single',
+                'original', 'remaster', 'remix', 'edit', 'version', 'take',
+                'bonus', 'hidden', 'instrumental', 'vocal', 'demo', 'live',
+                'session', 'studio', 'concert', 'performance', 'mix', 'master'
+            ];
+            
+            // Also skip if it's just a year (4 digits) or side indicator (single letter/number)
+            if (/^\d{4}$/.test(bracketContent) || /^[a-d]$/i.test(bracketContent) || /^\d{1,2}$/.test(bracketContent)) {
+                continue;
+            }
+            
             if (skipWords.some(word => bracketContent.toLowerCase().includes(word))) {
                 continue;
             }
@@ -981,17 +993,48 @@ class AlbumCollectionApp {
 
     // Check if text looks like an instrument name
     looksLikeInstrument(text) {
+        if (!text || typeof text !== 'string') return false;
+        
+        const lowerText = text.toLowerCase().trim();
+        
+        // First, filter out obvious non-instruments
+        const invalidTerms = [
+            // Years
+            /^\d{4}$/, // Four digit years like "1994"
+            /^\d{2}$/, // Two digit years like "94"
+            
+            // Generic music terms that are not instruments
+            /^(album|track|side|disc|cd|lp|ep|single|compilation)$/,
+            /^(recording|session|studio|live|concert|performance)$/,
+            /^(original|remaster|remix|edit|version|take|alternate)$/,
+            /^(bonus|hidden|secret|instrumental|vocal|demo)$/,
+            /^(a|b|c|d|1|2|3|4|5|6|7|8|9|10)$/, // Side/track indicators
+            
+            // Common production terms
+            /^(mix|master|overdub|dub|additional|backing|solo)$/,
+            /^(uncredited|credited|featuring|with|and|or)$/,
+            
+            // Time/date indicators  
+            /^(am|pm|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/,
+            /^\d{1,2}:\d{2}$/, // Time formats like "12:30"
+        ];
+        
+        // Check if text matches any invalid pattern
+        if (invalidTerms.some(pattern => pattern.test(lowerText))) {
+            return false;
+        }
+        
+        // Now check for valid instrument keywords
         const instrumentKeywords = [
             'piano', 'synthesizer', 'synth', 'keyboard', 'organ', 'moog', 'rhodes',
             'clavinet', 'vocoder', 'mellotron', 'hammond', 'dx', 'prophet', 'oberheim',
             'arp', 'jupiter', 'juno', 'fairlight', 'yamaha', 'roland', 'korg',
-            'acoustic', 'electric', 'fender', 'hohner', 'steinway'
+            'acoustic', 'electric', 'fender', 'hohner', 'steinway', 'bass', 'guitar',
+            'drums', 'percussion', 'saxophone', 'trumpet', 'violin', 'cello'
         ];
         
-        const lowerText = text.toLowerCase();
-        return instrumentKeywords.some(keyword => lowerText.includes(keyword)) &&
-               !text.toLowerCase().includes('uncredited') &&
-               !text.toLowerCase().includes('recording');
+        // Must contain at least one instrument keyword and not be in invalid list
+        return instrumentKeywords.some(keyword => lowerText.includes(keyword));
     }
     
     // Generate artist data from album credits instead of basic artist field
