@@ -22,8 +22,8 @@ class ArtistCard {
             return true;
         }
         
-        // For technical contributors, only show images for first 2 rows (8 cards: 0-7)
-        return this.position < 8;
+        // For technical contributors, only show images for first 15 cards (0-14)
+        return this.position < 15;
     }
 
     /**
@@ -128,9 +128,8 @@ class ArtistCard {
         
         // Initialize lazy image loading only if image should be shown
         if (this.shouldShowImage()) {
-            setTimeout(() => {
-                this.initializeLazyImageLoading();
-            }, 100);
+            // Use immediate initialization for lazy loaded items to prevent delays
+            this.initializeLazyImageLoading();
         }
         
         return this.element;
@@ -155,6 +154,9 @@ class ArtistCard {
      */
     initializeLazyImageLoading() {
         if (!this.element || this.imageLoadingInitialized) return;
+        
+        // Don't load images if shouldShowImage is false
+        if (!this.shouldShowImage()) return;
         
         this.imageLoadingInitialized = true;
         
