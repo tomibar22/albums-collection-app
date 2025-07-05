@@ -1321,10 +1321,6 @@
     transition: transform 0.3s ease;
 }
 
-.artist-card:hover .album-collage img {
-    opacity: 0.9;
-}
-
 /* Stylistic initials overlay */
 .initials-overlay {
     position: absolute;
@@ -1371,17 +1367,7 @@
     transition: transform 0.3s ease;
 }
 
-.artist-card:hover .stylized-collage img {
-    opacity: 0.8 !important;
-    filter: grayscale(15%) blur(0px) contrast(1.1) !important;
-}
 
-.artist-card:hover .stylized-collage::after {
-    background: linear-gradient(135deg, 
-        rgba(15, 23, 42, 0.2) 0%, 
-        rgba(30, 41, 59, 0.1) 50%, 
-        rgba(15, 23, 42, 0.3) 100%);
-}
 
 /* Hover effects for initials overlay */
 .artist-card:hover .initials-overlay {
@@ -1418,37 +1404,14 @@
     }
 }
 
-.artist-image.no-image .artist-overlay {
-    background: rgba(0, 0, 0, 0.6); /* Slightly more opaque for better contrast */
-}
+
 
 .artist-card:hover .artist-image.no-image {
     border-color: var(--accent-color);
     box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
 }
 
-.artist-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
 
-.artist-card:hover .artist-overlay {
-    opacity: 1;
-}
-
-.artist-actions {
-    display: flex;
-    gap: 0.75rem;
-}
 
 .artist-info {
     padding: 0.75rem;
