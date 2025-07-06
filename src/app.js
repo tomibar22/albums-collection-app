@@ -9218,14 +9218,10 @@ class AlbumCollectionApp {
         
         const overlay = document.getElementById('fullscreen-image-overlay');
         const image = document.getElementById('fullscreen-image');
-        const titleElement = document.getElementById('fullscreen-image-title');
-        const artistElement = document.getElementById('fullscreen-image-artist');
         
-        // Set image and info
+        // Set image
         image.src = imageSrc;
         image.alt = `Cover art for ${title}`;
-        titleElement.textContent = title;
-        artistElement.textContent = artist;
         
         // Show overlay
         overlay.classList.add('visible');

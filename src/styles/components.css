@@ -5996,31 +5996,6 @@
     transform: scale(1.1);
 }
 
-.fullscreen-image-info {
-    position: absolute;
-    bottom: -60px;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    color: white;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 12px 20px;
-    border-radius: 8px;
-    backdrop-filter: blur(10px);
-    max-width: 80%;
-}
-
-.fullscreen-image-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.fullscreen-image-artist {
-    font-size: 0.9rem;
-    opacity: 0.8;
-}
-
 @keyframes scaleIn {
     from {
         transform: scale(0.8);
