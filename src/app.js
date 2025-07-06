@@ -9261,10 +9261,107 @@ window.toggleTrackRoles = function(creditId) {
     }
 };
 
-// Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing app...');
-    window.albumApp = new AlbumCollectionApp();
+// Initialize the application when DOM is loaded AND authentication is complete
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM loaded, waiting for authentication...');
+    
+    try {
+        // Wait for authentication promise from index.html
+        const isAuthenticated = await window.authPromise;
+        
+        if (isAuthenticated) {
+            console.log('✅ Authentication successful, applying user credentials...');
+            
+            // Apply user-specific credentials before initializing app
+            const credentialsApplied = await window.AuthService.applyUserCredentials();
+            
+            if (credentialsApplied) {
+                console.log('🔑 User credentials applied, initializing app...');
+                window.albumApp = new AlbumCollectionApp();
+            } else {
+                console.warn('⚠️ No user credentials found, showing setup screen...');
+                // Show credentials setup screen instead of broken app
+                showCredentialsSetupScreen();
+            }
+        } else {
+            console.log('🔐 Authentication failed or redirected');
+            // Don't initialize the app if authentication failed
+        }
+        
+    } catch (error) {
+        console.error('❌ Authentication error during app initialization:', error);
+        alert('Authentication system error. Please refresh the page.');
+    }
+});
+
+// Show credentials setup screen when user hasn't configured their API keys
+function showCredentialsSetupScreen() {
+    document.body.innerHTML = `
+        <div style="
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            background: var(--bg-primary); 
+            color: var(--text-primary);
+            padding: 2rem;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        ">
+            <div style="
+                background: var(--bg-secondary); 
+                padding: 3rem; 
+                border-radius: 1rem; 
+                max-width: 600px; 
+                text-align: center;
+                border: 1px solid var(--border-color);
+            ">
+                <h1 style="color: var(--accent-color); margin-bottom: 1rem;">🎧 Welcome to Albums Collection</h1>
+                <h2 style="margin-bottom: 2rem;">Setup Required</h2>
+                
+                <p style="margin-bottom: 2rem; line-height: 1.6;">
+                    To use your personal music collection, you need to configure:
+                </p>
+                
+                <div style="text-align: left; margin-bottom: 2rem;">
+                    <h3 style="color: var(--accent-color);">🔑 Required Setup:</h3>
+                    <ul style="line-height: 1.8;">
+                        <li><strong>Discogs API Key:</strong> Get your free API key from <a href="https://www.discogs.com/settings/developers" target="_blank" style="color: var(--accent-color);">Discogs Developer Settings</a></li>
+                        <li><strong>Supabase Project:</strong> Create your personal music database at <a href="https://supabase.com" target="_blank" style="color: var(--accent-color);">Supabase.com</a></li>
+                    </ul>
+                </div>
+                
+                <p style="margin-bottom: 2rem; color: var(--text-secondary);">
+                    Each user has their own private collection and API keys for security and data isolation.
+                </p>
+                
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="window.location.href='auth.html'" style="
+                        background: var(--accent-color); 
+                        color: white; 
+                        border: none; 
+                        padding: 0.75rem 1.5rem; 
+                        border-radius: 0.5rem; 
+                        cursor: pointer;
+                        font-weight: 500;
+                    ">
+                        📝 Go to Profile Setup
+                    </button>
+                    <button onclick="window.location.reload()" style="
+                        background: var(--bg-tertiary); 
+                        color: var(--text-primary); 
+                        border: 1px solid var(--border-color); 
+                        padding: 0.75rem 1.5rem; 
+                        border-radius: 0.5rem; 
+                        cursor: pointer;
+                    ">
+                        🔄 Refresh Page
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
     
     // Test Discogs API integration (Enhanced UX version)
     window.testDiscogsAPI = async function(manuallyTriggered = false) {

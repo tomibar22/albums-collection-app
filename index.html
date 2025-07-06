@@ -310,7 +310,7 @@
         window.CONFIG = {
             // Discogs API Configuration
             DISCOGS: {
-                API_KEY: 'WqpYrXczbaWXtmKNncCeRysLaXNQFJQWXPetKSPR', // REQUIRED: Get your free API key from https://www.discogs.com/settings/developers
+                API_KEY: '', // Will be populated from user credentials after authentication
                 BASE_URL: 'https://api.discogs.com',
                 HEADERS: {
                     'User-Agent': 'AlbumsCollectionApp/1.0'
@@ -338,8 +338,8 @@
 
             // Supabase Configuration (User's personal music collection)
             SUPABASE: {
-                URL: 'https://mchuwawmnyeoemgrlepp.supabase.co',
-                ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNjQ1MTYsImV4cCI6MjA2Njg0MDUxNn0.1APvxfCAof_0V_EFZnAaucrayTdhE3dMHLb67LySnrc',
+                URL: '', // Will be populated from user credentials after authentication  
+                ANON_KEY: '', // Will be populated from user credentials after authentication
                 
                 // Table Names
                 TABLES: {
