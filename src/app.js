@@ -5500,17 +5500,32 @@ class AlbumCollectionApp {
 
         console.log('🖼️ Initializing lazy loading for role modal artist images');
         
+        // Find all artist items
+        const artistItems = modalBody.querySelectorAll('.role-artist-item');
+        console.log(`🖼️ Found ${artistItems.length} artist items for lazy loading`);
+        
+        if (artistItems.length === 0) {
+            console.warn('🖼️ No artist items found in modal for lazy loading');
+            return;
+        }
+        
         // Create IntersectionObserver for lazy loading images
         const imageObserver = new IntersectionObserver((entries) => {
+            console.log(`🖼️ IntersectionObserver triggered with ${entries.length} entries`);
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const artistItem = entry.target;
                     const artistName = artistItem.dataset.artistName;
                     const artistIndex = parseInt(artistItem.dataset.artistIndex, 10);
                     
+                    console.log(`🖼️ Artist item intersecting: ${artistName} (index: ${artistIndex})`);
+                    
                     // Only load images for first 10 artists to avoid overload
                     if (artistIndex < 10) {
+                        console.log(`🖼️ Loading image for artist ${artistIndex + 1}/10: ${artistName}`);
                         this.loadRoleArtistImage(artistItem, artistName);
+                    } else {
+                        console.log(`🖼️ Skipping image load for artist ${artistIndex + 1} (beyond 10 limit): ${artistName}`);
                     }
                     
                     // Stop observing this item
@@ -5524,39 +5539,56 @@ class AlbumCollectionApp {
         });
 
         // Observe all artist items
-        const artistItems = modalBody.querySelectorAll('.role-artist-item');
-        artistItems.forEach(item => {
+        console.log(`🖼️ Starting to observe ${artistItems.length} artist items`);
+        artistItems.forEach((item, index) => {
+            const artistName = item.dataset.artistName;
+            console.log(`🖼️ Observing artist ${index + 1}: ${artistName}`);
             imageObserver.observe(item);
         });
     }
 
     // Load individual artist image for role modal
     async loadRoleArtistImage(artistItem, artistName) {
-        if (!artistName || !artistItem) return;
+        if (!artistName || !artistItem) {
+            console.warn(`🖼️ Invalid parameters for loadRoleArtistImage: artistName=${artistName}, artistItem=${!!artistItem}`);
+            return;
+        }
         
         try {
-            console.log(`🖼️ Loading image for role modal artist: ${artistName}`);
+            console.log(`🖼️ Starting image load for role modal artist: ${artistName}`);
+            
+            // Find the image and placeholder elements first
+            const imgElement = artistItem.querySelector('.role-artist-photo');
+            const placeholderElement = artistItem.querySelector('.placeholder-artist-image');
+            
+            console.log(`🖼️ Elements found - img: ${!!imgElement}, placeholder: ${!!placeholderElement}`);
+            
+            if (!imgElement || !placeholderElement) {
+                console.warn(`🖼️ Missing elements for ${artistName} - img: ${!!imgElement}, placeholder: ${!!placeholderElement}`);
+                return;
+            }
             
             const imageService = new window.ImageService();
+            console.log(`🖼️ Fetching image URL for: ${artistName}`);
             const imageUrl = await imageService.fetchArtistImage(artistName);
             
+            console.log(`🖼️ Image fetch result for ${artistName}: ${imageUrl ? 'SUCCESS' : 'NO_IMAGE'}`);
+            
             if (imageUrl && artistItem.parentNode) {
-                // Find the image and placeholder elements
-                const imgElement = artistItem.querySelector('.role-artist-photo');
-                const placeholderElement = artistItem.querySelector('.placeholder-artist-image');
+                console.log(`🖼️ Setting image source for ${artistName}: ${imageUrl}`);
                 
-                if (imgElement && placeholderElement) {
-                    // Update image source and show it
-                    imgElement.src = imageUrl;
-                    imgElement.onload = () => {
-                        imgElement.style.display = 'block';
-                        placeholderElement.style.display = 'none';
-                        console.log(`✅ Image loaded successfully for ${artistName}`);
-                    };
-                    imgElement.onerror = () => {
-                        console.log(`❌ Image failed to load for ${artistName}, keeping placeholder`);
-                    };
-                }
+                // Update image source and show it
+                imgElement.src = imageUrl;
+                imgElement.onload = () => {
+                    imgElement.style.display = 'block';
+                    placeholderElement.style.display = 'none';
+                    console.log(`✅ Image displayed successfully for ${artistName}`);
+                };
+                imgElement.onerror = () => {
+                    console.log(`❌ Image failed to load for ${artistName}, keeping placeholder`);
+                };
+            } else {
+                console.log(`🖼️ No image URL found for ${artistName}, keeping placeholder`);
             }
         } catch (error) {
             console.error(`❌ Error loading image for ${artistName}:`, error);
