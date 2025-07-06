@@ -86,17 +86,17 @@ class AuthMiddleware {
 
         console.log('✅ User authenticated:', user.email);
 
-        // Check if Discogs API is configured
-        if (!this._isDiscogsConfigured()) {
-            this._showDiscogsConfigurationHelp();
-            return false;
-        }
-
-        // Apply user credentials to app configuration
+        // Apply user credentials to app configuration FIRST
         const credentialsApplied = await window.AuthService.applyUserCredentials();
         if (!credentialsApplied) {
             console.warn('⚠️ Could not load user credentials, may need to update settings');
             // Don't redirect - let user continue with default config or update later
+        }
+
+        // NOW check if Discogs API is configured (after credentials applied)
+        if (!this._isDiscogsConfigured()) {
+            this._showDiscogsConfigurationHelp();
+            return false;
         }
 
         // Set up user menu after successful authentication
