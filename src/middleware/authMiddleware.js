@@ -99,7 +99,122 @@ class AuthMiddleware {
             // Don't redirect - let user continue with default config or update later
         }
 
+        // Set up user menu after successful authentication
+        this._setupUserMenu(user);
+
         return true;
+    }
+
+    /**
+     * Set up user menu in the header
+     */
+    _setupUserMenu(user) {
+        const userMenuContainer = document.getElementById('userMenuContainer');
+        if (!userMenuContainer) {
+            console.warn('⚠️ User menu container not found');
+            return;
+        }
+
+        userMenuContainer.innerHTML = `
+            <div class="user-menu">
+                <div class="user-info">
+                    <span class="user-email">${user.email}</span>
+                    <button class="user-menu-toggle" id="userMenuToggle">⚙️</button>
+                </div>
+                <div class="user-dropdown" id="userDropdown" style="display: none;">
+                    <button class="dropdown-item" id="updateCredentials">🔑 Update API Keys</button>
+                    <button class="dropdown-item" id="logoutBtn">🚪 Sign Out</button>
+                </div>
+            </div>
+        `;
+
+        // Add event listeners
+        document.getElementById('userMenuToggle').addEventListener('click', () => {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('updateCredentials').addEventListener('click', () => {
+            this._showCredentialsModal();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await window.AuthService.signOut();
+            window.location.reload();
+        });
+
+        console.log('✅ User menu set up for:', user.email);
+    }
+
+    /**
+     * Show credentials update modal
+     */
+    _showCredentialsModal() {
+        const modal = document.createElement('div');
+        modal.className = 'config-error-overlay';
+        modal.innerHTML = `
+            <div class="config-error-content">
+                <div class="config-error-header">
+                    <h2>🔑 Update API Credentials</h2>
+                    <button class="close-modal" id="closeCredentialsModal">✕</button>
+                </div>
+                
+                <div class="credentials-form">
+                    <div class="form-group">
+                        <label for="discogsApiKey">Discogs API Key:</label>
+                        <input type="text" id="discogsApiKey" placeholder="Your Discogs API token" value="${window.CONFIG.DISCOGS.API_KEY || ''}">
+                        <small>Get from: <a href="https://www.discogs.com/settings/developers" target="_blank">Discogs Developer Settings</a></small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="saveCredentials" class="save-btn">💾 Save Credentials</button>
+                        <button id="cancelCredentials" class="cancel-btn">❌ Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Event listeners
+        document.getElementById('closeCredentialsModal').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        document.getElementById('cancelCredentials').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        document.getElementById('saveCredentials').addEventListener('click', async () => {
+            const discogsApiKey = document.getElementById('discogsApiKey').value.trim();
+            
+            if (!discogsApiKey) {
+                alert('Please enter your Discogs API key');
+                return;
+            }
+
+            // Update credentials
+            const result = await window.AuthService.updateUserCredentials({
+                discogsApiKey: discogsApiKey,
+                supabaseProjectId: window.CONFIG.SUPABASE.URL.match(/https:\/\/(.+)\.supabase\.co/)[1],
+                supabaseApiKey: window.CONFIG.SUPABASE.ANON_KEY
+            });
+
+            if (result.success) {
+                // Apply immediately
+                await window.AuthService.applyUserCredentials();
+                alert('✅ Credentials updated successfully!');
+                document.body.removeChild(modal);
+                
+                // Test API
+                if (window.testDiscogsAPI) {
+                    window.testDiscogsAPI();
+                }
+            } else {
+                alert('❌ Error updating credentials: ' + result.error);
+            }
+        });
+    }
     }
 
     /**
