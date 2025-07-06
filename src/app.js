@@ -9808,4 +9808,3 @@ function showCredentialsSetupScreen() {
         console.log('✅ Regeneration complete! Artist modals should now show specific instruments.');
         console.log('=============================================================');
     };
-});
