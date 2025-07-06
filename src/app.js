@@ -407,6 +407,20 @@ class AlbumCollectionApp {
             if (e.key === 'Escape') this.closeModal(true); // Force close on escape key
         });
 
+        // Fullscreen image viewer event delegation
+        document.addEventListener('click', (e) => {
+            // Check if clicked element is a modal cover image
+            if (e.target.classList.contains('modal-cover-image')) {
+                e.stopPropagation();
+                const imageSrc = e.target.src;
+                const title = e.target.closest('.album-modal-content')?.querySelector('.modal-album-title')?.textContent || 'Unknown Album';
+                const artist = e.target.closest('.album-modal-content')?.querySelector('.modal-album-artist')?.textContent || 'Unknown Artist';
+                
+                console.log('🖼️ Modal cover image clicked:', { imageSrc, title, artist });
+                this.openFullscreenImage(imageSrc, title, artist);
+            }
+        });
+
         // Sort event listeners
         const albumsSort = document.getElementById('albums-sort');
         const artistsSort = document.getElementById('artists-sort');
@@ -9198,6 +9212,89 @@ class AlbumCollectionApp {
         });
         
         console.log('🧹 Cleared all search inputs');
+    }
+
+    // ============================================
+    // Full-Screen Image Viewer
+    // ============================================
+    
+    // Open full-screen image viewer
+    openFullscreenImage(imageSrc, title, artist) {
+        console.log(`🖼️ Opening fullscreen image: ${title} by ${artist}`);
+        
+        const overlay = document.getElementById('fullscreen-image-overlay');
+        const image = document.getElementById('fullscreen-image');
+        const titleElement = document.getElementById('fullscreen-image-title');
+        const artistElement = document.getElementById('fullscreen-image-artist');
+        
+        // Set image and info
+        image.src = imageSrc;
+        image.alt = `Cover art for ${title}`;
+        titleElement.textContent = title;
+        artistElement.textContent = artist;
+        
+        // Show overlay
+        overlay.classList.add('visible');
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+        
+        // Add event listeners for closing
+        this.setupFullscreenImageListeners();
+    }
+    
+    // Close full-screen image viewer
+    closeFullscreenImage() {
+        console.log('❌ Closing fullscreen image');
+        
+        const overlay = document.getElementById('fullscreen-image-overlay');
+        overlay.classList.remove('visible');
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+        
+        // Remove event listeners
+        this.removeFullscreenImageListeners();
+    }
+    
+    // Setup event listeners for full-screen image viewer
+    setupFullscreenImageListeners() {
+        // Close button
+        const closeBtn = document.getElementById('fullscreen-close-btn');
+        closeBtn.addEventListener('click', () => this.closeFullscreenImage());
+        
+        // ESC key
+        this.fullscreenKeyListener = (event) => {
+            if (event.key === 'Escape') {
+                this.closeFullscreenImage();
+            }
+        };
+        document.addEventListener('keydown', this.fullscreenKeyListener);
+        
+        // Click outside image
+        this.fullscreenClickListener = (event) => {
+            const overlay = document.getElementById('fullscreen-image-overlay');
+            const container = document.querySelector('.fullscreen-image-container');
+            if (event.target === overlay && !container.contains(event.target)) {
+                this.closeFullscreenImage();
+            }
+        };
+        const overlay = document.getElementById('fullscreen-image-overlay');
+        overlay.addEventListener('click', this.fullscreenClickListener);
+    }
+    
+    // Remove event listeners for full-screen image viewer
+    removeFullscreenImageListeners() {
+        if (this.fullscreenKeyListener) {
+            document.removeEventListener('keydown', this.fullscreenKeyListener);
+            this.fullscreenKeyListener = null;
+        }
+        
+        if (this.fullscreenClickListener) {
+            const overlay = document.getElementById('fullscreen-image-overlay');
+            overlay.removeEventListener('click', this.fullscreenClickListener);
+            this.fullscreenClickListener = null;
+        }
     }
 }
 

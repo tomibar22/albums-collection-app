@@ -437,6 +437,18 @@
     <!-- Main Application -->
     <script src="src/app.js"></script>
 
+    <!-- Full-Screen Image Viewer -->
+    <div id="fullscreen-image-overlay" class="fullscreen-image-overlay">
+        <div class="fullscreen-image-container">
+            <img id="fullscreen-image" class="fullscreen-image" src="" alt="">
+            <button class="fullscreen-close-btn" id="fullscreen-close-btn" title="Close">×</button>
+            <div class="fullscreen-image-info" id="fullscreen-image-info">
+                <div class="fullscreen-image-title" id="fullscreen-image-title"></div>
+                <div class="fullscreen-image-artist" id="fullscreen-image-artist"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Authentication Guard -->
     <script>
             // Define a global promise that resolves when authentication is successful.
