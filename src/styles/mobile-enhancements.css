@@ -1,0 +1,494 @@
+/* 📱 MOBILE ENHANCEMENTS FOR ALBUMS COLLECTION APP
+ * Comprehensive mobile optimizations for iPhone and small screens
+ * PRESERVES desktop UI/UX completely - only adds mobile-specific improvements
+ */
+
+/* iPhone 16 Pro and similar mobile devices (max-width: 430px) */
+@media (max-width: 430px) {
+    
+    /* === HEADER & NAVIGATION === */
+    .app-header {
+        padding: 0.75rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+    
+    .header-content {
+        padding: 0 1rem;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .app-title {
+        font-size: 1.25rem;
+        text-align: center;
+        font-weight: 600;
+    }
+    
+    /* Mobile navigation - horizontal scrollable */
+    .main-navigation {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding: 0 0.25rem 0.5rem 0.25rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .main-navigation::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .nav-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-width: fit-content;
+        border-radius: 20px;
+    }
+    
+    /* User menu adjustments */
+    .user-menu-container {
+        justify-content: center;
+    }
+    
+    .user-menu-button {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    /* === MAIN CONTENT === */
+    .app-main {
+        padding: 0.75rem;
+    }
+    
+    /* === VIEW HEADERS === */
+    .view-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .view-title {
+        font-size: 1.25rem;
+        text-align: center;
+    }
+    
+    .view-controls {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .sort-controls {
+        gap: 0.25rem;
+    }
+    
+    .sort-btn, .shuffle-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+        border-radius: 16px;
+    }
+    
+    /* === ALBUM CARDS === */
+    .albums-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+    }
+    
+    .album-card {
+        border-radius: 12px;
+    }
+    
+    .album-cover {
+        height: 110px;
+        border-radius: 8px;
+    }
+    
+    .album-info {
+        padding: 0.5rem;
+        gap: 0.25rem;
+    }
+    
+    .album-title {
+        font-size: 0.75rem;
+        line-height: 1.2;
+        font-weight: 600;
+    }
+    
+    .album-artist {
+        font-size: 0.65rem;
+    }
+    
+    .album-year {
+        font-size: 0.6rem;
+    }
+    
+    /* Album overlay buttons */
+    .overlay-circle-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+    
+    .album-actions {
+        gap: 0.25rem;
+        top: 0.25rem;
+        right: 0.25rem;
+    }
+    
+    /* === ARTIST CARDS === */
+    .artists-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.75rem;
+    }
+    
+    .artist-card {
+        border-radius: 12px;
+    }
+    
+    .artist-image {
+        height: 80px;
+        width: 80px;
+        margin: 0 auto 0.5rem auto;
+    }
+    
+    .artist-info {
+        padding: 0.5rem;
+        gap: 0.25rem;
+        text-align: center;
+    }
+    
+    .artist-name {
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+    
+    .artist-album-count {
+        font-size: 0.7rem;
+    }
+    
+    .artist-roles {
+        gap: 0.25rem;
+        margin-top: 0.25rem;
+    }
+    
+    .role-capsule {
+        padding: 0.15rem 0.4rem;
+        font-size: 0.6rem;
+        border-radius: 8px;
+    }
+    
+    /* === TRACKS & ROLES GRIDS === */
+    .tracks-grid,
+    .roles-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .track-card,
+    .role-card {
+        padding: 0.75rem 0.5rem;
+        border-radius: 12px;
+    }
+    
+    .track-title,
+    .role-name {
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+    
+    .track-frequency,
+    .role-frequency {
+        font-size: 0.7rem;
+    }
+    
+    /* === MODALS === */
+    .modal {
+        padding: 0.5rem;
+        align-items: flex-start;
+        padding-top: 10vh;
+    }
+    
+    .modal-content {
+        max-width: 100%;
+        width: 100%;
+        max-height: 85vh;
+        border-radius: 16px;
+        margin: 0;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .modal-title-image {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 32px;
+        height: 32px;
+        font-size: 1.2rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+        max-height: calc(85vh - 120px);
+    }
+    
+    /* === MODAL ALBUM SECTION === */
+    .album-section-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .album-section-search {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .search-input {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+        border-radius: 12px;
+    }
+    
+    .album-section-sort {
+        gap: 0.25rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .album-section-sort select,
+    .album-section-sort .shuffle-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+        border-radius: 12px;
+    }
+    
+    /* === MODAL BUTTONS === */
+    .modal-action-buttons {
+        flex-direction: row;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        justify-content: center;
+    }
+    
+    .btn-spotify,
+    .btn-youtube,
+    .btn-edit,
+    .btn-delete {
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+        border-radius: 20px;
+        flex: 1;
+        max-width: 120px;
+    }
+    
+    /* === TABS === */
+    .tab-container {
+        margin-bottom: 1rem;
+    }
+    
+    .tab-buttons {
+        display: flex;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+        justify-content: center;
+    }
+    
+    .tab-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        border-radius: 16px;
+        white-space: nowrap;
+    }
+    
+    /* === SEARCH & SCRAPER === */
+    .search-container {
+        margin-bottom: 1rem;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+        border-radius: 12px;
+    }
+    
+    .search-btn,
+    .scrape-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+        border-radius: 12px;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    
+    /* === SCRAPER SPECIFIC === */
+    .scraper-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .scraper-section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .album-cart-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-radius: 12px;
+    }
+    
+    .album-cart-item h4 {
+        font-size: 0.9rem;
+        line-height: 1.2;
+    }
+    
+    .album-cart-item p {
+        font-size: 0.8rem;
+    }
+    
+    /* === LOADING STATES === */
+    .loading-overlay {
+        padding: 1rem;
+    }
+    
+    .loading-content h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .loading-text {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    .progress-bar {
+        height: 6px;
+        border-radius: 3px;
+        margin: 1rem 0;
+    }
+    
+    /* === TOUCH IMPROVEMENTS === */
+    .album-card,
+    .artist-card,
+    .track-card,
+    .role-card,
+    .nav-btn,
+    .sort-btn,
+    .shuffle-btn,
+    .search-btn,
+    .scrape-btn {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+    
+    /* === FORM ELEMENTS === */
+    select,
+    input,
+    textarea,
+    button {
+        font-size: 16px; /* Prevents zoom on iOS */
+        -webkit-appearance: none;
+    }
+    
+    /* === ALBUM COLLAGES IN ARTIST CARDS === */
+    .album-collage {
+        height: 60px;
+        margin-bottom: 0.5rem;
+        border-radius: 8px;
+    }
+    
+    .initials-overlay {
+        width: 28px;
+        height: 28px;
+        border-radius: 14px;
+    }
+    
+    .initials-text {
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+}
+
+/* Extra small devices (max-width: 360px) */
+@media (max-width: 360px) {
+    .albums-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .album-cover {
+        height: 100px;
+    }
+    
+    .artists-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+    
+    .app-title {
+        font-size: 1.1rem;
+    }
+    
+    .nav-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Landscape orientation adjustments for mobile */
+@media (max-width: 430px) and (orientation: landscape) {
+    .modal {
+        padding-top: 2vh;
+    }
+    
+    .modal-content {
+        max-height: 95vh;
+    }
+    
+    .app-header {
+        padding: 0.5rem 0;
+    }
+    
+    .header-content {
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .app-title {
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .albums-grid {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    }
+    
+    .album-cover {
+        height: 90px;
+    }
+}
