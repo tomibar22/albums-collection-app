@@ -100,11 +100,23 @@ class AuthMiddleware {
      * Check if authentication system is properly configured
      */
     _isAuthConfigured() {
-        return !!(
-            window.CONFIG?.USER_MANAGEMENT?.URL && 
-            window.CONFIG?.USER_MANAGEMENT?.ANON_KEY &&
-            window.CONFIG.USER_MANAGEMENT.ANON_KEY.length > 10
-        );
+        const hasUrl = !!(window.CONFIG?.USER_MANAGEMENT?.URL);
+        const hasAnonKey = !!(window.CONFIG?.USER_MANAGEMENT?.ANON_KEY);
+        const keyLength = window.CONFIG?.USER_MANAGEMENT?.ANON_KEY?.length || 0;
+        const isValid = hasUrl && hasAnonKey && keyLength > 10;
+        
+        // Debug logging for deployment troubleshooting
+        console.log('🔐 AUTH MIDDLEWARE: Configuration check', {
+            hasConfig: !!(window.CONFIG),
+            hasUserMgmt: !!(window.CONFIG?.USER_MANAGEMENT),
+            hasUrl,
+            hasAnonKey,
+            keyLength,
+            isValid,
+            timestamp: new Date().toISOString()
+        });
+        
+        return isValid;
     }
 
     /**
