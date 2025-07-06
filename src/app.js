@@ -5577,16 +5577,21 @@ class AlbumCollectionApp {
             if (imageUrl && artistItem.parentNode) {
                 console.log(`🖼️ Setting image source for ${artistName}: ${imageUrl}`);
                 
-                // Update image source and show it
-                imgElement.src = imageUrl;
-                imgElement.onload = () => {
+                // Create a new image element to test loading
+                const testImg = new Image();
+                testImg.onload = () => {
+                    console.log(`✅ Image loaded successfully for ${artistName}, now displaying`);
+                    // Set the actual image source
+                    imgElement.src = imageUrl;
                     imgElement.style.display = 'block';
                     placeholderElement.style.display = 'none';
-                    console.log(`✅ Image displayed successfully for ${artistName}`);
+                    console.log(`🎭 Image display updated for ${artistName}`);
                 };
-                imgElement.onerror = () => {
+                testImg.onerror = () => {
                     console.log(`❌ Image failed to load for ${artistName}, keeping placeholder`);
                 };
+                // Start loading
+                testImg.src = imageUrl;
             } else {
                 console.log(`🖼️ No image URL found for ${artistName}, keeping placeholder`);
             }
