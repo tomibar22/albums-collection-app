@@ -5336,13 +5336,19 @@ class AlbumCollectionApp {
         try {
             const modalContent = this.generateRoleArtistsModalContent(roleData);
             if (modalContent) {
-                // Use the proper showModal method to ensure event listeners are set up
-                this.showModal(modalTitle, modalContent);
+                // Use the proper showModal method with isNestedModal flag to ensure proper stack management
+                this.showModal(modalTitle, modalContent, true);
                 
-                // Add special event delegation for role artist interactions
-                // Note: setupRoleArtistEvents is additional to the main modal event system
+                // Set up lazy loading and interactions after modal is displayed
                 const modalBody = document.getElementById('modal-body');
                 this.setupRoleArtistEvents(modalBody);
+                
+                // Set up lazy loading with a small delay to ensure DOM is ready
+                setTimeout(() => {
+                    this.setupRoleArtistCardLazyLoading(modalBody);
+                    this.initializeRoleModalLazyLoading(modalBody);
+                    console.log('✅ Role modal lazy loading initialized');
+                }, 100);
             } else {
                 this.showModal(modalTitle, '<p>No content could be generated for this role.</p>');
             }
@@ -5521,7 +5527,7 @@ class AlbumCollectionApp {
 
         let currentlyLoaded = this.roleCardsInitialLoad;
         
-        const cardObserver = new IntersectionObserver((entries) => {
+        this.cardObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting && currentlyLoaded < this.currentRoleArtists.length) {
                     // Load next batch
@@ -5553,7 +5559,7 @@ class AlbumCollectionApp {
                         
                         // If all cards loaded, stop observing
                         if (currentlyLoaded >= this.currentRoleArtists.length) {
-                            cardObserver.unobserve(sentinel);
+                            this.cardObserver.unobserve(sentinel);
                             console.log('🎭 All cards loaded');
                         }
                     }
@@ -5565,7 +5571,7 @@ class AlbumCollectionApp {
             threshold: 0.1
         });
 
-        cardObserver.observe(sentinel);
+        this.cardObserver.observe(sentinel);
     }
 
     // Observe new cards for image lazy loading
@@ -5788,15 +5794,21 @@ class AlbumCollectionApp {
             const albumCount = trackData.albums ? trackData.albums.length : 0;
             const modalTitle = `Albums containing "${trackData.title}" (${albumCount} album${albumCount !== 1 ? 's' : ''})`;
             
+            // Check if a modal is currently open to determine if this should be nested
+            const modal = document.getElementById('more-info-modal');
+            const isModalCurrentlyOpen = !modal.classList.contains('hidden');
+            
             if (modalContent) {
-                // Use the proper showModal method to ensure event listeners are set up
-                this.showModal(modalTitle, modalContent);
+                // Use the proper showModal method with nested flag to ensure event listeners are set up
+                this.showModal(modalTitle, modalContent, isModalCurrentlyOpen);
             } else {
-                this.showModal(modalTitle, '<p>No content could be generated for this track.</p>');
+                this.showModal(modalTitle, '<p>No content could be generated for this track.</p>', isModalCurrentlyOpen);
             }
         } catch (error) {
             console.error('❌ Error generating modal content:', error);
-            this.showModal('Error', '<p>Error loading track information.</p>');
+            const modal = document.getElementById('more-info-modal');
+            const isModalCurrentlyOpen = !modal.classList.contains('hidden');
+            this.showModal('Error', '<p>Error loading track information.</p>', isModalCurrentlyOpen);
         }
     }
     
@@ -7058,7 +7070,7 @@ class AlbumCollectionApp {
             const modalBody = document.getElementById('modal-body');
             const currentScrollPosition = modalBody.scrollTop;
             
-            // Enhanced duplicate detection for artist modals
+            // Enhanced duplicate detection for all modal types
             const lastStackEntry = this.modalStack[this.modalStack.length - 1];
             let isDuplicate = false;
             
@@ -7076,6 +7088,16 @@ class AlbumCollectionApp {
                 if (currentArtistMatch && lastArtistMatch && currentArtistMatch[1] === lastArtistMatch[1]) {
                     isDuplicate = true;
                     console.warn(`⚠️ ARTIST MODAL DUPLICATE DETECTED! Same artist "${currentArtistMatch[1]}" with different counts`);
+                    console.warn(`⚠️ Previous: "${lastStackEntry.title}", Current: "${currentTitle}"`);
+                }
+                
+                // Smart role modal detection (same role, different contributor counts)
+                const currentRoleMatch = currentTitle.match(/^(Artists|Contributors) with role: "(.+?)"$/);
+                const lastRoleMatch = lastStackEntry.title.match(/^(Artists|Contributors) with role: "(.+?)"$/);
+                
+                if (currentRoleMatch && lastRoleMatch && currentRoleMatch[2] === lastRoleMatch[2]) {
+                    isDuplicate = true;
+                    console.warn(`⚠️ ROLE MODAL DUPLICATE DETECTED! Same role "${currentRoleMatch[2]}" with different counts`);
                     console.warn(`⚠️ Previous: "${lastStackEntry.title}", Current: "${currentTitle}"`);
                 }
             }
@@ -7531,8 +7553,11 @@ class AlbumCollectionApp {
             // Re-setup event listeners for the restored modal
             this.setupModalEventListeners();
             
-            // Restore scroll position after a brief delay to ensure content is rendered
+            // Check if this is a role artists modal and re-initialize lazy loading
             const modalBody = document.getElementById('modal-body');
+            this.reinitializeModalSpecificFeatures(modalBody, previousModal.title);
+            
+            // Restore scroll position after a brief delay to ensure content is rendered
             setTimeout(() => {
                 modalBody.scrollTop = previousModal.scrollPosition || 0;
                 console.log(`📍 Restored scroll position to ${previousModal.scrollPosition}px`);
@@ -7549,6 +7574,9 @@ class AlbumCollectionApp {
         
         // Clear any remaining modal stack
         this.modalStack = [];
+        
+        // Clean up observers
+        this.cleanupModalObservers();
     }
 
     // Force close modal entirely (for after saving edits)
@@ -7588,6 +7616,64 @@ class AlbumCollectionApp {
             };
             modal.addEventListener('click', this.modalClickHandler);
         }, 200);
+    }
+
+    // Re-initialize modal-specific features when restoring from stack
+    reinitializeModalSpecificFeatures(modalBody, modalTitle) {
+        console.log(`🔄 Reinitializing features for modal: "${modalTitle}"`);
+        
+        // Check if this is a role artists modal by looking for role-specific content
+        const roleArtistsList = modalBody.querySelector('#role-artists-list');
+        const roleSentinel = modalBody.querySelector('.role-loading-sentinel');
+        
+        if (roleArtistsList && roleSentinel) {
+            console.log('🎭 Detected role artists modal - reinitializing lazy loading');
+            
+            // Clean up any existing observers first
+            this.cleanupModalObservers();
+            
+            // Re-setup role artist interactions
+            this.setupRoleArtistEvents(modalBody);
+            
+            // Re-initialize card lazy loading
+            setTimeout(() => {
+                this.setupRoleArtistCardLazyLoading(modalBody);
+                this.initializeRoleModalLazyLoading(modalBody);
+                console.log('✅ Role modal lazy loading reinitialized');
+            }, 100);
+        }
+        
+        // Check if this is an artist albums modal with sorting
+        const artistAlbumsGrid = modalBody.querySelector('#artist-albums-grid');
+        if (artistAlbumsGrid) {
+            console.log('🎤 Detected artist albums modal - reinitializing sort listeners');
+            this.setupModalSortListeners();
+        }
+        
+        // Check if this is a track albums modal with sorting  
+        const trackAlbumsGrid = modalBody.querySelector('#track-albums-grid');
+        if (trackAlbumsGrid) {
+            console.log('🎵 Detected track albums modal - reinitializing sort listeners');
+            this.setupModalSortListeners();
+        }
+    }
+
+    // Clean up modal observers to prevent memory leaks
+    cleanupModalObservers() {
+        console.log('🧹 Cleaning up modal observers');
+        
+        // Clean up role modal observers
+        if (this.cardObserver) {
+            this.cardObserver.disconnect();
+            this.cardObserver = null;
+            console.log('🎭 Cleaned up card observer');
+        }
+        
+        if (this.imageObserver) {
+            this.imageObserver.disconnect();
+            this.imageObserver = null;
+            console.log('🖼️ Cleaned up image observer');
+        }
     }
 
     // Loading state methods
