@@ -5562,21 +5562,6 @@ class AlbumCollectionApp {
             console.error(`❌ Error loading image for ${artistName}:`, error);
         }
     }
-                
-                this.showArtistAlbumsFromRole(artistName);
-            }
-            
-            // Handle "View Albums" button clicks
-            const viewAlbumsBtn = e.target.closest('.view-artist-albums-btn');
-            if (viewAlbumsBtn) {
-                e.stopPropagation();
-                const artistName = viewAlbumsBtn.dataset.artistName;
-                console.log(`🎭 View Albums button clicked for: ${artistName}`);
-                
-                this.showArtistAlbumsFromRole(artistName);
-            }
-        });
-    }
 
     // Show albums for an artist found in role credits
     showArtistAlbumsFromRole(artistName) {
