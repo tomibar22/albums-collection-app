@@ -449,11 +449,6 @@ class AuthService {
 
             console.log('✅ User credentials applied successfully');
             return true;
-                console.log('🔄 Recreated Discogs API instance with user credentials');
-            }
-
-            console.log('✅ User credentials applied to app config');
-            return true;
 
         } catch (error) {
             console.error('❌ Apply user credentials error:', error);
