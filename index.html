@@ -445,6 +445,21 @@
                 document.addEventListener('DOMContentLoaded', async function() {
                     console.log('🚀 Starting Albums Collection App with authentication...');
                     
+                    // Debug: Check if all required objects are available
+                    console.log('🔍 Debug - Checking available objects:', {
+                        hasAuthMiddleware: !!window.AuthMiddleware,
+                        hasAuthService: !!window.AuthService,
+                        hasConfig: !!window.CONFIG,
+                        hasUserManagement: !!window.CONFIG?.USER_MANAGEMENT
+                    });
+                    
+                    if (!window.AuthMiddleware) {
+                        console.error('❌ AuthMiddleware not available');
+                        alert('Authentication system not loaded. Please refresh the page.');
+                        resolve(false);
+                        return;
+                    }
+                    
                     try {
                         // Check authentication before initializing app
                         const isAuthenticated = await window.AuthMiddleware.requireAuthentication();
@@ -462,7 +477,8 @@
                         
                     } catch (error) {
                         console.error('❌ Authentication check failed:', error);
-                        alert('Authentication system error. Please refresh the page.');
+                        // Instead of alert, let's fall back to offline mode
+                        console.log('🔄 Falling back to offline mode due to authentication error');
                         resolve(false); // Resolve as false on error
                     }
                 });
