@@ -5723,19 +5723,24 @@ class AlbumCollectionApp {
                                 </div>
                                 <div class="album-overlay">
                                     <div class="album-actions">
-                                        <button class="action-btn more-info-btn" data-album-id="${albumData.id}" title="View album details">
-                                            <span class="btn-icon">ℹ️</span>
-                                            <span class="btn-text">More Info</span>
+                                        <button class="overlay-circle-btn more-info-btn" data-album-id="${albumData.id}" title="More Info">
+                                            ℹ️
                                         </button>
-                                        <button class="action-btn spotify-btn" data-search-query="${artistNames} ${albumData.title}" title="Open in Spotify">
-                                            <span class="btn-icon">🎵</span>
-                                            <span class="btn-text">Spotify</span>
+                                        <button class="overlay-circle-btn spotify-btn" data-search-query="${artistNames} ${albumData.title}" title="Spotify">
+                                            🎵
                                         </button>
-                                        <button class="action-btn youtube-btn" data-search-query="${artistNames} ${albumData.title}" title="Open in YouTube">
-                                            <span class="btn-icon">📺</span>
-                                            <span class="btn-text">YouTube</span>
+                                        <button class="overlay-circle-btn youtube-btn" data-search-query="${artistNames} ${albumData.title}" title="YouTube">
+                                            📺
                                         </button>
                                     </div>
+                                </div>
+                                <div class="card-edit-overlay">
+                                    <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${albumData.id}'); event.stopPropagation();" title="Edit Album">
+                                        ✏️
+                                    </button>
+                                    <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${albumData.id}', '${this.escapeAttributeValue(albumData.title)}'); event.stopPropagation();" title="Delete Album">
+                                        🗑️
+                                    </button>
                                 </div>
                             </div>
                             <div class="album-info">
