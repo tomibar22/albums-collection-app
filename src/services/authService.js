@@ -302,6 +302,9 @@ class AuthService {
     async loadUserCredentials(userId) {
         try {
             await this.ensureInitialized();
+            console.log(`🔍 Loading credentials for user: ${userId}`);
+            console.log(`📊 Using table: ${window.CONFIG.USER_MANAGEMENT.TABLES.USER_CREDENTIALS}`);
+            console.log(`🌐 Client URL: ${this.client?.supabaseUrl}`);
 
             const { data, error } = await this.client
                 .from(window.CONFIG.USER_MANAGEMENT.TABLES.USER_CREDENTIALS)
@@ -309,27 +312,45 @@ class AuthService {
                 .eq('user_id', userId)
                 .single();
 
+            console.log('📄 Raw credential query result:', { data, error });
+
             if (error) {
                 if (error.code === 'PGRST116') {
                     // No credentials found - this is normal for new users
+                    console.log('ℹ️ No credentials found for user (new user)');
                     return { success: true, data: null };
                 }
-                console.error('Load credentials error:', error);
+                console.error('❌ Load credentials error:', error);
                 return { success: false, error: error.message };
             }
 
+            if (!data) {
+                console.log('ℹ️ No credential data returned');
+                return { success: true, data: null };
+            }
+
+            const mappedCredentials = {
+                discogsApiKey: data.discogs_api_key,
+                supabaseProjectId: data.supabase_project_id,
+                supabaseApiKey: data.supabase_api_key,
+                updatedAt: data.updated_at
+            };
+
+            console.log('✅ Credentials loaded and mapped:', {
+                hasDiscogsKey: !!mappedCredentials.discogsApiKey,
+                discogsKeyLength: mappedCredentials.discogsApiKey?.length || 0,
+                discogsKeyPreview: mappedCredentials.discogsApiKey?.substring(0, 10) + '...',
+                hasSupabaseProject: !!mappedCredentials.supabaseProjectId,
+                updatedAt: mappedCredentials.updatedAt
+            });
+
             return { 
                 success: true, 
-                data: {
-                    discogsApiKey: data.discogs_api_key,
-                    supabaseProjectId: data.supabase_project_id,
-                    supabaseApiKey: data.supabase_api_key,
-                    updatedAt: data.updated_at
-                }
+                data: mappedCredentials
             };
 
         } catch (error) {
-            console.error('Load user credentials error:', error);
+            console.error('❌ Load user credentials error:', error);
             return { success: false, error: error.message };
         }
     }
@@ -392,24 +413,39 @@ class AuthService {
      */
     async applyUserCredentials() {
         try {
+            console.log('🔄 Applying user credentials...');
+            
             const result = await this.getUserCredentials();
+            console.log('📄 Get credentials result:', result);
+            
             if (!result.success || !result.data) {
                 console.warn('⚠️ No user credentials available');
                 return false;
             }
 
             const credentials = result.data;
+            console.log('🔑 Credentials to apply:', {
+                hasDiscogsKey: !!credentials.discogsApiKey,
+                discogsKeyLength: credentials.discogsApiKey?.length || 0,
+                discogsKeyPreview: credentials.discogsApiKey?.substring(0, 10) + '...'
+            });
 
             // Update app configuration with user's credentials
             window.CONFIG.DISCOGS.API_KEY = credentials.discogsApiKey;
             window.CONFIG.SUPABASE.URL = `https://${credentials.supabaseProjectId}.supabase.co`;
             window.CONFIG.SUPABASE.ANON_KEY = credentials.supabaseApiKey;
 
+            // Recreate the Discogs API instance with new credentials
+            if (window.DiscogsAPI && credentials.discogsApiKey) {
+                window.discogsAPI = new window.DiscogsAPI();
+                console.log('🔄 Recreated Discogs API instance with user credentials');
+            }
+
             console.log('✅ User credentials applied to app config');
             return true;
 
         } catch (error) {
-            console.error('Apply user credentials error:', error);
+            console.error('❌ Apply user credentials error:', error);
             return false;
         }
     }
