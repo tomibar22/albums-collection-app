@@ -1,4 +1,5 @@
 # Netlify Configuration for Albums Collection App
+# Last Updated: July 6, 2025 - Trigger Fresh Deploy
 
 # SPA (Single Page Application) routing
 [[redirects]]
