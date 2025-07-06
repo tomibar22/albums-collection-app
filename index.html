@@ -310,7 +310,7 @@
         window.CONFIG = {
             // Discogs API Configuration
             DISCOGS: {
-                API_KEY: '', // REQUIRED: Get your free API key from https://www.discogs.com/settings/developers
+                API_KEY: 'WqpYrXczbaWXtmKNncCeRysLaXNQFJQWXPetKSPR', // REQUIRED: Get your free API key from https://www.discogs.com/settings/developers
                 BASE_URL: 'https://api.discogs.com',
                 HEADERS: {
                     'User-Agent': 'AlbumsCollectionApp/1.0'
@@ -439,32 +439,34 @@
 
     <!-- Authentication Guard -->
     <script>
-        // Authentication guard - run immediately when page loads
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Starting Albums Collection App with authentication...');
-            
-            try {
-                // Check authentication before initializing app
-                const isAuthenticated = await window.AuthMiddleware.requireAuthentication();
-                
-                if (isAuthenticated) {
-                    console.log('✅ Authentication successful, initializing app...');
+            // Define a global promise that resolves when authentication is successful.
+            // Other scripts (like app.js) can then wait for this promise.
+            window.authPromise = new Promise(resolve => {
+                document.addEventListener('DOMContentLoaded', async function() {
+                    console.log('🚀 Starting Albums Collection App with authentication...');
                     
-                    // App will be initialized by src/app.js
-                    // The authentication middleware has already applied user credentials
-                    
-                    // Handle any auth redirects
-                    window.AuthMiddleware.handleAuthRedirect();
-                } else {
-                    // User will be redirected to auth page by middleware
-                    console.log('🔐 Authentication required - redirecting...');
-                }
-                
-            } catch (error) {
-                console.error('❌ Authentication check failed:', error);
-                alert('Authentication system error. Please refresh the page.');
-            }
-        });
+                    try {
+                        // Check authentication before initializing app
+                        const isAuthenticated = await window.AuthMiddleware.requireAuthentication();
+                        
+                        if (isAuthenticated) {
+                            console.log('✅ Authentication successful. Preparing app initialization...');
+                            // Handle any auth redirects (e.g., clearing tokens from URL)
+                            window.AuthMiddleware.handleAuthRedirect();
+                            resolve(true); // Resolve the promise, indicating success
+                        } else {
+                            console.log('🔐 Authentication required - redirecting...');
+                            // No resolve here, the app won't fully initialize if redirected.
+                            resolve(false); // Resolve as false, so app.js can decide how to handle it (e.g., show login)
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ Authentication check failed:', error);
+                        alert('Authentication system error. Please refresh the page.');
+                        resolve(false); // Resolve as false on error
+                    }
+                });
+            });
     </script>
 </body>
 </html>

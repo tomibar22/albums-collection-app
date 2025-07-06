@@ -215,7 +215,7 @@ class AuthMiddleware {
             }
         });
     }
-    }
+    
 
     /**
      * Check if authentication system is properly configured
