@@ -1,13 +1,19 @@
 # Netlify Configuration for Albums Collection App
-# Last Updated: July 6, 2025 - Trigger Fresh Deploy
+# Last Updated: July 6, 2025 - Troubleshooting MIME Type Issue
 
-# SPA (Single Page Application) routing
-# Only redirect if not a file (has no extension)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+# Temporarily disable SPA redirect to fix MIME type serving
+# Will re-enable with correct pattern once authentication works
+
+# Add explicit MIME type headers for JavaScript files
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+    
+[[headers]]
+  for = "/src/*.js"  
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
 
 # Security headers
 [[headers]]
