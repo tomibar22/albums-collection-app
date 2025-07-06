@@ -303,7 +303,98 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- App Configuration and Core -->
-    <script src="src/config.js"></script>
+    <!-- Configuration (inline to avoid MIME type issues) -->
+    <script>
+        // Configuration - injected directly to bypass MIME type issues
+        window.CONFIG = {
+            // Discogs API Configuration
+            DISCOGS: {
+                TOKEN: 'URgRrJTZzrgnmHTZKaROqhaLvRgLSJNYICepxuui', // Public demo token
+                BASE_URL: 'https://api.discogs.com',
+                USER_AGENT: 'AlbumsCollectionApp/1.0',
+                RATE_LIMIT_DELAY: 1500, // MS between requests
+                MAX_RETRIES: 3,
+                MAX_429_RETRIES: 10,
+                EXCLUDE_WORDS: ['compilation', 'single', 'Shellac', 'EP', '10"', '7"', 'Transcription', 'reissue', 'remastered'],
+                EXCLUDE_SLASH_IN_TITLE: false // Allow albums with "/" in title since format filtering handles quality
+            },
+
+            // Supabase Configuration (User's personal music collection)
+            SUPABASE: {
+                URL: 'https://mchuwawmnyeoemgrlepp.supabase.co',
+                ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NjQ5ODIsImV4cCI6MjA2NzA0MDk4Mn0.Nt_Qal0EGYRrNJG2AJHrOHhZ2sU_G5SsUaIw8cF8TQI',
+                
+                // Table Names
+                TABLES: {
+                    ALBUMS: 'albums',
+                    ARTISTS: 'artists', 
+                    TRACKS: 'tracks',
+                    ROLES: 'roles',
+                    ALBUM_ARTISTS: 'album_artists',
+                    ALBUM_TRACKS: 'album_tracks',
+                    ARTIST_ROLES: 'artist_roles',
+                    COLLECTIONS: 'collections',
+                    COLLECTION_ALBUMS: 'collection_albums'
+                },
+                
+                // Connection Settings
+                DATABASE: {
+                    MAX_CONNECTIONS: 100,
+                    IDLE_TIMEOUT: 300000,
+                    CONNECTION_TIMEOUT: 10000,
+                    ENABLE_RLS: false
+                },
+                
+                // Sync Settings
+                SYNC: {
+                    AUTO_SYNC: true,
+                    SYNC_INTERVAL: 30000,
+                    OFFLINE_MODE: false,
+                    CONFLICT_RESOLUTION: 'server_wins'
+                }
+            },
+
+            // User Management Configuration (Dedicated Supabase Project)
+            USER_MANAGEMENT: {
+                URL: 'https://cznrjflfqjjpsqhtmatz.supabase.co',
+                ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6bnJqZmxmcWpqcHNxaHRtYXR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3OTUxMTgsImV4cCI6MjA2NzM3MTExOH0.EAGv_Cww4M3qd3rzHV6ytiovBBgoYuB0dQ-4G2B9oT0',
+                
+                TABLES: {
+                    USERS: 'users',
+                    USER_CREDENTIALS: 'user_credentials',
+                    USER_SESSIONS: 'user_sessions'
+                },
+                
+                AUTH: {
+                    SESSION_TIMEOUT: 7200000,
+                    REMEMBER_ME_DURATION: 604800,
+                    PASSWORD_MIN_LENGTH: 8,
+                    REQUIRE_EMAIL_VERIFICATION: false
+                }
+            },
+
+            // Development settings
+            DEBUG: {
+                ENABLED: true,
+                LOG_API_CALLS: true,
+                LOG_PERFORMANCE: true,
+                LOG_SUPABASE: true,
+                AUTO_TEST_API: false
+            }
+        };
+
+        // Debug: Log config loading
+        console.log('🔧 CONFIG: Configuration loaded successfully (inline)', {
+            hasUserManagement: !!(CONFIG?.USER_MANAGEMENT),
+            hasUrl: !!(CONFIG?.USER_MANAGEMENT?.URL),
+            hasAnonKey: !!(CONFIG?.USER_MANAGEMENT?.ANON_KEY),
+            anonKeyLength: CONFIG?.USER_MANAGEMENT?.ANON_KEY?.length || 0,
+            timestamp: new Date().toISOString()
+        });
+    </script>
+    
+    <!-- Remove reference to external config.js -->
+    <!-- <script src="src/config.js"></script> -->
     
     <!-- Authentication System -->
     <script src="src/services/authService.js"></script>
