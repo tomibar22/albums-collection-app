@@ -23,6 +23,10 @@
                     <button class="nav-btn" data-view="roles">Roles</button>
                     <button class="nav-btn" data-view="scraper">Scraper</button>
                 </nav>
+                <!-- User Menu (will be populated by auth middleware) -->
+                <div class="user-menu-container" id="userMenuContainer">
+                    <!-- User menu will be inserted here by authMiddleware -->
+                </div>
             </div>
         </header>
 
@@ -300,6 +304,12 @@
     
     <!-- App Configuration and Core -->
     <script src="src/config.js"></script>
+    
+    <!-- Authentication System -->
+    <script src="src/services/authService.js"></script>
+    <script src="src/middleware/authMiddleware.js"></script>
+    
+    <!-- Core App Components -->
     <script src="src/data/models.js"></script>
     <script src="src/api/discogs.js"></script>
     <script src="src/data/parser.js"></script>
@@ -317,5 +327,35 @@
     
     <!-- Main Application -->
     <script src="src/app.js"></script>
+
+    <!-- Authentication Guard -->
+    <script>
+        // Authentication guard - run immediately when page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Starting Albums Collection App with authentication...');
+            
+            try {
+                // Check authentication before initializing app
+                const isAuthenticated = await window.AuthMiddleware.requireAuthentication();
+                
+                if (isAuthenticated) {
+                    console.log('✅ Authentication successful, initializing app...');
+                    
+                    // App will be initialized by src/app.js
+                    // The authentication middleware has already applied user credentials
+                    
+                    // Handle any auth redirects
+                    window.AuthMiddleware.handleAuthRedirect();
+                } else {
+                    // User will be redirected to auth page by middleware
+                    console.log('🔐 Authentication required - redirecting...');
+                }
+                
+            } catch (error) {
+                console.error('❌ Authentication check failed:', error);
+                alert('Authentication system error. Please refresh the page.');
+            }
+        });
+    </script>
 </body>
 </html>

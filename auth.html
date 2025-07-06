@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albums Collection App - Authentication</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    
+    <style>
+        /* CSS Variables for consistent theming */
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --border-color: #334155;
+            --border-hover: #475569;
+            --shadow-light: rgba(59, 130, 246, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.3);
+            --shadow-heavy: rgba(0, 0, 0, 0.5);
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-accent: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        }
+
+        /* Main Container */
+        .auth-container {
+            width: 100%;
+            max-width: 480px;
+            margin: 2rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 25px -5px var(--shadow-medium),
+                0 10px 10px -5px var(--shadow-medium);
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        /* Header */
+        .auth-header {
+            padding: 2rem 2rem 0 2rem;
+            text-align: center;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .app-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 400;
+            margin-bottom: 2rem;
+        }
+
+        /* Form Container */
+        .auth-form-container {
+            padding: 0 2rem 2rem 2rem;
+        }
+
+        /* Tab Navigation */
+        .auth-tabs {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 2rem;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .auth-tab.active {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Form Styles */
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px var(--shadow-light);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Password Input with Toggle */
+        .password-input-group {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: var(--accent-color);
+        }
+
+        /* API Credentials Section */
+        .credentials-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .credentials-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        /* Buttons */
+        .auth-button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--gradient-accent);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .auth-button:active {
+            transform: translateY(0);
+        }
+
+        .auth-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-button.loading {
+            pointer-events: none;
+        }
+
+        .auth-button.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error and Success Messages */
+        .message {
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 15, 35, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-content {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            box-shadow: 0 20px 25px -5px var(--shadow-heavy);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem auto;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            .auth-container {
+                margin: 1rem;
+                border-radius: 16px;
+            }
+            
+            .auth-header {
+                padding: 1.5rem 1.5rem 0 1.5rem;
+            }
+            
+            .auth-form-container {
+                padding: 0 1.5rem 1.5rem 1.5rem;
+            }
+            
+            .app-title {
+                font-size: 1.75rem;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div id="loadingText">Setting up your account...</div>
+        </div>
+    </div>
+
+    <!-- Main Authentication Container -->
+    <div class="auth-container">
+        <!-- Header -->
+        <div class="auth-header">
+            <h1 class="app-title">
+                🎵 Albums Collection App
+            </h1>
+            <p class="app-subtitle">Discover, organize, and explore your music collection</p>
+        </div>
+
+        <!-- Form Container -->
+        <div class="auth-form-container">
+            <!-- Tab Navigation -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('signin')">Sign In</button>
+                <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
+            </div>
+
+            <!-- Messages -->
+            <div class="message" id="messageContainer"></div>
+
+            <!-- Sign In Form -->
+            <form class="auth-form active" id="signinForm">
+                <div class="form-group">
+                    <label class="form-label" for="signinEmail">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="signinEmail" 
+                        class="form-input" 
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="signinPassword">Password</label>
+                    <div class="password-input-group">
+                        <input 
+                            type="password" 
+                            id="signinPassword" 
+                            class="form-input" 
+                            placeholder="Enter your password"
+                            required
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="password-toggle" onclick="togglePassword('signinPassword')">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-button">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form class="auth-form" id="signupForm">
+                <div class="form-group">
+                    <label class="form-label" for="signupEmail">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="signupEmail" 
+                        class="form-input" 
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="signupPassword">Password</label>
+                    <div class="password-input-group">
+                        <input 
+                            type="password" 
+                            id="signupPassword" 
+                            class="form-input" 
+                            placeholder="Create a password (min. 8 characters)"
+                            required
+                            autocomplete="new-password"
+                            minlength="8"
+                        >
+                        <button type="button" class="password-toggle" onclick="togglePassword('signupPassword')">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                    <div class="password-input-group">
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            class="form-input" 
+                            placeholder="Confirm your password"
+                            required
+                            autocomplete="new-password"
+                            minlength="8"
+                        >
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- API Credentials Section -->
+                <div class="credentials-section">
+                    <div class="credentials-header">
+                        🔑 API Credentials
+                    </div>
+                    <div class="help-text">
+                        Configure your API keys to start building your music collection. You can always update these later in settings.
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="discogsApiKey">Discogs API Key</label>
+                        <input 
+                            type="text" 
+                            id="discogsApiKey" 
+                            class="form-input" 
+                            placeholder="Enter your Discogs API key"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="supabaseProjectId">Supabase Project ID</label>
+                        <input 
+                            type="text" 
+                            id="supabaseProjectId" 
+                            class="form-input" 
+                            placeholder="Your Supabase project ID"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="supabaseApiKey">Supabase API Key</label>
+                        <input 
+                            type="text" 
+                            id="supabaseApiKey" 
+                            class="form-input" 
+                            placeholder="Your Supabase anon/public key"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-button">
+                    Create Account
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Include Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Include Configuration -->
+    <script src="src/config.js"></script>
+    
+    <!-- Authentication Logic -->
+    <script src="src/services/authService.js"></script>
+    
+    <!-- Main Authentication Script -->
+    <script>
+        // Initialize Authentication System
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAuth();
+        });
+
+        // Tab Switching
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.auth-tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update forms
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            document.getElementById(tab + 'Form').classList.add('active');
+
+            // Clear messages
+            hideMessage();
+        }
+
+        // Password Toggle
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = event.target;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggle.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggle.textContent = '👁️';
+            }
+        }
+
+        // Message Display
+        function showMessage(text, type = 'error') {
+            const container = document.getElementById('messageContainer');
+            container.textContent = text;
+            container.className = `message ${type} show`;
+        }
+
+        function hideMessage() {
+            const container = document.getElementById('messageContainer');
+            container.classList.remove('show');
+        }
+
+        // Loading States
+        function showLoading(text = 'Please wait...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+
+        function setButtonLoading(button, loading = true) {
+            if (loading) {
+                button.classList.add('loading');
+                button.disabled = true;
+                button.setAttribute('data-original-text', button.textContent);
+                button.textContent = '';
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+                button.textContent = button.getAttribute('data-original-text') || 'Submit';
+            }
+        }
+
+        // Initialize Authentication
+        async function initializeAuth() {
+            try {
+                // Check if user is already authenticated
+                const user = await window.AuthService.getCurrentUser();
+                if (user) {
+                    // User is already signed in, redirect to main app
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Set up form listeners
+                setupFormListeners();
+                
+            } catch (error) {
+                console.error('Auth initialization error:', error);
+                showMessage('Authentication system unavailable. Please try again later.');
+            }
+        }
+
+        // Set up form event listeners
+        function setupFormListeners() {
+            // Sign In Form
+            document.getElementById('signinForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await handleSignIn();
+            });
+
+            // Sign Up Form
+            document.getElementById('signupForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await handleSignUp();
+            });
+        }
+
+        // Handle Sign In
+        async function handleSignIn() {
+            const button = document.querySelector('#signinForm .auth-button');
+            const email = document.getElementById('signinEmail').value.trim();
+            const password = document.getElementById('signinPassword').value;
+
+            // Validation
+            if (!email || !password) {
+                showMessage('Please fill in all fields.');
+                return;
+            }
+
+            try {
+                setButtonLoading(button);
+                hideMessage();
+
+                const result = await window.AuthService.signIn(email, password);
+                
+                if (result.success) {
+                    showMessage('Sign in successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } else {
+                    showMessage(result.error || 'Sign in failed. Please check your credentials.');
+                    setButtonLoading(button, false);
+                }
+            } catch (error) {
+                console.error('Sign in error:', error);
+                showMessage('An error occurred during sign in. Please try again.');
+                setButtonLoading(button, false);
+            }
+        }
+
+        // Handle Sign Up
+        async function handleSignUp() {
+            const button = document.querySelector('#signupForm .auth-button');
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const discogsApiKey = document.getElementById('discogsApiKey').value.trim();
+            const supabaseProjectId = document.getElementById('supabaseProjectId').value.trim();
+            const supabaseApiKey = document.getElementById('supabaseApiKey').value.trim();
+
+            // Validation
+            if (!email || !password || !confirmPassword || !discogsApiKey || !supabaseProjectId || !supabaseApiKey) {
+                showMessage('Please fill in all fields.');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match.');
+                return;
+            }
+
+            if (password.length < 8) {
+                showMessage('Password must be at least 8 characters long.');
+                return;
+            }
+
+            try {
+                setButtonLoading(button);
+                hideMessage();
+                showLoading('Creating your account...');
+
+                const result = await window.AuthService.signUp(email, password, {
+                    discogsApiKey,
+                    supabaseProjectId,
+                    supabaseApiKey
+                });
+                
+                hideLoading();
+
+                if (result.success) {
+                    showMessage('Account created successfully! You can now sign in.', 'success');
+                    
+                    // Switch to sign in tab
+                    setTimeout(() => {
+                        switchTab('signin');
+                        document.getElementById('signinEmail').value = email;
+                    }, 2000);
+                } else {
+                    showMessage(result.error || 'Account creation failed. Please try again.');
+                    setButtonLoading(button, false);
+                }
+            } catch (error) {
+                console.error('Sign up error:', error);
+                hideLoading();
+                showMessage('An error occurred during account creation. Please try again.');
+                setButtonLoading(button, false);
+            }
+        }
+    </script>
+</body>
+</html>
