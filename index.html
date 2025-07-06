@@ -310,14 +310,30 @@
         window.CONFIG = {
             // Discogs API Configuration
             DISCOGS: {
-                TOKEN: 'URgRrJTZzrgnmHTZKaROqhaLvRgLSJNYICepxuui', // Public demo token
+                API_KEY: 'URgRrJTZzrgnmHTZKaROqhaLvRgLSJNYICepxuui', // Public demo token
                 BASE_URL: 'https://api.discogs.com',
-                USER_AGENT: 'AlbumsCollectionApp/1.0',
-                RATE_LIMIT_DELAY: 1500, // MS between requests
-                MAX_RETRIES: 3,
-                MAX_429_RETRIES: 10,
-                EXCLUDE_WORDS: ['compilation', 'single', 'Shellac', 'EP', '10"', '7"', 'Transcription', 'reissue', 'remastered'],
-                EXCLUDE_SLASH_IN_TITLE: false // Allow albums with "/" in title since format filtering handles quality
+                HEADERS: {
+                    'User-Agent': 'AlbumsCollectionApp/1.0'
+                },
+                RATE_LIMIT: {
+                    MAX_RETRIES: 3,
+                    DELAY: 1500, // MS between requests
+                    MAX_429_RETRIES: 10,
+                    MAX_DELAY: 300000, // 5 minutes
+                    SCRAPER_DELAY: 3000, // 3 seconds between releases
+                    PAGE_DELAY: 5000 // 5 seconds between pages
+                }
+            },
+
+            // Filter Configuration (from prototype)
+            FILTERS: {
+                EXCLUDE_WORDS: [
+                    'compilation', 'single', 'Shellac', 'EP', 
+                    '10"', '7"', 'Transcription', 'reissue', 'remastered'
+                ],
+                ALBUM_KEYWORDS: ['album', 'lp'],
+                EXCLUDE_SLASH_IN_TITLE: false,
+                EXCLUDE_VARIOUS_ARTISTS: true
             },
 
             // Supabase Configuration (User's personal music collection)
