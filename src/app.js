@@ -5405,14 +5405,25 @@ class AlbumCollectionApp {
             console.log(`🎭 Sorted ${sortedArtists.length} artists by role-specific album count for role "${roleData.name}"`);
             
             // Generate HTML for sorted artists
-            const artistsHtml = sortedArtists.map(artistInfo => {
+            const artistsHtml = sortedArtists.map((artistInfo, index) => {
                 const albumText = artistInfo.roleSpecificAlbumCount === 1 ? '1 album' : `${artistInfo.roleSpecificAlbumCount} albums`;
+                const initials = artistInfo.name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
                 
                 return `
-                    <div class="role-artist-item clickable-artist-item" data-artist-name="${this.escapeHtmlAttribute(artistInfo.name)}">
+                    <div class="role-artist-item clickable-artist-item" 
+                         data-artist-name="${this.escapeHtmlAttribute(artistInfo.name)}"
+                         data-artist-index="${index}">
                         <div class="role-artist-image">
-                            <div class="placeholder-artist-image">
-                                ${artistInfo.name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase()}
+                            <img 
+                                src="" 
+                                alt="Photo of ${this.escapeHtmlAttribute(artistInfo.name)}"
+                                class="artist-photo role-artist-photo"
+                                loading="lazy"
+                                style="display: none;"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            />
+                            <div class="placeholder-artist-image" style="display: flex;">
+                                ${initials}
                             </div>
                         </div>
                         <div class="role-artist-details">
@@ -5458,6 +5469,99 @@ class AlbumCollectionApp {
             if (artistItem && !e.target.closest('button')) {
                 const artistName = artistItem.dataset.artistName;
                 console.log(`🎭 Artist item clicked from role modal: ${artistName}`);
+                
+                // Create artist data for modal and redirect to artist albums
+                this.handleCreditArtistClick(artistName);
+                return;
+            }
+            
+            // Handle View Albums button
+            const viewAlbumsBtn = e.target.closest('.view-artist-albums-btn');
+            if (viewAlbumsBtn) {
+                const artistName = viewAlbumsBtn.dataset.artistName;
+                console.log(`🎭 View Albums clicked from role modal: ${artistName}`);
+                
+                // Create artist data and show albums
+                this.handleCreditArtistClick(artistName);
+                return;
+            }
+        });
+        
+        // Initialize lazy loading for artist images
+        this.initializeRoleModalLazyLoading(modalBody);
+    }
+
+    // Initialize lazy loading for role modal artist images
+    initializeRoleModalLazyLoading(modalBody) {
+        if (!window.ImageService) {
+            console.warn('🖼️ ImageService not available for role modal lazy loading');
+            return;
+        }
+
+        console.log('🖼️ Initializing lazy loading for role modal artist images');
+        
+        // Create IntersectionObserver for lazy loading images
+        const imageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const artistItem = entry.target;
+                    const artistName = artistItem.dataset.artistName;
+                    const artistIndex = parseInt(artistItem.dataset.artistIndex, 10);
+                    
+                    // Only load images for first 10 artists to avoid overload
+                    if (artistIndex < 10) {
+                        this.loadRoleArtistImage(artistItem, artistName);
+                    }
+                    
+                    // Stop observing this item
+                    imageObserver.unobserve(artistItem);
+                }
+            });
+        }, {
+            root: modalBody,
+            rootMargin: '50px',
+            threshold: 0.1
+        });
+
+        // Observe all artist items
+        const artistItems = modalBody.querySelectorAll('.role-artist-item');
+        artistItems.forEach(item => {
+            imageObserver.observe(item);
+        });
+    }
+
+    // Load individual artist image for role modal
+    async loadRoleArtistImage(artistItem, artistName) {
+        if (!artistName || !artistItem) return;
+        
+        try {
+            console.log(`🖼️ Loading image for role modal artist: ${artistName}`);
+            
+            const imageService = new window.ImageService();
+            const imageUrl = await imageService.fetchArtistImage(artistName);
+            
+            if (imageUrl && artistItem.parentNode) {
+                // Find the image and placeholder elements
+                const imgElement = artistItem.querySelector('.role-artist-photo');
+                const placeholderElement = artistItem.querySelector('.placeholder-artist-image');
+                
+                if (imgElement && placeholderElement) {
+                    // Update image source and show it
+                    imgElement.src = imageUrl;
+                    imgElement.onload = () => {
+                        imgElement.style.display = 'block';
+                        placeholderElement.style.display = 'none';
+                        console.log(`✅ Image loaded successfully for ${artistName}`);
+                    };
+                    imgElement.onerror = () => {
+                        console.log(`❌ Image failed to load for ${artistName}, keeping placeholder`);
+                    };
+                }
+            }
+        } catch (error) {
+            console.error(`❌ Error loading image for ${artistName}:`, error);
+        }
+    }
                 
                 this.showArtistAlbumsFromRole(artistName);
             }

@@ -2630,7 +2630,15 @@
 
 /* Role Artists Modal Styling */
 .role-artists-content {
-    padding: 1rem 0;
+    padding: 1rem 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .role-artists-content {
+        padding: 1rem;
+    }
 }
 
 .role-artists-header {
@@ -2677,6 +2685,21 @@
 
 .role-artist-image {
     flex-shrink: 0;
+    position: relative;
+}
+
+.role-artist-image img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.role-artist-image img:hover {
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
 }
 
 .placeholder-artist-image {
@@ -2692,6 +2715,11 @@
     font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.placeholder-artist-image:hover {
+    transform: scale(1.05);
 }
 
 .role-artist-details {
