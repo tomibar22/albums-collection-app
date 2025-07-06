@@ -416,14 +416,14 @@ class AlbumCollectionApp {
         const modal = document.getElementById('more-info-modal');
         const closeModal = document.getElementById('close-modal');
         
-        closeModal.addEventListener('click', () => this.closeModal());
+        closeModal.addEventListener('click', () => this.closeModal(true)); // Force close on X button
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) this.closeModal();
+            if (e.target === modal) this.closeModal(true); // Force close when clicking outside
         });
 
         // Escape key to close modal
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') this.closeModal();
+            if (e.key === 'Escape') this.closeModal(true); // Force close on escape key
         });
 
         // Sort event listeners
@@ -7537,8 +7537,18 @@ class AlbumCollectionApp {
         document.body.style.overflow = 'hidden';
     }
 
-    closeModal() {
-        // Check if there's a previous modal to return to
+    closeModal(forceClose = false) {
+        // If forceClose is true (e.g., clicking X button), close entirely regardless of stack
+        if (forceClose) {
+            console.log('🚪 Force closing modal (X button clicked)');
+            document.getElementById('more-info-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+            this.modalStack = [];
+            this.cleanupModalObservers();
+            return;
+        }
+        
+        // Check if there's a previous modal to return to (back button behavior)
         if (this.modalStack.length > 0) {
             const previousModal = this.modalStack.pop();
             console.log(`📚 Returning to previous modal: "${previousModal.title}" (scroll: ${previousModal.scrollPosition}px, stack size: ${this.modalStack.length})`);
