@@ -2666,6 +2666,19 @@
     line-height: 1.5;
 }
 
+.role-artists-stats {
+    margin-top: 0.5rem !important;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.role-loading-sentinel {
+    height: 1px;
+    background: transparent;
+    margin-top: 2rem;
+}
+
 @media (max-width: 640px) {
     .role-artists-list {
         grid-template-columns: 1fr;
