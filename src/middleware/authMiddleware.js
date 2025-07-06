@@ -86,6 +86,12 @@ class AuthMiddleware {
 
         console.log('✅ User authenticated:', user.email);
 
+        // Check if Discogs API is configured
+        if (!this._isDiscogsConfigured()) {
+            this._showDiscogsConfigurationHelp();
+            return false;
+        }
+
         // Apply user credentials to app configuration
         const credentialsApplied = await window.AuthService.applyUserCredentials();
         if (!credentialsApplied) {
@@ -293,6 +299,71 @@ class AuthMiddleware {
 
         document.head.appendChild(style);
         document.body.appendChild(overlay);
+    }
+
+    /**
+     * Check if Discogs API is configured
+     */
+    _isDiscogsConfigured() {
+        const hasApiKey = !!(window.CONFIG?.DISCOGS?.API_KEY);
+        const keyLength = window.CONFIG?.DISCOGS?.API_KEY?.length || 0;
+        const isValid = hasApiKey && keyLength > 10;
+        
+        console.log('🎵 DISCOGS API: Configuration check', {
+            hasConfig: !!(window.CONFIG),
+            hasDiscogs: !!(window.CONFIG?.DISCOGS),
+            hasApiKey,
+            keyLength,
+            isValid,
+            timestamp: new Date().toISOString()
+        });
+        
+        return isValid;
+    }
+
+    /**
+     * Show Discogs API configuration help
+     */
+    _showDiscogsConfigurationHelp() {
+        console.error('❌ Discogs API not configured');
+        
+        // Create configuration help overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'config-error-overlay';
+        overlay.innerHTML = `
+            <div class="config-error-content">
+                <div class="config-error-header">
+                    <h2>🎵 Discogs API Configuration Required</h2>
+                    <p>To use the music collection features, you need a free Discogs API key.</p>
+                </div>
+                
+                <div class="config-setup-steps">
+                    <h3>📋 Setup Steps:</h3>
+                    <ol>
+                        <li><strong>Visit:</strong> <a href="https://www.discogs.com/settings/developers" target="_blank">https://www.discogs.com/settings/developers</a></li>
+                        <li><strong>Create an application</strong> (any name works)</li>
+                        <li><strong>Copy your Personal Access Token</strong></li>
+                        <li><strong>Update the configuration</strong> in your deployment</li>
+                    </ol>
+                </div>
+
+                <div class="config-code-block">
+                    <h4>Update your index.html configuration:</h4>
+                    <pre><code>DISCOGS: {
+    API_KEY: 'YOUR_DISCOGS_TOKEN_HERE', // ← Add your token here
+    BASE_URL: 'https://api.discogs.com',
+    // ... rest of config
+}</code></pre>
+                </div>
+
+                <div class="config-error-note">
+                    <p><strong>Note:</strong> The Discogs API is free for personal use and allows you to access comprehensive music metadata for building your collection.</p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        return true;
     }
 
     /**
