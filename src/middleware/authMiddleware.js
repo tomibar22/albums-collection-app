@@ -63,6 +63,12 @@ class AuthMiddleware {
      * Perform the actual authentication check
      */
     async _performAuthCheck() {
+        // Check if authentication system is properly configured
+        if (!this._isAuthConfigured()) {
+            this._showConfigurationError();
+            return false;
+        }
+
         // Initialize if needed
         const initialized = await this.initialize();
         if (!initialized) {
@@ -88,6 +94,193 @@ class AuthMiddleware {
         }
 
         return true;
+    }
+
+    /**
+     * Check if authentication system is properly configured
+     */
+    _isAuthConfigured() {
+        return !!(
+            window.CONFIG?.USER_MANAGEMENT?.URL && 
+            window.CONFIG?.USER_MANAGEMENT?.ANON_KEY &&
+            window.CONFIG.USER_MANAGEMENT.ANON_KEY.length > 10
+        );
+    }
+
+    /**
+     * Show configuration error message for deployment
+     */
+    _showConfigurationError() {
+        console.error('❌ Authentication not configured for deployment');
+        
+        // Create configuration help overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'config-error-overlay';
+        overlay.innerHTML = `
+            <div class="config-error-content">
+                <div class="config-error-header">
+                    <h2>🔐 Authentication Setup Required</h2>
+                </div>
+                <div class="config-error-body">
+                    <p>The Albums Collection App requires authentication configuration to function.</p>
+                    
+                    <div class="config-steps">
+                        <h3>Quick Setup Steps:</h3>
+                        <ol>
+                            <li>Add your <strong>album-collection-users</strong> Supabase anon key to <code>src/config.js</code></li>
+                            <li>Update the <code>USER_MANAGEMENT.ANON_KEY</code> field</li>
+                            <li>Redeploy your application</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="config-help">
+                        <p><strong>Need help?</strong> Check the <code>AUTHENTICATION-SETUP.md</code> guide in your project.</p>
+                    </div>
+                    
+                    <div class="config-actions">
+                        <button onclick="window.location.reload()" class="config-retry-btn">
+                            🔄 Retry
+                        </button>
+                        <a href="https://github.com/tomibar22/albums-collection-app" target="_blank" class="config-docs-btn">
+                            📖 View Documentation
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add styles for the error overlay
+        const style = document.createElement('style');
+        style.textContent = `
+            .config-error-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(15, 15, 35, 0.95);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                backdrop-filter: blur(10px);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+            
+            .config-error-content {
+                background: #1a1a2e;
+                border: 1px solid #334155;
+                border-radius: 16px;
+                padding: 2rem;
+                max-width: 600px;
+                width: 90%;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+                color: #e2e8f0;
+            }
+            
+            .config-error-header h2 {
+                margin: 0 0 1.5rem 0;
+                color: #3b82f6;
+                font-size: 1.5rem;
+                font-weight: 600;
+            }
+            
+            .config-error-body p {
+                margin-bottom: 1.5rem;
+                line-height: 1.6;
+                color: #94a3b8;
+            }
+            
+            .config-steps {
+                background: #0f0f23;
+                border: 1px solid #334155;
+                border-radius: 8px;
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .config-steps h3 {
+                margin: 0 0 1rem 0;
+                color: #e2e8f0;
+                font-size: 1.1rem;
+            }
+            
+            .config-steps ol {
+                margin: 0;
+                padding-left: 1.5rem;
+                color: #cbd5e1;
+            }
+            
+            .config-steps li {
+                margin-bottom: 0.5rem;
+                line-height: 1.5;
+            }
+            
+            .config-steps code {
+                background: #334155;
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                font-family: 'Monaco', 'Consolas', monospace;
+                font-size: 0.875rem;
+                color: #fbbf24;
+            }
+            
+            .config-help {
+                background: #134e4a;
+                border: 1px solid #14b8a6;
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 2rem;
+            }
+            
+            .config-help p {
+                margin: 0;
+                color: #5eead4;
+                font-size: 0.875rem;
+            }
+            
+            .config-actions {
+                display: flex;
+                gap: 1rem;
+                justify-content: center;
+            }
+            
+            .config-retry-btn, .config-docs-btn {
+                padding: 0.75rem 1.5rem;
+                border-radius: 8px;
+                font-size: 0.875rem;
+                font-weight: 500;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: none;
+                font-family: inherit;
+            }
+            
+            .config-retry-btn {
+                background: #3b82f6;
+                color: white;
+            }
+            
+            .config-retry-btn:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+            }
+            
+            .config-docs-btn {
+                background: #374151;
+                color: #e5e7eb;
+                border: 1px solid #4b5563;
+            }
+            
+            .config-docs-btn:hover {
+                background: #4b5563;
+                border-color: #6b7280;
+            }
+        `;
+
+        document.head.appendChild(style);
+        document.body.appendChild(overlay);
     }
 
     /**

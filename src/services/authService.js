@@ -21,6 +21,11 @@ class AuthService {
                 throw new Error('User management configuration missing. Please add your album-collection-users Supabase credentials to config.js');
             }
 
+            // Validate anon key (should be a long JWT-like string)
+            if (window.CONFIG.USER_MANAGEMENT.ANON_KEY.length < 50) {
+                throw new Error('Invalid USER_MANAGEMENT.ANON_KEY. Please add your actual Supabase anon key to config.js');
+            }
+
             // Initialize Supabase client for user management
             const { createClient } = supabase;
             this.client = createClient(

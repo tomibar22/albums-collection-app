@@ -620,6 +620,18 @@
         // Initialize Authentication
         async function initializeAuth() {
             try {
+                // Check if authentication system is configured
+                if (!window.CONFIG?.USER_MANAGEMENT?.URL || 
+                    !window.CONFIG?.USER_MANAGEMENT?.ANON_KEY ||
+                    window.CONFIG.USER_MANAGEMENT.ANON_KEY.length < 50) {
+                    
+                    showMessage('Authentication system not configured. Please contact the administrator.', 'error');
+                    
+                    // Disable forms
+                    document.querySelectorAll('form input, form button').forEach(el => el.disabled = true);
+                    return;
+                }
+
                 // Check if user is already authenticated
                 const user = await window.AuthService.getCurrentUser();
                 if (user) {
@@ -634,6 +646,9 @@
             } catch (error) {
                 console.error('Auth initialization error:', error);
                 showMessage('Authentication system unavailable. Please try again later.');
+                
+                // Disable forms
+                document.querySelectorAll('form input, form button').forEach(el => el.disabled = true);
             }
         }
 
