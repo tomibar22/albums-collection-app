@@ -5372,10 +5372,10 @@ class AlbumCollectionApp {
         
         try {
             // First, calculate role-specific album counts for all artists and create sortable array
+            console.log(`🎭 Processing ${roleData.artists.length} artists for role: ${roleData.name}`);
+            
             const artistsWithCounts = roleData.artists.map(artistInfo => {
-                console.log('🎭 Processing artist:', artistInfo);
-                
-                // Count albums where this artist performed this SPECIFIC role
+                // Count albums where this artist performed this SPECIFIC role (silent processing)
                 let roleSpecificAlbumCount = 0;
                 const roleSpecificAlbums = new Set(); // Use Set to avoid duplicates
                 
@@ -5392,8 +5392,6 @@ class AlbumCollectionApp {
                 
                 roleSpecificAlbumCount = roleSpecificAlbums.size;
                 
-                console.log(`🎭 Role-specific count for ${artistInfo.name} as ${roleData.name}: ${roleSpecificAlbumCount} albums`);
-                
                 return {
                     ...artistInfo,
                     roleSpecificAlbumCount
@@ -5402,7 +5400,7 @@ class AlbumCollectionApp {
             
             // Sort artists by role-specific album count (most albums for this role first)
             const sortedArtists = artistsWithCounts.sort((a, b) => b.roleSpecificAlbumCount - a.roleSpecificAlbumCount);
-            console.log(`🎭 Sorted ${sortedArtists.length} artists by role-specific album count for role "${roleData.name}"`);
+            console.log(`✅ Processed and sorted ${sortedArtists.length} artists for role "${roleData.name}"`);
             
             // Store sorted artists for lazy loading
             this.currentRoleArtists = sortedArtists;
@@ -5427,7 +5425,7 @@ class AlbumCollectionApp {
                 </div>
             `;
             
-            console.log(`✅ Generated role artists modal content with ${initialArtists.length}/${sortedArtists.length} artists initially`);
+            console.log(`🎭 Generated modal with ${initialArtists.length}/${sortedArtists.length} artists initially loaded`);
             return result;
             
         } catch (error) {
@@ -5510,11 +5508,10 @@ class AlbumCollectionApp {
     // Initialize lazy loading for more artist cards
     initializeRoleCardLazyLoading(modalBody) {
         if (!this.currentRoleArtists || this.currentRoleArtists.length <= this.roleCardsInitialLoad) {
-            console.log('🎭 No additional cards to lazy load');
             return;
         }
 
-        console.log(`🎭 Initializing card lazy loading - ${this.currentRoleArtists.length - this.roleCardsInitialLoad} more cards available`);
+        console.log(`🎭 Card lazy loading: ${this.currentRoleArtists.length - this.roleCardsInitialLoad} more cards available`);
         
         const sentinel = modalBody.querySelector('.role-loading-sentinel');
         if (!sentinel) {
@@ -5527,8 +5524,6 @@ class AlbumCollectionApp {
         const cardObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting && currentlyLoaded < this.currentRoleArtists.length) {
-                    console.log(`🎭 Loading more cards: ${currentlyLoaded} → ${Math.min(currentlyLoaded + this.roleCardsLoadIncrement, this.currentRoleArtists.length)}`);
-                    
                     // Load next batch
                     const nextBatch = this.currentRoleArtists.slice(
                         currentlyLoaded, 
@@ -5549,7 +5544,7 @@ class AlbumCollectionApp {
                             loadedCounter.textContent = currentlyLoaded;
                         }
                         
-                        console.log(`✅ Loaded batch of ${nextBatch.length} cards, total now: ${currentlyLoaded}/${this.currentRoleArtists.length}`);
+                        console.log(`🎭 Loaded +${nextBatch.length} cards (${currentlyLoaded}/${this.currentRoleArtists.length})`);
                         
                         // Initialize image lazy loading for new cards
                         const newCards = roleList.querySelectorAll('.role-artist-item');
@@ -5559,7 +5554,7 @@ class AlbumCollectionApp {
                         // If all cards loaded, stop observing
                         if (currentlyLoaded >= this.currentRoleArtists.length) {
                             cardObserver.unobserve(sentinel);
-                            console.log('🎭 All cards loaded, stopping card observer');
+                            console.log('🎭 All cards loaded');
                         }
                     }
                 }
@@ -5595,30 +5590,23 @@ class AlbumCollectionApp {
             return;
         }
 
-        console.log('🖼️ Initializing lazy loading for role modal artist images');
+        console.log(`🖼️ Initializing image lazy loading for role modal`);
         
         // Find all artist items
         const artistItems = modalBody.querySelectorAll('.role-artist-item');
-        console.log(`🖼️ Found ${artistItems.length} artist items for lazy loading`);
         
         if (artistItems.length === 0) {
-            console.warn('🖼️ No artist items found in modal for lazy loading');
             return;
         }
         
         // Create IntersectionObserver for lazy loading images and store it
         this.imageObserver = new IntersectionObserver((entries) => {
-            console.log(`🖼️ IntersectionObserver triggered with ${entries.length} entries`);
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const artistItem = entry.target;
                     const artistName = artistItem.dataset.artistName;
-                    const artistIndex = parseInt(artistItem.dataset.artistIndex, 10);
                     
-                    console.log(`🖼️ Artist item intersecting: ${artistName} (index: ${artistIndex})`);
-                    
-                    // Load images as they come into view (no arbitrary limit)
-                    console.log(`🖼️ Loading image for artist ${artistIndex + 1}: ${artistName}`);
+                    // Load images as they come into view (silent processing)
                     this.loadRoleArtistImage(artistItem, artistName);
                     
                     // Stop observing this item after loading
@@ -5632,10 +5620,7 @@ class AlbumCollectionApp {
         });
 
         // Observe all artist items
-        console.log(`🖼️ Starting to observe ${artistItems.length} artist items`);
-        artistItems.forEach((item, index) => {
-            const artistName = item.dataset.artistName;
-            console.log(`🖼️ Observing artist ${index + 1}: ${artistName}`);
+        artistItems.forEach((item) => {
             this.imageObserver.observe(item);
         });
     }
@@ -5643,21 +5628,15 @@ class AlbumCollectionApp {
     // Load individual artist image for role modal
     async loadRoleArtistImage(artistItem, artistName) {
         if (!artistName || !artistItem) {
-            console.warn(`🖼️ Invalid parameters for loadRoleArtistImage: artistName=${artistName}, artistItem=${!!artistItem}`);
             return;
         }
         
         try {
-            console.log(`🖼️ Starting image load for role modal artist: ${artistName}`);
-            
             // Find the image and placeholder elements first
             const imgElement = artistItem.querySelector('.role-artist-photo');
             const placeholderElement = artistItem.querySelector('.placeholder-artist-image');
             
-            console.log(`🖼️ Elements found - img: ${!!imgElement}, placeholder: ${!!placeholderElement}`);
-            
             if (!imgElement || !placeholderElement) {
-                console.warn(`🖼️ Missing elements for ${artistName} - img: ${!!imgElement}, placeholder: ${!!placeholderElement}`);
                 return;
             }
             
@@ -5666,39 +5645,29 @@ class AlbumCollectionApp {
             const delay = Math.min(artistIndex * 200, 2000); // Max 2 second delay
             
             if (delay > 0) {
-                console.log(`🖼️ Adding ${delay}ms delay for ${artistName} to prevent API overload`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
             
             const imageService = new window.ImageService();
-            console.log(`🖼️ Fetching image URL for: ${artistName}`);
             const imageUrl = await imageService.fetchArtistImage(artistName);
             
-            console.log(`🖼️ Image fetch result for ${artistName}: ${imageUrl ? 'SUCCESS' : 'NO_IMAGE'}`);
-            
             if (imageUrl && artistItem.parentNode) {
-                console.log(`🖼️ Setting image source for ${artistName}: ${imageUrl}`);
-                
                 // Create a new image element to test loading
                 const testImg = new Image();
                 testImg.onload = () => {
-                    console.log(`✅ Image loaded successfully for ${artistName}, now displaying`);
                     // Set the actual image source
                     imgElement.src = imageUrl;
                     imgElement.style.display = 'block';
                     placeholderElement.style.display = 'none';
-                    console.log(`🎭 Image display updated for ${artistName}`);
                 };
                 testImg.onerror = () => {
-                    console.log(`❌ Image failed to load for ${artistName}, keeping placeholder`);
+                    // Keep placeholder on error (silent)
                 };
                 // Start loading
                 testImg.src = imageUrl;
-            } else {
-                console.log(`🖼️ No image URL found for ${artistName}, keeping placeholder`);
             }
         } catch (error) {
-            console.error(`❌ Error loading image for ${artistName}:`, error);
+            // Silent error handling - keep placeholder
         }
     }
 
