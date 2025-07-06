@@ -547,6 +547,7 @@ class AuthMiddleware {
 
 // Create global instance
 window.AuthMiddleware = new AuthMiddleware();
+window.authMiddleware = window.AuthMiddleware; // Alias for consistency
 
 // Export for modules
 if (typeof module !== 'undefined' && module.exports) {
