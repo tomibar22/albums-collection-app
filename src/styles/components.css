@@ -2633,6 +2633,18 @@
     padding: 1rem 1.5rem;
     max-width: 1200px;
     margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.role-artists-list {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 2rem;
 }
 
 @media (max-width: 768px) {
@@ -2652,12 +2664,6 @@
     color: var(--text-secondary);
     font-size: 1rem;
     line-height: 1.5;
-}
-
-.role-artists-list {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(2, 1fr);
 }
 
 @media (max-width: 640px) {

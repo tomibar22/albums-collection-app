@@ -5520,21 +5520,17 @@ class AlbumCollectionApp {
                     
                     console.log(`🖼️ Artist item intersecting: ${artistName} (index: ${artistIndex})`);
                     
-                    // Only load images for first 10 artists to avoid overload
-                    if (artistIndex < 10) {
-                        console.log(`🖼️ Loading image for artist ${artistIndex + 1}/10: ${artistName}`);
-                        this.loadRoleArtistImage(artistItem, artistName);
-                    } else {
-                        console.log(`🖼️ Skipping image load for artist ${artistIndex + 1} (beyond 10 limit): ${artistName}`);
-                    }
+                    // Load images as they come into view (no arbitrary limit)
+                    console.log(`🖼️ Loading image for artist ${artistIndex + 1}: ${artistName}`);
+                    this.loadRoleArtistImage(artistItem, artistName);
                     
-                    // Stop observing this item
+                    // Stop observing this item after loading
                     imageObserver.unobserve(artistItem);
                 }
             });
         }, {
             root: modalBody,
-            rootMargin: '50px',
+            rootMargin: '100px', // Start loading when 100px away from viewport
             threshold: 0.1
         });
 
@@ -5566,6 +5562,15 @@ class AlbumCollectionApp {
             if (!imgElement || !placeholderElement) {
                 console.warn(`🖼️ Missing elements for ${artistName} - img: ${!!imgElement}, placeholder: ${!!placeholderElement}`);
                 return;
+            }
+            
+            // Add a small delay to prevent overwhelming the API
+            const artistIndex = parseInt(artistItem.dataset.artistIndex, 10) || 0;
+            const delay = Math.min(artistIndex * 200, 2000); // Max 2 second delay
+            
+            if (delay > 0) {
+                console.log(`🖼️ Adding ${delay}ms delay for ${artistName} to prevent API overload`);
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
             
             const imageService = new window.ImageService();
