@@ -3411,7 +3411,7 @@ class AlbumCollectionApp {
                         }
                         
                         // Secondary format filtering (after musical role check)
-                        if (!window.shouldIncludeAlbum(releaseData)) {
+                        if (!window.shouldIncludeAlbum(releaseData, artistName)) {
                             totalSkipped++;
                             console.log(`🚫 FORMAT FILTERED: '${release.title}' - failed format/quality checks`);
                             continue;

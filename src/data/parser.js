@@ -114,7 +114,7 @@ class DiscogsDataParser {
     /**
      * Filter release based on prototype logic
      */
-    shouldIncludeRelease(release, releaseData = null) {
+    shouldIncludeRelease(release, releaseData = null, scrapedArtistName = null) {
         const title = release.title || '';
         const formats = releaseData?.formats || release.formats || [];
 
@@ -152,13 +152,33 @@ class DiscogsDataParser {
         }
 
         // Filter out releases with "Various" artists (compilations)
+        // UNLESS the scraped artist appears in the artists array
         if (this.filters.EXCLUDE_VARIOUS_ARTISTS) {
             const artist = releaseData?.artists?.[0]?.name || release.artist || '';
             if (artist.toLowerCase().includes('various')) {
-                if (window.CONFIG.DEBUG.ENABLED) {
-                    console.log(`🚫 Filtered out '${title}' - Various Artists compilation (artist: ${artist})`);
+                // If we're scraping a specific artist, check if they appear in the artists array
+                if (scrapedArtistName && releaseData?.artists) {
+                    const artistAppears = releaseData.artists.some(a => 
+                        a.name && a.name.toLowerCase() === scrapedArtistName.toLowerCase()
+                    );
+                    if (artistAppears) {
+                        if (window.CONFIG.DEBUG.ENABLED) {
+                            console.log(`✅ Allowing '${title}' - Various Artists compilation but ${scrapedArtistName} appears in artists`);
+                        }
+                        // Allow this compilation album
+                    } else {
+                        if (window.CONFIG.DEBUG.ENABLED) {
+                            console.log(`🚫 Filtered out '${title}' - Various Artists compilation and ${scrapedArtistName} not in artists`);
+                        }
+                        return false;
+                    }
+                } else {
+                    // No specific artist provided, filter out all Various Artists
+                    if (window.CONFIG.DEBUG.ENABLED) {
+                        console.log(`🚫 Filtered out '${title}' - Various Artists compilation (artist: ${artist})`);
+                    }
+                    return false;
                 }
-                return false;
             }
         }
 
@@ -994,8 +1014,8 @@ function shouldIncludeAlbumEnhanced(albumData, scrapedArtistName = null) {
     // Use existing parser instance for format filtering
     const parser = window.discogsParser;
     
-    // Existing filters (format, filter words, etc.)
-    if (!parser.shouldIncludeRelease(albumData, albumData)) {
+    // Existing filters (format, filter words, etc.) - now with artist name support
+    if (!parser.shouldIncludeRelease(albumData, albumData, scrapedArtistName)) {
         return false;
     }
 
@@ -1013,8 +1033,8 @@ function shouldIncludeAlbumEnhanced(albumData, scrapedArtistName = null) {
 }
 
 // Add compatibility functions for existing app.js calls
-function shouldIncludeAlbum(albumData) {
-    return window.discogsParser.shouldIncludeRelease(albumData, albumData);
+function shouldIncludeAlbum(albumData, scrapedArtistName = null) {
+    return window.discogsParser.shouldIncludeRelease(albumData, albumData, scrapedArtistName);
 }
 
 function parseAlbumData(albumData) {
