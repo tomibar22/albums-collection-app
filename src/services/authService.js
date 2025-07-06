@@ -438,6 +438,17 @@ class AuthService {
             // Recreate the Discogs API instance with new credentials
             if (window.DiscogsAPI && credentials.discogsApiKey) {
                 window.discogsAPI = new window.DiscogsAPI();
+                console.log('🔄 Discogs API recreated with user credentials');
+            }
+
+            // Reinitialize Supabase service with new credentials
+            if (window.albumApp?.supabaseService) {
+                const supabaseReinitialized = await window.albumApp.supabaseService.reinitialize();
+                console.log('🔄 Supabase service reinitialized:', supabaseReinitialized);
+            }
+
+            console.log('✅ User credentials applied successfully');
+            return true;
                 console.log('🔄 Recreated Discogs API instance with user credentials');
             }
 

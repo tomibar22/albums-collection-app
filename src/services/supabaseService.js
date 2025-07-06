@@ -18,7 +18,7 @@ class SupabaseService {
 
             const config = window.CONFIG.SUPABASE;
             if (!config.URL || !config.ANON_KEY) {
-                console.error('❌ Supabase configuration missing. Please check src/config.js');
+                console.warn('⚠️ Supabase configuration not yet available. Will initialize after user credentials are applied.');
                 return;
             }
 
@@ -39,6 +39,16 @@ class SupabaseService {
             console.error('❌ Failed to initialize Supabase service:', error);
             this.initialized = false;
         }
+    }
+
+    /**
+     * Reinitialize Supabase service after credentials are applied
+     */
+    async reinitialize() {
+        console.log('🔄 Reinitializing Supabase service with user credentials...');
+        this.initialized = false;
+        await this.init();
+        return this.initialized;
     }
 
     async testConnection() {
