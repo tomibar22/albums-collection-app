@@ -55,7 +55,6 @@ class AlbumCollectionApp {
             this.showLoadingModal('🎧 Albums Collection', 'Starting your music library...', 0);
             
             // Start Supabase initialization immediately (non-blocking)
-            console.log('🔧 Initializing Supabase service...');
             this.updateLoadingProgress('🔗 Connecting to database...', 'Establishing secure connection...', 5);
             
             // Initialize Supabase and UI setup in parallel
@@ -77,7 +76,6 @@ class AlbumCollectionApp {
                 this.hideLoadingModal();
             }, 800); // Reduced from 1500ms
             
-            console.log('🎧 Albums Collection App initialized successfully');
         } catch (error) {
             console.error('❌ Failed to initialize app:', error);
             
@@ -85,7 +83,6 @@ class AlbumCollectionApp {
             this.updateLoadingProgress('⚠️ Connection failed', 'Starting in offline mode...', 60);
             
             // Fallback to in-memory mode
-            console.log('⚠️ Falling back to offline mode');
             await this.initializeUIComponents();
             this.loadInitialView();
             
@@ -128,13 +125,11 @@ class AlbumCollectionApp {
         this.setupScraperEvents();
         this.initializeSortControls();
         
-        console.log('✅ UI components initialized');
     }
 
     // Enhanced data loading with granular progress tracking
     async loadDataFromSupabaseEnhanced() {
         try {
-            console.log('📊 Loading data from Supabase...');
             this.updateLoadingProgress('📚 Loading albums...', 'Fetching album database...', 30);
 
             // Load data with individual progress tracking
@@ -161,7 +156,6 @@ class AlbumCollectionApp {
             this.updateLoadingProgress('📊 Generating tracks...', 'Processing album tracklists...', 85);
             
             // Generate tracks and roles from albums with progress updates
-            console.log('🔄 Generating tracks and roles from albums (rich data)...');
             this.collection.tracks = await this.generateTracksFromAlbumsAsync();
             
             this.updateLoadingProgress('🎭 Generating roles...', 'Processing album credits...', 88);
@@ -171,8 +165,6 @@ class AlbumCollectionApp {
             // Generate and cache artists during startup for better performance
             this.collection.artists = this.generateArtistsFromAlbums();
             this.artistsNeedRegeneration = false; // Mark as freshly generated
-            
-            console.log(`✅ Generated ${this.collection.tracks.length} tracks, ${this.collection.roles.length} roles, and ${this.collection.artists.length} artists with full relationships`);
 
             this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
 
@@ -342,39 +334,28 @@ class AlbumCollectionApp {
     }
 
     initializeSortControls() {
-        console.log('Initializing sort controls...');
         // Initialize shuffle button visibility based on default sort values
         const albumsSort = document.getElementById('albums-sort');
         const artistsSort = document.getElementById('artists-sort');
         const tracksSort = document.getElementById('tracks-sort');
         const rolesSort = document.getElementById('roles-sort');
         
-        console.log('Albums sort element:', albumsSort);
-        console.log('Artists sort element:', artistsSort);
-        console.log('Tracks sort element:', tracksSort);
-        console.log('Roles sort element:', rolesSort);
-        
         if (albumsSort) {
-            console.log('Albums sort value:', albumsSort.value);
             this.sortAlbums(albumsSort.value);
         }
         if (artistsSort) {
-            console.log('Artists sort value:', artistsSort.value);
             this.sortArtists(artistsSort.value);
         }
         if (tracksSort) {
-            console.log('Tracks sort value:', tracksSort.value);
             this.sortTracks(tracksSort.value);
         }
         if (rolesSort) {
-            console.log('Roles sort value:', rolesSort.value);
             this.sortRoles(rolesSort.value);
         }
     }
 
     // Update page title counts
     updatePageTitleCounts() {
-        console.log('🔢 Updating page title counts...');
         
         // Update Albums count
         const albumsCountEl = document.getElementById('albums-count');
@@ -787,19 +768,14 @@ class AlbumCollectionApp {
         // Debounce mechanism to prevent double rendering
         const now = Date.now();
         if (now - this.lastArtistRenderTime < this.artistRenderDebounceMs) {
-            console.log(`🎭 DEBUG: Debouncing artist render (${now - this.lastArtistRenderTime}ms since last render)`);
             return;
         }
         this.lastArtistRenderTime = now;
-        
-        console.log(`🎭 DEBUG: renderActiveArtistsTab called, currentArtistsTab = ${this.currentArtistsTab}`);
         
         const activeTab = this.currentArtistsTab || 'musical';
         const artists = activeTab === 'musical' ? this.musicalArtists : this.technicalArtists;
         const gridId = activeTab === 'musical' ? 'musical-artists-grid' : 'technical-artists-grid';
         const grid = document.getElementById(gridId);
-        
-        console.log(`🎭 DEBUG: Rendering ${activeTab} tab with ${artists ? artists.length : 0} artists, gridId = ${gridId}`);
         
         if (!grid) {
             console.error(`❌ Grid not found: ${gridId}`);
@@ -826,15 +802,12 @@ class AlbumCollectionApp {
         };
         
         const tabLabel = activeTab === 'musical' ? 'Musical Artists' : 'Technical Contributors';
-        console.log(`🎭 DEBUG: About to initialize lazy grid for ${gridId} with ${artists.length} artists`);
         
         this.lazyLoadingManager.initializeLazyGrid(gridId, artists, artistRenderFunction, {
             itemsPerPage: 16,
             loadingMessage: `🎭 Loading more ${tabLabel.toLowerCase()}...`,
             noMoreMessage: `✅ All ${tabLabel.toLowerCase()} loaded`
         });
-        
-        console.log(`🚀 DEBUG: Lazy loading initialized for ${artists.length} ${activeTab} artist cards in ${gridId}`);
     }
     
     // Switch between artists tabs
@@ -1462,15 +1435,7 @@ class AlbumCollectionApp {
         const technicalArtists = [];
         
         artists.forEach(artist => {
-            // Enhanced role analysis with debugging for specific artists
-            const isPatMetheny = artist.name.toLowerCase().includes('pat metheny');
-            
-            if (isPatMetheny) {
-                console.log(`🎸 [DEBUG] Analyzing Pat Metheny:`, artist);
-                console.log(`🎭 [DEBUG] Roles:`, artist.roles);
-            }
-            
-            // Check each role individually for better debugging
+            // Check each role individually
             const musicalRoles = [];
             const technicalRoles = [];
             
@@ -1480,10 +1445,6 @@ class AlbumCollectionApp {
                     musicalRoles.push(role);
                 } else {
                     technicalRoles.push(role);
-                }
-                
-                if (isPatMetheny) {
-                    console.log(`  [DEBUG] ${role} → ${category}`);
                 }
             });
             
@@ -5122,7 +5083,6 @@ class AlbumCollectionApp {
 
     // Async version with progress updates - optimized for performance
     async generateTracksFromAlbumsAsync() {
-        console.log('🎵 Generating tracks from albums (async)...', this.collection.albums?.length || 0, 'albums');
         const trackMap = new Map();
         const totalAlbums = this.collection.albums?.length || 0;
         let processedAlbums = 0;
@@ -6194,7 +6154,6 @@ class AlbumCollectionApp {
 
     // Async version with progress updates - optimized for performance (removed excessive logging)
     async generateRolesFromAlbumsAsync() {
-        console.log('🎭 Starting generateRolesFromAlbumsAsync...');
         const roleMap = new Map();
         const totalAlbums = this.collection.albums?.length || 0;
         let processedAlbums = 0;

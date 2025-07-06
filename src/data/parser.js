@@ -697,11 +697,8 @@ if (typeof module !== 'undefined' && module.exports) {
 function isStrictArtistMatch(creditName, normalizedScrapedArtist, originalScrapedArtistName) {
     const normalizedCreditName = creditName.toLowerCase().trim();
     
-    console.log(`🔍 STRICT MATCHING: "${creditName}" vs "${originalScrapedArtistName}"`);
-    
     // 1. EXACT MATCH (most reliable)
     if (normalizedCreditName === normalizedScrapedArtist) {
-        console.log(`   ✅ EXACT MATCH: "${creditName}" === "${originalScrapedArtistName}"`);
         return true;
     }
     
@@ -715,10 +712,7 @@ function isStrictArtistMatch(creditName, normalizedScrapedArtist, originalScrape
         });
         
         if (allWordsPresent) {
-            console.log(`   ✅ FULL NAME IN CREDIT: "${creditName}" contains full name "${originalScrapedArtistName}"`);
             return true;
-        } else {
-            console.log(`   ❌ PARTIAL WORD MATCH REJECTED: "${creditName}" - not all words from "${originalScrapedArtistName}" present as complete words`);
         }
     }
     
@@ -735,19 +729,16 @@ function isStrictArtistMatch(creditName, normalizedScrapedArtist, originalScrape
         ];
         
         if (commonNames.includes(normalizedCreditName)) {
-            console.log(`   ❌ COMMON NAME REJECTED: "${creditName}" is too common, could cause false matches`);
             return false;
         }
         
         // Check if it's a meaningful word boundary match
         const regex = new RegExp(`\\b${normalizedCreditName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
         if (regex.test(normalizedScrapedArtist)) {
-            console.log(`   ⚠️ PARTIAL MATCH ACCEPTED: "${creditName}" found as complete word in "${originalScrapedArtistName}"`);
             return true;
         }
     }
     
-    console.log(`   ❌ NO MATCH: "${creditName}" does not match "${originalScrapedArtistName}"`);
     return false;
 }
 
@@ -760,12 +751,8 @@ function isStrictArtistMatch(creditName, normalizedScrapedArtist, originalScrape
  */
 function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
     if (!albumData || !scrapedArtistName) {
-        console.log('❌ Missing album data or artist name for musical role check');
         return false;
     }
-
-    // ENHANCED LOGGING for debugging
-    console.log(`🔍 CHECKING MUSICAL ROLE for "${scrapedArtistName}" in "${albumData.title || 'Unknown Album'}"`);
 
     // Normalize artist name for comparison (lowercase, trim)
     const normalizedScrapedArtist = scrapedArtistName.toLowerCase().trim();
@@ -905,14 +892,11 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
         
         if (isArtistMatch) {
             foundCredits.push(credit);
-            console.log(`🎯 STRICT MATCH FOUND: "${scrapedArtistName}" matches "${credit.name}" → Role: "${credit.role}" (${credit.source})`);
         }
     });
 
     // MANDATORY CHECK: If no credits found for scraped artist, reject immediately
     if (foundCredits.length === 0) {
-        console.log(`❌ MANDATORY REJECTION: "${scrapedArtistName}" not found in ANY credits for "${albumData.title}"`);
-        console.log(`📋 All credits in album:`, allCredits.map(c => `"${c.name}" (${c.role})`));
         return false;
     }
 
@@ -938,7 +922,6 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
         
         if (isExcludedRole) {
             excludedCredits.push(credit);
-            console.log(`🚫 EXCLUDED ROLE: "${credit.role}" - matches excluded patterns`);
             return; // Skip this credit
         }
         
@@ -1023,10 +1006,8 @@ function shouldIncludeAlbumEnhanced(albumData, scrapedArtistName = null) {
     if (scrapedArtistName) {
         const hasMusicalRole = hasScrapedArtistMusicalRole(albumData, scrapedArtistName);
         if (!hasMusicalRole) {
-            console.log(`🚫 FILTERED OUT: "${albumData.title}" - ${scrapedArtistName} has no musical role`);
             return false;
         }
-        console.log(`✅ ACCEPTING: "${albumData.title}" - ${scrapedArtistName} has musical role`);
     }
 
     return true;
