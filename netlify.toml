@@ -2,10 +2,12 @@
 # Last Updated: July 6, 2025 - Trigger Fresh Deploy
 
 # SPA (Single Page Application) routing
+# Only redirect if not a file (has no extension)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 # Security headers
 [[headers]]
