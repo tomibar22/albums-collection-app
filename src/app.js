@@ -46,7 +46,7 @@ class AlbumCollectionApp {
             roles: ''
         };
         
-        this.init();
+        // Don't initialize here - wait for credentials to be applied first
     }
 
     async init() {
@@ -9278,6 +9278,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (credentialsApplied) {
                 console.log('🔑 User credentials applied, initializing app...');
                 window.albumApp = new AlbumCollectionApp();
+                // Initialize the app AFTER credentials are applied
+                await window.albumApp.init();
             } else {
                 console.warn('⚠️ No user credentials found, showing setup screen...');
                 // Show credentials setup screen instead of broken app
