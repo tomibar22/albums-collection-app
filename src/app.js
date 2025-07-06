@@ -1466,12 +1466,6 @@ class AlbumCollectionApp {
             const hasMusicalRole = musicalRoles.length > 0;
             const hasTechnicalRole = technicalRoles.length > 0;
             
-            if (isPatMetheny) {
-                console.log(`🎵 [DEBUG] Musical roles (${musicalRoles.length}):`, musicalRoles);
-                console.log(`🔧 [DEBUG] Technical roles (${technicalRoles.length}):`, technicalRoles);
-                console.log(`📋 [DEBUG] Final categories: ${hasMusicalRole ? 'MUSICAL' : ''} ${hasTechnicalRole ? 'TECHNICAL' : ''}`);
-            }
-            
             // Add to musical tab if they have any musical roles
             if (hasMusicalRole) {
                 musicalArtists.push(artist);
