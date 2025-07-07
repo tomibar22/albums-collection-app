@@ -26,6 +26,15 @@ class LazyLoadingManager {
             console.warn(`⚠️ Grid element with ID '${gridId}' not found`);
             return;
         }
+
+        // DEBUG: Check if grid is already being managed
+        if (this.loadingStates.has(gridId)) {
+            console.error(`🚨 DUPLICATE LAZY LOADING INITIALIZATION: ${gridId} is already being managed!`);
+            console.error(`🚨 Existing state:`, this.loadingStates.get(gridId));
+            console.error(`🚨 Current grid content:`, gridElement.children.length, 'items');
+            // Clear existing state to prevent conflicts
+            this.resetGrid(gridId);
+        }
         
         // Configuration
         const config = {
