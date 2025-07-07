@@ -969,6 +969,15 @@ class AlbumCollectionApp {
             return;
         }
 
+        // AGGRESSIVE CLEARING: Reset the grid completely
+        grid.innerHTML = '';
+        grid.className = activeTab === 'musical' ? 'musical-artists-grid' : 'technical-artists-grid';
+        
+        // Reset the specific grid in lazy loading manager
+        if (this.lazyLoadingManager) {
+            this.lazyLoadingManager.resetGrid(gridId);
+        }
+
         // Add optimized grid class for performance
         grid.classList.add('optimized-grid');
 
@@ -5004,7 +5013,7 @@ class AlbumCollectionApp {
     }
 
     // Tracks View Implementation
-    async renderTracksGrid() {
+    async renderTracksGrid(tracksToRender = null) {
         console.log('🎵 Starting renderTracksGrid...');
         const tracksGrid = document.getElementById('tracks-grid');
 
@@ -5012,27 +5021,42 @@ class AlbumCollectionApp {
         const isMobile = this.isMobile;
         console.log(`📱 Mobile device detected: ${isMobile}`);
 
+        // Use provided tracks or default to collection tracks
+        let tracksToDisplay = tracksToRender;
+
         try {
-            // Show loading state immediately
-            tracksGrid.innerHTML = '<div class="loading-placeholder">🎵 Generating tracks data...</div>';
+            // Show loading state immediately if we need to generate tracks
+            if (!tracksToDisplay) {
+                tracksGrid.innerHTML = '<div class="loading-placeholder">🎵 Generating tracks data...</div>';
 
-            // Only generate tracks if they don't exist or are empty
-            if (!this.collection.tracks || this.collection.tracks.length === 0) {
-                console.log('🔄 Generating tracks from albums (async for mobile compatibility)...');
+                // Only generate tracks if they don't exist or are empty
+                if (!this.collection.tracks || this.collection.tracks.length === 0) {
+                    console.log('🔄 Generating tracks from albums (async for mobile compatibility)...');
 
-                // Use async generation to prevent blocking the main thread
-                if (isMobile) {
-                    // For mobile, use smaller batches to prevent memory pressure
-                    this.collection.tracks = await this.generateTracksFromAlbumsAsync();
-                } else {
-                    // For desktop, can use synchronous method
-                    this.collection.tracks = this.generateTracksFromAlbums();
+                    // Use async generation to prevent blocking the main thread
+                    if (isMobile) {
+                        // For mobile, use smaller batches to prevent memory pressure
+                        this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+                    } else {
+                        // For desktop, can use synchronous method
+                        this.collection.tracks = this.generateTracksFromAlbums();
+                    }
                 }
+                tracksToDisplay = this.collection.tracks;
             }
 
-            if (this.collection.tracks.length === 0) {
+            if (!tracksToDisplay || tracksToDisplay.length === 0) {
                 this.displayEmptyState('tracks');
                 return;
+            }
+
+            // AGGRESSIVE CLEARING: Reset the grid completely
+            tracksGrid.innerHTML = '';
+            tracksGrid.className = 'tracks-grid';
+            
+            // Reset the tracks grid in lazy loading manager
+            if (this.lazyLoadingManager) {
+                this.lazyLoadingManager.resetGrid('tracks-grid');
             }
 
             // Add optimized grid class for performance
@@ -5054,24 +5078,21 @@ class AlbumCollectionApp {
             let itemsPerPage;
             if (isMobile) {
                 // For mobile (especially iPhone), use much smaller initial batch
-                itemsPerPage = Math.min(24, Math.ceil(this.collection.tracks.length / 10)); // Max 24 items initially
+                itemsPerPage = Math.min(24, Math.ceil(tracksToDisplay.length / 10)); // Max 24 items initially
                 console.log('📱 Using mobile-optimized batch size:', itemsPerPage);
             } else {
                 // For desktop, can load more initially
-                itemsPerPage = Math.max(50, Math.ceil(this.collection.tracks.length / 5));
+                itemsPerPage = Math.max(50, Math.ceil(tracksToDisplay.length / 5));
             }
 
-            // Clear loading placeholder
-            tracksGrid.innerHTML = '';
-
-            this.lazyLoadingManager.initializeLazyGrid('tracks-grid', this.collection.tracks, trackRenderFunction, {
+            this.lazyLoadingManager.initializeLazyGrid('tracks-grid', tracksToDisplay, trackRenderFunction, {
                 itemsPerPage: itemsPerPage,
                 loadingMessage: '🎶 Loading more tracks...',
                 noMoreMessage: '✅ All tracks loaded',
                 enableInfiniteScroll: true
             });
 
-            console.log(`🚀 Lazy loading initialized for ${this.collection.tracks.length} tracks (${itemsPerPage} per page)`);
+            console.log(`🚀 Lazy loading initialized for ${tracksToDisplay.length} tracks (${itemsPerPage} per page)`);
 
             // Add debug function to check lazy loading state
             window.debugTracksLoading = () => {
@@ -5227,6 +5248,15 @@ class AlbumCollectionApp {
         if (!grid) {
             console.error(`❌ Grid not found: ${gridId}`);
             return;
+        }
+
+        // AGGRESSIVE CLEARING: Reset the grid completely
+        grid.innerHTML = '';
+        grid.className = activeTab === 'musical' ? 'musical-roles-grid' : 'technical-roles-grid';
+        
+        // Reset the specific grid in lazy loading manager
+        if (this.lazyLoadingManager) {
+            this.lazyLoadingManager.resetGrid(gridId);
         }
 
         // Add optimized grid class for performance
@@ -6695,16 +6725,9 @@ class AlbumCollectionApp {
                 return;
         }
 
-        // Temporarily replace collection.tracks with sorted/filtered data for rendering
-        const originalTracks = this.collection.tracks;
-        this.collection.tracks = tracksToDisplay;
-
-        // Render the grid with the filtered/sorted data
+        // Render the grid with the filtered/sorted data directly
         console.log(`🔄 Rendering tracks grid with sorted data...`);
-        this.renderTracksGrid();
-
-        // Restore original collection
-        this.collection.tracks = originalTracks;
+        this.renderTracksGrid(tracksToDisplay);
 
         console.log(`✅ Sorted and displayed ${tracksToDisplay.length} tracks`);
     }
