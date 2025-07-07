@@ -1907,7 +1907,7 @@ class AlbumCollectionApp {
                             <button class="modal-header-btn edit-btn" onclick="window.albumApp.openEditAlbumModal('${album.id}')" title="Edit Album">
                                 ✏️
                             </button>
-                            <button class="modal-header-btn delete-btn" onclick="window.albumApp.confirmDeleteAlbum('${album.id}', '${this.escapeAttributeValue(album.title)}')" title="Delete Album">
+                            <button class="modal-header-btn delete-btn" onclick="window.albumApp.confirmDeleteAlbum('${album.id}', ${JSON.stringify(album.title)})" title="Delete Album">
                                 🗑️
                             </button>
                         </div>
@@ -2550,7 +2550,7 @@ class AlbumCollectionApp {
                                 <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${album.id || albumData.id}'); event.stopPropagation();" title="Edit Album">
                                     ✏️
                                 </button>
-                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', '${this.escapeAttributeValue((album.title || albumData.title))}'); event.stopPropagation();" title="Delete Album">
+                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', ${JSON.stringify((album.title || albumData.title))})); event.stopPropagation();" title="Delete Album">
                                     🗑️
                                 </button>
                             </div>
@@ -6188,7 +6188,7 @@ class AlbumCollectionApp {
                                     <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${albumData.id}'); event.stopPropagation();" title="Edit Album">
                                         ✏️
                                     </button>
-                                    <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${albumData.id}', '${this.escapeAttributeValue(albumData.title)}'); event.stopPropagation();" title="Delete Album">
+                                    <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${albumData.id}', ${JSON.stringify(albumData.title)}); event.stopPropagation();" title="Delete Album">
                                         🗑️
                                     </button>
                                 </div>
@@ -7243,7 +7243,7 @@ class AlbumCollectionApp {
                                 <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${album.id || albumData.id}'); event.stopPropagation();" title="Edit Album">
                                     ✏️
                                 </button>
-                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', '${this.escapeAttributeValue((album.title || albumData.title))}'); event.stopPropagation();" title="Delete Album">
+                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', ${JSON.stringify((album.title || albumData.title))})); event.stopPropagation();" title="Delete Album">
                                     🗑️
                                 </button>
                             </div>
@@ -9283,7 +9283,7 @@ class AlbumCollectionApp {
                                 <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${album.id || albumData.id}'); event.stopPropagation();" title="Edit Album">
                                     ✏️
                                 </button>
-                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', '${this.escapeAttributeValue((album.title || albumData.title))}'); event.stopPropagation();" title="Delete Album">
+                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', ${JSON.stringify((album.title || albumData.title))})); event.stopPropagation();" title="Delete Album">
                                     🗑️
                                 </button>
                             </div>
