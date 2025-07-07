@@ -4414,8 +4414,15 @@
     display: flex;
     gap: 0.25rem;
     opacity: 0;
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
     z-index: 10;
+}
+
+/* Smart positioning: Move edit buttons to top-right when in selection mode */
+.album-card.selection-mode .card-edit-overlay {
+    top: 0.5rem;
+    right: 0.5rem;
+    left: auto;
 }
 
 .album-card:hover .card-edit-overlay,
@@ -5658,7 +5665,7 @@
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    z-index: 10;
+    z-index: 15;
     display: flex;
     align-items: center;
     justify-content: center;
