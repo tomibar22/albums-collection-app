@@ -649,7 +649,7 @@ class AlbumCollectionApp {
     }
 
     // Album Card Rendering and Management with Lazy Loading
-    renderAlbumsGrid() {
+    renderAlbumsGrid(albumsToRender = null) {
         // Debounce mechanism to prevent rapid successive calls
         const now = Date.now();
         if (now - this.lastAlbumRenderTime < this.albumRenderDebounceMs) {
@@ -660,9 +660,32 @@ class AlbumCollectionApp {
 
         const albumsGrid = document.getElementById('albums-grid');
 
-        if (this.collection.albums.length === 0) {
+        // Use provided albums or default to collection albums
+        const albumsToDisplay = albumsToRender || this.collection.albums;
+
+        if (albumsToDisplay.length === 0) {
             this.displayEmptyState('albums');
             return;
+        }
+
+        // Check for duplicate albums in data before rendering
+        const albumIds = albumsToDisplay.map(a => a.id);
+        const uniqueIds = new Set(albumIds);
+        if (albumIds.length !== uniqueIds.size) {
+            console.error(`❌ DUPLICATE ALBUMS IN DATA: ${albumIds.length} albums but only ${uniqueIds.size} unique IDs`);
+            // Remove duplicates from the data
+            const seenIds = new Set();
+            const cleanedAlbums = albumsToDisplay.filter(album => {
+                if (seenIds.has(album.id)) {
+                    console.log(`🗑️ Removing duplicate album: ${album.title} (ID: ${album.id})`);
+                    return false;
+                }
+                seenIds.add(album.id);
+                return true;
+            });
+            console.log(`✅ Cleaned data: now ${cleanedAlbums.length} unique albums`);
+            // Re-render with cleaned data
+            return this.renderAlbumsGrid(cleanedAlbums);
         }
 
         // 🔍 DEBUG: Check what albums are being rendered
@@ -677,6 +700,10 @@ class AlbumCollectionApp {
         // Clear existing card instances
         this.albumCardInstances.clear();
 
+        // AGGRESSIVE CLEARING: Completely reset the grid element
+        albumsGrid.innerHTML = '';
+        albumsGrid.className = 'albums-grid'; // Reset classes
+        
         // Reset the albums grid specifically to prevent duplication
         if (this.lazyLoadingManager) {
             this.lazyLoadingManager.resetGrid('albums-grid');
@@ -704,13 +731,13 @@ class AlbumCollectionApp {
             return cardElement;
         };
 
-        this.lazyLoadingManager.initializeLazyGrid('albums-grid', this.collection.albums, albumRenderFunction, {
+        this.lazyLoadingManager.initializeLazyGrid('albums-grid', albumsToDisplay, albumRenderFunction, {
             itemsPerPage: 20,
             loadingMessage: '🎵 Loading more albums...',
             noMoreMessage: '✅ All albums loaded'
         });
 
-        console.log(`🚀 Lazy loading initialized for ${this.collection.albums.length} albums`);
+        console.log(`🚀 Lazy loading initialized for ${albumsToDisplay.length} albums`);
     }
 
     // ===== ALBUM SELECTION MODE METHODS =====
@@ -4885,15 +4912,8 @@ class AlbumCollectionApp {
                 break;
         }
 
-        // Temporarily replace collection.albums with sorted/filtered data for rendering
-        const originalAlbums = this.collection.albums;
-        this.collection.albums = albumsToDisplay;
-
-        // Render the grid with the filtered/sorted data
-        this.renderAlbumsGrid();
-
-        // Restore original collection
-        this.collection.albums = originalAlbums;
+        // Render the grid with the filtered/sorted data directly
+        this.renderAlbumsGrid(albumsToDisplay);
 
         console.log(`✅ Sorted and displayed ${albumsToDisplay.length} albums`);
     }
