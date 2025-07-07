@@ -4418,11 +4418,12 @@
     z-index: 10;
 }
 
-/* Smart positioning: Move edit buttons to top-right when in selection mode */
+/* Smart positioning: Move edit buttons to bottom-left when in selection mode */
 .album-card.selection-mode .card-edit-overlay {
-    top: 0.5rem;
-    right: 0.5rem;
-    left: auto;
+    top: auto;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    right: auto;
 }
 
 .album-card:hover .card-edit-overlay,
