@@ -650,6 +650,10 @@ class AlbumCollectionApp {
 
     // Album Card Rendering and Management with Lazy Loading
     renderAlbumsGrid() {
+        // Debug tracking to identify duplicate calls
+        console.log(`🎵 DEBUG: renderAlbumsGrid() called at ${Date.now()}`);
+        console.trace('🔍 Call stack for renderAlbumsGrid()');
+        
         // Debounce mechanism to prevent rapid successive calls
         const now = Date.now();
         if (now - this.lastAlbumRenderTime < this.albumRenderDebounceMs) {
