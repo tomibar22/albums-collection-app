@@ -662,12 +662,21 @@ class AlbumCollectionApp {
         this.lastAlbumRenderTime = now;
 
         const albumsGrid = document.getElementById('albums-grid');
+        if (!albumsGrid) {
+            console.error('❌ renderAlbumsGrid: Albums grid element not found. Aborting render.');
+            return;
+        }
 
         // Use provided albums or default to collection albums
         const albumsToDisplay = albumsToRender || this.collection.albums;
 
         if (albumsToDisplay.length === 0) {
             this.displayEmptyState('albums');
+            // IMPORTANT: If there are no items, ensure lazy loading manager is reset
+            // This clears any previous state and sentinel for an empty grid.
+            if (this.lazyLoadingManager) {
+                this.lazyLoadingManager.resetGrid('albums-grid');
+            }
             return;
         }
 
@@ -676,11 +685,10 @@ class AlbumCollectionApp {
         const uniqueIds = new Set(albumIds);
         if (albumIds.length !== uniqueIds.size) {
             console.error(`❌ DUPLICATE ALBUMS IN DATA: ${albumIds.length} albums but only ${uniqueIds.size} unique IDs`);
-            // Remove duplicates from the data
             const seenIds = new Set();
             const cleanedAlbums = albumsToDisplay.filter(album => {
                 if (seenIds.has(album.id)) {
-                    console.log(`🗑️ Removing duplicate album: ${album.title} (ID: ${album.id})`);
+                    console.warn(`🗑️ Removing duplicate album from data: ${album.title} (ID: ${album.id})`);
                     return false;
                 }
                 seenIds.add(album.id);
@@ -700,19 +708,62 @@ class AlbumCollectionApp {
             console.log(`   Sample post-1994 albums:`, post1994Albums.slice(0, 5).map(a => `${a.title} (${a.year})`));
         }
 
-        // Clear existing card instances
+        // Clear existing card instances (assuming AlbumCard instances are managed here)
         this.albumCardInstances.clear();
 
-        // Allow re-renders for sorting - only prevent duplicates during rapid successive calls (handled by debounce above)
+        // Define the renderItem function for albums, to be passed to LazyLoadingManager
+        const renderAlbumItem = (album, index) => {
+            // This is a placeholder for your actual AlbumCard rendering logic.
+            // It should return an HTMLElement.
+            const albumDiv = document.createElement('div');
+            albumDiv.className = 'album-card'; // Apply your card styling classes
+            // IMPORTANT: Set data-item-id for LazyLoadingManager's duplicate prevention
+            albumDiv.setAttribute('data-item-id', album.id); 
+            albumDiv.innerHTML = `
+                <img src="${album.coverImageUrl || 'https://placehold.co/150x150/aabbcc/ffffff?text=No+Cover'}" alt="${album.title}" class="album-cover">
+                <div class="album-info">
+                    <h3 class="album-title">${album.title}</h3>
+                    <p class="album-artist">${album.artist}</p>
+                    <p class="album-year">${album.year}</p>
+                </div>
+            `;
+            // If you have an AlbumCard class, you would instantiate it and return its rendered element:
+            // const albumCard = new AlbumCard(album, this);
+            // this.albumCardInstances.set(album.id, albumCard); // Store instance if needed
+            // return albumCard.render();
+            return albumDiv;
+        };
 
-        // CRITICAL: Reset the albums grid specifically to prevent duplication
-        // This will clear DOM content and reset lazy loading state
+        // Use LazyLoadingManager to update or initialize the grid
         if (this.lazyLoadingManager) {
-            this.lazyLoadingManager.resetGrid('albums-grid');
+            // Attempt to update the grid first.
+            // If updateGridItems returns false, it means the grid was not yet initialized by the manager.
+            const updated = this.lazyLoadingManager.updateGridItems('albums-grid', albumsToDisplay);
+            if (!updated) {
+                console.log(`🎵 LazyLoadingManager: 'albums-grid' not found in manager state. Initializing it.`);
+                // If not updated, initialize it for the first time or after a full reset.
+                this.lazyLoadingManager.initializeLazyGrid('albums-grid', albumsToDisplay, renderAlbumItem);
+            }
+        } else {
+            console.error('❌ LazyLoadingManager not initialized. Cannot use lazy loading for albums grid. Rendering all items directly as a fallback.');
+            // Fallback: if lazy loading manager isn't available, render all items directly
+            albumsGrid.innerHTML = ''; // Clear existing content
+            albumsToDisplay.forEach((album, index) => {
+                const albumDiv = document.createElement('div');
+                albumDiv.className = 'album-card';
+                albumDiv.setAttribute('data-item-id', album.id);
+                albumDiv.innerHTML = `
+                    <img src="${album.coverImageUrl || 'https://placehold.co/150x150/aabbcc/ffffff?text=No+Cover'}" alt="${album.title}" class="album-cover">
+                    <div class="album-info">
+                        <h3 class="album-title">${album.title}</h3>
+                        <p class="album-artist">${album.artist}</p>
+                        <p class="album-year">${album.year}</p>
+                    </div>
+                `;
+                albumsGrid.appendChild(albumDiv);
+            });
         }
 
-        // Add optimized grid class for performance
-        albumsGrid.classList.add('optimized-grid');
 
         // Initialize lazy loading for albums grid
         const albumRenderFunction = (albumData, index) => {
