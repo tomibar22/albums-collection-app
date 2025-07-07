@@ -20,12 +20,10 @@ class AlbumCollectionApp {
         // Main page scroll position preservation
         this.mainPageScrollPosition = 0;
 
-        // Initialize Supabase service (placeholder)
+        // Initialize Supabase service
         this.supabaseService = null;
 
         // Initialize Lazy Loading Manager
-        // IMPORTANT: LazyLoadingManager must be defined and available in the global scope or imported.
-        // For this snippet, we assume it's available (e.g., from a separate script tag or file).
         this.lazyLoadingManager = new LazyLoadingManager();
 
         // Debounce mechanism to prevent double rendering
@@ -55,7 +53,7 @@ class AlbumCollectionApp {
         // Mobile detection for responsive features
         this.isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        console.log('🚀 AlbumCollectionApp initialized');
+        // Don't initialize here - wait for credentials to be applied first
     }
 
     async init() {
@@ -99,7 +97,7 @@ class AlbumCollectionApp {
 
             // Fallback to in-memory mode
             await this.initializeUIComponents();
-            this.loadInitialView(); // This will call renderAlbumsGrid
+            this.loadInitialView();
 
             // Hide loading modal
             setTimeout(() => {
@@ -664,21 +662,12 @@ class AlbumCollectionApp {
         this.lastAlbumRenderTime = now;
 
         const albumsGrid = document.getElementById('albums-grid');
-        if (!albumsGrid) {
-            console.error('❌ renderAlbumsGrid: Albums grid element not found. Aborting render.');
-            return;
-        }
 
         // Use provided albums or default to collection albums
-        let albumsToDisplay = albumsToRender || this.collection.albums;
+        const albumsToDisplay = albumsToRender || this.collection.albums;
 
         if (albumsToDisplay.length === 0) {
             this.displayEmptyState('albums');
-            // IMPORTANT: If there are no items, ensure lazy loading manager is reset
-            // This clears any previous state and sentinel for an empty grid.
-            if (this.lazyLoadingManager) {
-                this.lazyLoadingManager.resetGrid('albums-grid');
-            }
             return;
         }
 
@@ -687,17 +676,19 @@ class AlbumCollectionApp {
         const uniqueIds = new Set(albumIds);
         if (albumIds.length !== uniqueIds.size) {
             console.error(`❌ DUPLICATE ALBUMS IN DATA: ${albumIds.length} albums but only ${uniqueIds.size} unique IDs`);
+            // Remove duplicates from the data
             const seenIds = new Set();
             const cleanedAlbums = albumsToDisplay.filter(album => {
                 if (seenIds.has(album.id)) {
-                    console.warn(`🗑️ Removing duplicate album from data: ${album.title} (ID: ${album.id})`);
+                    console.log(`🗑️ Removing duplicate album: ${album.title} (ID: ${album.id})`);
                     return false;
                 }
                 seenIds.add(album.id);
                 return true;
             });
             console.log(`✅ Cleaned data: now ${cleanedAlbums.length} unique albums`);
-            albumsToDisplay = cleanedAlbums; // Use cleaned data for rendering
+            // Re-render with cleaned data
+            return this.renderAlbumsGrid(cleanedAlbums);
         }
 
         // 🔍 DEBUG: Check what albums are being rendered
@@ -709,16 +700,22 @@ class AlbumCollectionApp {
             console.log(`   Sample post-1994 albums:`, post1994Albums.slice(0, 5).map(a => `${a.title} (${a.year})`));
         }
 
-        // Clear existing card instances (assuming AlbumCard instances are managed here)
+        // Clear existing card instances
         this.albumCardInstances.clear();
 
-        // Add optimized grid class for performance (this should ideally be done once during UI init)
+        // Allow re-renders for sorting - only prevent duplicates during rapid successive calls (handled by debounce above)
+
+        // CRITICAL: Reset the albums grid specifically to prevent duplication
+        // This will clear DOM content and reset lazy loading state
+        if (this.lazyLoadingManager) {
+            this.lazyLoadingManager.resetGrid('albums-grid');
+        }
+
+        // Add optimized grid class for performance
         albumsGrid.classList.add('optimized-grid');
 
-        // Define the renderItem function for albums, to be passed to LazyLoadingManager
+        // Initialize lazy loading for albums grid
         const albumRenderFunction = (albumData, index) => {
-            // This is a placeholder for your actual AlbumCard rendering logic.
-            // It should return an HTMLElement.
             const options = {
                 selectionMode: this.selectionMode,
                 selected: this.selectedAlbums.has(albumData.id),
@@ -726,10 +723,8 @@ class AlbumCollectionApp {
                     this.handleAlbumSelectionChange(albumId, isSelected);
                 }
             };
-            // Assuming AlbumCard class is defined elsewhere and returns an HTMLElement from its render method
-            // If AlbumCard is not available, this will need to be a direct DOM creation.
-            const albumCard = new AlbumCard(albumData, options); // Placeholder for AlbumCard instantiation
-            const cardElement = albumCard.render(); // Placeholder for AlbumCard render method
+            const albumCard = new AlbumCard(albumData, options);
+            const cardElement = albumCard.render();
             cardElement.classList.add('grid-item');
 
             // Store the card instance for later reference
@@ -738,7 +733,7 @@ class AlbumCollectionApp {
             return cardElement;
         };
 
-        // Mobile-aware batch sizing for LazyLoadingManager
+        // Mobile-aware batch sizing to prevent timing issues on desktop
         let itemsPerPage;
         if (this.isMobile) {
             // For mobile, use smaller batches for performance
@@ -750,43 +745,14 @@ class AlbumCollectionApp {
             console.log('🖥️ Using desktop-conservative album batch size:', itemsPerPage);
         }
 
-        // Use LazyLoadingManager to update or initialize the grid
-        if (this.lazyLoadingManager) {
-            // Attempt to update the grid first.
-            // If updateGridItems returns false, it means the grid was not yet initialized by the manager.
-            const updated = this.lazyLoadingManager.updateGridItems('albums-grid', albumsToDisplay);
-            if (!updated) {
-                console.log(`🎵 LazyLoadingManager: 'albums-grid' not found in manager state or update failed. Initializing it.`);
-                // If not updated, initialize it for the first time or after a full reset.
-                this.lazyLoadingManager.initializeLazyGrid('albums-grid', albumsToDisplay, albumRenderFunction, {
-                    itemsPerPage: itemsPerPage,
-                    loadingMessage: '🎵 Loading more albums...',
-                    noMoreMessage: '✅ All albums loaded'
-                });
-            }
-        } else {
-            console.error('❌ LazyLoadingManager not initialized. Cannot use lazy loading for albums grid. Rendering all items directly as a fallback.');
-            // Fallback: if lazy loading manager isn't available, render all items directly
-            albumsGrid.innerHTML = ''; // Clear existing content
-            albumsToDisplay.forEach((album, index) => {
-                const albumDiv = document.createElement('div');
-                albumDiv.className = 'album-card grid-item'; // Add grid-item class
-                albumDiv.setAttribute('data-item-id', album.id);
-                albumDiv.innerHTML = `
-                    <img src="${album.coverImageUrl || 'https://placehold.co/150x150/aabbcc/ffffff?text=No+Cover'}" alt="${album.title}" class="album-cover">
-                    <div class="album-info">
-                        <h3 class="album-title">${album.title}</h3>
-                        <p class="album-artist">${album.artist}</p>
-                        <p class="album-year">${album.year}</p>
-                    </div>
-                `;
-                albumsGrid.appendChild(albumDiv);
-            });
-        }
+        this.lazyLoadingManager.initializeLazyGrid('albums-grid', albumsToDisplay, albumRenderFunction, {
+            itemsPerPage: itemsPerPage,
+            loadingMessage: '🎵 Loading more albums...',
+            noMoreMessage: '✅ All albums loaded'
+        });
 
-        console.log(`🚀 Lazy loading process initiated for ${albumsToDisplay.length} albums.`);
+        console.log(`🚀 Lazy loading initialized for ${albumsToDisplay.length} albums`);
     }
-
 
     // ===== ALBUM SELECTION MODE METHODS =====
 
