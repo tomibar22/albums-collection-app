@@ -701,6 +701,21 @@ class AlbumCollectionApp {
         // Clear existing card instances
         this.albumCardInstances.clear();
 
+        // ENHANCED DUPLICATE PREVENTION: Check if grid already has content BEFORE clearing
+        if (albumsGrid.children.length > 0) {
+            console.log(`⚠️ Albums grid already has ${albumsGrid.children.length} items - preventing duplicate initialization`);
+            return;
+        }
+
+        // ENHANCED DUPLICATE PREVENTION: Check if lazy loading is already managing this grid
+        if (this.lazyLoadingManager && this.lazyLoadingManager.loadingStates && this.lazyLoadingManager.loadingStates.has('albums-grid')) {
+            const currentState = this.lazyLoadingManager.loadingStates.get('albums-grid');
+            if (currentState && currentState.items && currentState.items.length > 0) {
+                console.log(`⚠️ Lazy loading manager already managing albums-grid with ${currentState.items.length} items - preventing duplicate initialization`);
+                return;
+            }
+        }
+
         // Clear existing content but preserve CSS classes
         albumsGrid.innerHTML = '';
         
@@ -711,12 +726,6 @@ class AlbumCollectionApp {
 
         // Add optimized grid class for performance
         albumsGrid.classList.add('optimized-grid');
-
-        // ENHANCED DUPLICATE PREVENTION: Check if grid already has content
-        if (albumsGrid.children.length > 0) {
-            console.log(`⚠️ Albums grid already has ${albumsGrid.children.length} items - preventing duplicate initialization`);
-            return;
-        }
 
         // Initialize lazy loading for albums grid
         const albumRenderFunction = (albumData, index) => {
