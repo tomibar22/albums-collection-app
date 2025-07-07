@@ -220,7 +220,6 @@
         height: 36px;
         font-size: 1rem;
     }
-    }
 }
 
 /* Scraper View Styles */
@@ -784,7 +783,6 @@
     padding-top: 1rem;
     border-top: 1px solid var(--border-color);
 }
-}
 
 .modal-track-count {
     font-size: 1rem;
@@ -1046,7 +1044,6 @@
         align-items: flex-start;
         gap: 0.25rem;
     }
-}
 
 @media (max-width: 480px) {
     .modal-content {
@@ -1386,7 +1383,6 @@
         0 0 0 2px rgba(255, 255, 255, 0.3);
 }
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
 
 .artist-card:hover .initials-text {
     color: #ffffff;
@@ -1648,7 +1644,6 @@
     .artist-album-tracks {
         font-size: 0.75rem;
     }
-}
 
 @media (max-width: 480px) {
     .artist-albums-modal {
@@ -1912,7 +1907,6 @@
     .track-album-title {
         font-size: 1.1rem;
     }
-}
 }
 
 /* Track albums modal scrollbar */
@@ -2702,7 +2696,6 @@
     border-radius: 8px;
     border: 1px solid var(--border-color);
     transition: all 0.3s ease;
-}
 
 .role-artist-item:hover {
     border-color: var(--accent-primary);
@@ -4026,7 +4019,6 @@
     transform: translateY(-1px);
 }
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
 
 .form-btn.cancel-btn {
     background: rgba(75, 85, 99, 0.3);
