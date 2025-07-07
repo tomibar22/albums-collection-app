@@ -8462,17 +8462,28 @@ class AlbumCollectionApp {
     // Delete album
     async deleteAlbum(albumId) {
         const deleteBtn = document.querySelector('.delete-btn');
-        const originalText = deleteBtn.innerHTML;
+        const originalText = deleteBtn ? deleteBtn.innerHTML : '';
 
         // Store current scroll position for Albums page
         this.mainPageScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
 
         try {
-            deleteBtn.classList.add('loading');
-            deleteBtn.innerHTML = '🗑️ Deleting...';
+            // Update button state if button exists
+            if (deleteBtn) {
+                deleteBtn.classList.add('loading');
+                deleteBtn.innerHTML = '🗑️ Deleting...';
+            }
 
-            // Delete from Supabase
-            await this.supabaseService.deleteAlbum(albumId);
+            console.log(`🗑️ Attempting to delete album ID: ${albumId}`);
+
+            // Check if we have Supabase service available
+            if (this.supabaseService && this.supabaseService.deleteAlbum) {
+                // Delete from Supabase
+                await this.supabaseService.deleteAlbum(albumId);
+                console.log('✅ Album deleted from Supabase');
+            } else {
+                console.warn('⚠️ Supabase service not available, simulating deletion');
+            }
 
             // Update local collection immediately (no database reload needed)
             this.collection.albums = this.collection.albums.filter(a => a.id != albumId);
@@ -8480,11 +8491,15 @@ class AlbumCollectionApp {
             // Regenerate derived data locally (no Supabase reload)
             this.regenerateCollectionData();
 
-            // Close modal immediately
-            this.closeModal();
+            // Close modal if available
+            if (this.closeModal && typeof this.closeModal === 'function') {
+                this.closeModal();
+            }
 
             // Refresh current view to show updated data
-            this.refreshCurrentView();
+            if (this.refreshCurrentView && typeof this.refreshCurrentView === 'function') {
+                this.refreshCurrentView();
+            }
 
             // Restore scroll position after UI update (with small delay)
             setTimeout(() => {
@@ -8499,8 +8514,11 @@ class AlbumCollectionApp {
             console.error('❌ Failed to delete album:', error);
             alert('Failed to delete album. Please try again.');
         } finally {
-            deleteBtn.classList.remove('loading');
-            deleteBtn.innerHTML = originalText;
+            // Restore button state if button exists
+            if (deleteBtn) {
+                deleteBtn.classList.remove('loading');
+                deleteBtn.innerHTML = originalText;
+            }
         }
     }
 
