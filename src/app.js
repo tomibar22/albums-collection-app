@@ -29,6 +29,10 @@ class AlbumCollectionApp {
         // Debounce mechanism to prevent double rendering
         this.lastArtistRenderTime = 0;
         this.artistRenderDebounceMs = 100; // 100ms debounce
+        
+        // Debounce mechanism for album rendering to prevent duplicates
+        this.lastAlbumRenderTime = 0;
+        this.albumRenderDebounceMs = 100; // 100ms debounce
 
         // Performance optimization flags
         this.artistsNeedRegeneration = true; // Flag to track when artists need to be regenerated
@@ -646,6 +650,14 @@ class AlbumCollectionApp {
 
     // Album Card Rendering and Management with Lazy Loading
     renderAlbumsGrid() {
+        // Debounce mechanism to prevent rapid successive calls
+        const now = Date.now();
+        if (now - this.lastAlbumRenderTime < this.albumRenderDebounceMs) {
+            console.log(`🎵 DEBUG: Debouncing album render (${now - this.lastAlbumRenderTime}ms since last render)`);
+            return;
+        }
+        this.lastAlbumRenderTime = now;
+
         const albumsGrid = document.getElementById('albums-grid');
 
         if (this.collection.albums.length === 0) {
