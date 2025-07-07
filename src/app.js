@@ -733,8 +733,20 @@ class AlbumCollectionApp {
             return cardElement;
         };
 
+        // Mobile-aware batch sizing to prevent timing issues on desktop
+        let itemsPerPage;
+        if (this.isMobile) {
+            // For mobile, use smaller batches for performance
+            itemsPerPage = Math.min(16, Math.ceil(albumsToDisplay.length / 12)); // Max 16 items initially
+            console.log('📱 Using mobile-optimized album batch size:', itemsPerPage);
+        } else {
+            // For desktop, use conservative batch size to prevent duplication timing issues
+            itemsPerPage = 12; // Smaller than the problematic 20 to avoid race conditions
+            console.log('🖥️ Using desktop-conservative album batch size:', itemsPerPage);
+        }
+
         this.lazyLoadingManager.initializeLazyGrid('albums-grid', albumsToDisplay, albumRenderFunction, {
-            itemsPerPage: 20,
+            itemsPerPage: itemsPerPage,
             loadingMessage: '🎵 Loading more albums...',
             noMoreMessage: '✅ All albums loaded'
         });
