@@ -102,34 +102,12 @@ class LazyLoadingManager {
             // Remove loading indicator
             this.hideLoadingIndicator(gridId);
             
-            // CRITICAL FIX: Render batch items with comprehensive duplicate prevention
-            const renderedIds = new Set();
-            let actuallyAdded = 0;
-            
+            // Render batch items
             batch.forEach((item, index) => {
                 try {
-                    // Prevent duplicate rendering of same item
-                    const itemId = item.id || `item-${startIndex + index}`;
-                    
-                    // Check 1: Already processed in this batch
-                    if (renderedIds.has(itemId)) {
-                        console.warn(`⚠️ DUPLICATE PREVENTION: Skipping duplicate render of item ${itemId} in batch`);
-                        return;
-                    }
-                    renderedIds.add(itemId);
-                    
-                    // Check 2: Already exists in DOM
-                    const existingElement = gridElement.querySelector(`[data-album-id="${itemId}"]`);
-                    if (existingElement) {
-                        console.warn(`⚠️ DOM DUPLICATE PREVENTION: Element with ID ${itemId} already exists in grid, skipping`);
-                        return;
-                    }
-                    
-                    // Render the item
                     const element = renderItem(item, startIndex + index);
                     if (element) {
                         gridElement.appendChild(element);
-                        actuallyAdded++;
                         
                         // Add subtle animation for newly loaded items
                         this.animateNewItem(element);
@@ -148,7 +126,7 @@ class LazyLoadingManager {
                 this.showNoMoreMessage(gridId);
             }
             
-            console.log(`✅ Loaded batch for ${gridId}: items ${startIndex}-${endIndex-1} (${batch.length} items requested, ${actuallyAdded} actually added)`);
+            console.log(`✅ Loaded batch for ${gridId}: items ${startIndex}-${endIndex-1} (${batch.length} items)`);
             
         }, 50); // Small delay for smooth loading effect
     }
