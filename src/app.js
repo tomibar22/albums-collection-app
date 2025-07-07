@@ -516,10 +516,20 @@ class AlbumCollectionApp {
         const modal = document.getElementById('more-info-modal');
         const closeModal = document.getElementById('close-modal');
 
-        closeModal.addEventListener('click', () => this.closeModal(true)); // Force close on X button
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) this.closeModal(true); // Force close when clicking outside
-        });
+        // Only add listeners if elements exist
+        if (closeModal) {
+            closeModal.addEventListener('click', () => this.closeModal(true)); // Force close on X button
+        } else {
+            console.warn('⚠️ Close modal button not found');
+        }
+        
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) this.closeModal(true); // Force close when clicking outside
+            });
+        } else {
+            console.warn('⚠️ Modal element not found');
+        }
 
         // Escape key to close modal
         document.addEventListener('keydown', (e) => {
@@ -9561,7 +9571,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else {
             console.log('🔐 Authentication failed or redirected');
-            // Don't initialize the app if authentication failed
+            // Initialize app with default configuration as fallback
+            console.log('🔄 Initializing app with default configuration for offline mode...');
+            try {
+                window.albumApp = new AlbumCollectionApp();
+                await window.albumApp.init();
+                console.log('✅ App initialized in offline mode');
+            } catch (initError) {
+                console.error('❌ Failed to initialize app in offline mode:', initError);
+            }
         }
 
     } catch (error) {
