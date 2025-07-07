@@ -700,9 +700,8 @@ class AlbumCollectionApp {
         // Clear existing card instances
         this.albumCardInstances.clear();
 
-        // AGGRESSIVE CLEARING: Completely reset the grid element
+        // Clear existing content but preserve CSS classes
         albumsGrid.innerHTML = '';
-        albumsGrid.className = 'albums-grid'; // Reset classes
         
         // Reset the albums grid specifically to prevent duplication
         if (this.lazyLoadingManager) {
