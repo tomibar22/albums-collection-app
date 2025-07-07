@@ -57,6 +57,7 @@ class AlbumCollectionApp {
     }
 
     async init() {
+        console.log('🚀 AlbumCollectionApp initializing... v2.1 - DUPLICATE PREVENTION ENHANCED');
         try {
             // Show loading modal immediately with better messaging
             const startMessage = this.isMobile ? 'Optimizing for mobile performance...' : 'Starting your music library...';
@@ -703,13 +704,19 @@ class AlbumCollectionApp {
         // Clear existing content but preserve CSS classes
         albumsGrid.innerHTML = '';
         
-        // Reset the albums grid specifically to prevent duplication
+        // CRITICAL: Reset the albums grid specifically to prevent duplication
         if (this.lazyLoadingManager) {
             this.lazyLoadingManager.resetGrid('albums-grid');
         }
 
         // Add optimized grid class for performance
         albumsGrid.classList.add('optimized-grid');
+
+        // ENHANCED DUPLICATE PREVENTION: Check if grid already has content
+        if (albumsGrid.children.length > 0) {
+            console.log(`⚠️ Albums grid already has ${albumsGrid.children.length} items - preventing duplicate initialization`);
+            return;
+        }
 
         // Initialize lazy loading for albums grid
         const albumRenderFunction = (albumData, index) => {
@@ -968,13 +975,18 @@ class AlbumCollectionApp {
             return;
         }
 
-        // AGGRESSIVE CLEARING: Reset the grid completely
+        // Clear existing content but preserve essential CSS classes
         grid.innerHTML = '';
-        grid.className = activeTab === 'musical' ? 'musical-artists-grid' : 'technical-artists-grid';
         
         // Reset the specific grid in lazy loading manager
         if (this.lazyLoadingManager) {
             this.lazyLoadingManager.resetGrid(gridId);
+        }
+
+        // ENHANCED DUPLICATE PREVENTION: Check if grid already has content after reset
+        if (grid.children.length > 0) {
+            console.log(`⚠️ ${gridId} already has ${grid.children.length} items - preventing duplicate initialization`);
+            return;
         }
 
         // Add optimized grid class for performance
@@ -5249,13 +5261,18 @@ class AlbumCollectionApp {
             return;
         }
 
-        // AGGRESSIVE CLEARING: Reset the grid completely
+        // Clear existing content but preserve essential CSS classes
         grid.innerHTML = '';
-        grid.className = activeTab === 'musical' ? 'musical-roles-grid' : 'technical-roles-grid';
         
         // Reset the specific grid in lazy loading manager
         if (this.lazyLoadingManager) {
             this.lazyLoadingManager.resetGrid(gridId);
+        }
+
+        // ENHANCED DUPLICATE PREVENTION: Check if grid already has content after reset
+        if (grid.children.length > 0) {
+            console.log(`⚠️ ${gridId} already has ${grid.children.length} items - preventing duplicate initialization`);
+            return;
         }
 
         // Add optimized grid class for performance
