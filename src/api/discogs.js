@@ -12,10 +12,26 @@ class DiscogsAPI {
         
         this.config = window.CONFIG.DISCOGS;
         this.baseUrl = this.config.BASE_URL;
-        this.token = this.config.API_KEY;
+        this._token = this.config.API_KEY; // Private token storage
         this.headers = { ...this.config.HEADERS };
         this.rateLimit = this.config.RATE_LIMIT;
         this.debug = window.CONFIG.DEBUG; // Add debug configuration
+        
+        // Add token mutation watcher
+        Object.defineProperty(this, 'token', {
+            get: function() {
+                return this._token;
+            },
+            set: function(newValue) {
+                console.log('🚨 TOKEN MUTATION DETECTED:', {
+                    oldValue: this._token?.substring(0, 15) + '...' || 'UNDEFINED',
+                    newValue: newValue?.substring(0, 15) + '...' || 'UNDEFINED',
+                    stackTrace: new Error().stack.split('\n').slice(1, 5),
+                    timestamp: new Date().toISOString()
+                });
+                this._token = newValue;
+            }
+        });
         
         console.log('🔧 DiscogsAPI initialized with token:', {
             hasToken: !!this.token,
