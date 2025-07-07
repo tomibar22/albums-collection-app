@@ -46,13 +46,16 @@ class AlbumCollectionApp {
             roles: ''
         };
 
+        // Mobile detection for responsive features
+        this.isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
         // Don't initialize here - wait for credentials to be applied first
     }
 
     async init() {
         try {
             // Show loading modal immediately with better messaging
-            const startMessage = isMobile ? 'Optimizing for mobile performance...' : 'Starting your music library...';
+            const startMessage = this.isMobile ? 'Optimizing for mobile performance...' : 'Starting your music library...';
             this.showLoadingModal('🎧 Albums Collection', startMessage, 0);
 
             // Start Supabase initialization immediately (non-blocking)
@@ -68,8 +71,7 @@ class AlbumCollectionApp {
             this.updateLoadingProgress('🎯 Interface ready', 'Loading your music collection...', 25);
 
             // Enhanced data loading with granular progress
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
+            if (this.isMobile) {
                 await this.loadDataFromSupabaseMobileOptimized();
             } else {
                 await this.loadDataFromSupabaseEnhanced();
@@ -4571,8 +4573,8 @@ class AlbumCollectionApp {
     async loadViewContent(viewType) {
         console.log(`Loading content for view: ${viewType}`);
 
-        // Mobile detection for lazy loading
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        // Use existing mobile detection
+        const isMobile = this.isMobile;
 
         switch(viewType) {
             case 'albums':
@@ -4892,8 +4894,8 @@ class AlbumCollectionApp {
         console.log('🎵 Starting renderTracksGrid...');
         const tracksGrid = document.getElementById('tracks-grid');
 
-        // Mobile detection for performance optimization
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        // Use existing mobile detection for performance optimization
+        const isMobile = this.isMobile;
         console.log(`📱 Mobile device detected: ${isMobile}`);
 
         try {
@@ -5296,8 +5298,8 @@ class AlbumCollectionApp {
         const totalAlbums = this.collection.albums?.length || 0;
         let processedAlbums = 0;
 
-        // Mobile detection for batch size optimization
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        // Use existing mobile detection for batch size optimization
+        const isMobile = this.isMobile;
         const batchSize = isMobile ? 25 : 100; // Smaller batches for mobile
 
         console.log(`🎵 Generating tracks async (mobile: ${isMobile}, batch size: ${batchSize})...`);
