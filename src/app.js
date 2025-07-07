@@ -3284,18 +3284,27 @@ class AlbumCollectionApp {
 
         // Use existing global DiscogsAPI instance (already initialized with user credentials)
         // instead of creating a new one that might have empty config
+        console.log('🎵 App DiscogsAPI Setup - Before:', {
+            hasGlobalInstance: !!window.discogsAPI,
+            globalToken: window.discogsAPI?.token?.substring(0, 15) + '...' || 'NO_GLOBAL',
+            configToken: window.CONFIG?.DISCOGS?.API_KEY?.substring(0, 15) + '...' || 'NO_CONFIG'
+        });
+        
         this.discogsAPI = window.discogsAPI || new window.DiscogsAPI();
         
         // If we had to create a new instance, make it global too
         if (!window.discogsAPI) {
             window.discogsAPI = this.discogsAPI;
+            console.log('🎵 Created new global DiscogsAPI instance');
+        } else {
+            console.log('🎵 Using existing global DiscogsAPI instance');
         }
 
         // Debug: Verify API key is properly configured
         console.log('🎵 Discogs API initialization:', {
             hasApiKey: !!this.discogsAPI.token,
             apiKeyLength: this.discogsAPI.token?.length || 0,
-            apiKeyPreview: this.discogsAPI.token?.substring(0, 10) + '...' || 'EMPTY',
+            apiKeyPreview: this.discogsAPI.token?.substring(0, 15) + '...' || 'EMPTY',
             configApiKey: !!window.CONFIG?.DISCOGS?.API_KEY,
             timestamp: new Date().toISOString()
         });
@@ -3330,11 +3339,27 @@ class AlbumCollectionApp {
         }
 
         console.log(`🔍 Searching for artist: ${query}`);
+        console.log('🔍 Pre-search API state:', {
+            hasDiscogsAPI: !!this.discogsAPI,
+            apiToken: this.discogsAPI?.token?.substring(0, 15) + '...' || 'NO_TOKEN',
+            globalApiToken: window.discogsAPI?.token?.substring(0, 15) + '...' || 'NO_GLOBAL',
+            configToken: window.CONFIG?.DISCOGS?.API_KEY?.substring(0, 15) + '...' || 'NO_CONFIG'
+        });
+        
         this.showLoading('Searching for artists...');
 
         try {
             // Search for artists with more results for selection
+            console.log('🔍 About to call searchArtist...');
             const searchResults = await this.discogsAPI.searchArtist(query, 10);
+            console.log('🔍 Search completed, checking API state after search...');
+            
+            console.log('🔍 Post-search API state:', {
+                hasDiscogsAPI: !!this.discogsAPI,
+                apiToken: this.discogsAPI?.token?.substring(0, 15) + '...' || 'NO_TOKEN',
+                globalApiToken: window.discogsAPI?.token?.substring(0, 15) + '...' || 'NO_GLOBAL',
+                configToken: window.CONFIG?.DISCOGS?.API_KEY?.substring(0, 15) + '...' || 'NO_CONFIG'
+            });
 
             if (!searchResults || searchResults.length === 0) {
                 this.hideLoading();
@@ -3354,6 +3379,11 @@ class AlbumCollectionApp {
     }
 
     displayArtistSearchResults(artists) {
+        console.log('🎭 Displaying artist search results:', {
+            artistCount: artists.length,
+            apiTokenBefore: this.discogsAPI?.token?.substring(0, 15) + '...' || 'NO_TOKEN'
+        });
+        
         const resultsContainer = document.getElementById('artist-results');
 
         if (!artists || artists.length === 0) {
@@ -3399,7 +3429,15 @@ class AlbumCollectionApp {
         });
 
         // Mark already scraped artists
-        setTimeout(() => this.markSearchResultsAsScraped(), 100);
+        console.log('🎭 About to call markSearchResultsAsScraped, API token state:', {
+            apiToken: this.discogsAPI?.token?.substring(0, 15) + '...' || 'NO_TOKEN'
+        });
+        setTimeout(() => {
+            console.log('🎭 Calling markSearchResultsAsScraped, API token state:', {
+                apiToken: this.discogsAPI?.token?.substring(0, 15) + '...' || 'NO_TOKEN'
+            });
+            this.markSearchResultsAsScraped();
+        }, 100);
     }
 
     async scrapeArtistDiscography(artistId, artistName) {

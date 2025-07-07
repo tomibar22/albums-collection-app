@@ -3,12 +3,26 @@
 
 class DiscogsAPI {
     constructor() {
+        console.log('🔧 NEW DiscogsAPI instance created at:', new Date().toISOString());
+        console.log('🔧 CONFIG at constructor time:', {
+            hasConfig: !!window.CONFIG,
+            hasDiscogs: !!window.CONFIG?.DISCOGS,
+            configApiKey: window.CONFIG?.DISCOGS?.API_KEY?.substring(0, 15) + '...' || 'EMPTY'
+        });
+        
         this.config = window.CONFIG.DISCOGS;
         this.baseUrl = this.config.BASE_URL;
         this.token = this.config.API_KEY;
         this.headers = { ...this.config.HEADERS };
         this.rateLimit = this.config.RATE_LIMIT;
         this.debug = window.CONFIG.DEBUG; // Add debug configuration
+        
+        console.log('🔧 DiscogsAPI initialized with token:', {
+            hasToken: !!this.token,
+            tokenLength: this.token?.length || 0,
+            tokenPreview: this.token?.substring(0, 15) + '...' || 'EMPTY',
+            timestamp: new Date().toISOString()
+        });
     }
 
     /**
@@ -22,6 +36,15 @@ class DiscogsAPI {
         
         let rateLimitAttempts = 0;
         let currentDelay = initialDelay;
+
+        console.log('🚀 API Request Starting:', {
+            url: url.substring(0, 120) + '...',
+            hasToken: !!this.token,
+            tokenLength: this.token?.length || 0,
+            tokenPreview: this.token?.substring(0, 15) + '...' || 'EMPTY',
+            attempt: 1,
+            timestamp: new Date().toISOString()
+        });
 
         if (this.debug.LOG_API_CALLS) {
             console.log(`🔗 Making Discogs API request: ${url}`);
@@ -131,8 +154,19 @@ class DiscogsAPI {
      * Add authentication token to URL
      */
     addTokenToUrl(url) {
+        console.log('🔑 Adding token to URL:', {
+            hasToken: !!this.token,
+            tokenLength: this.token?.length || 0,
+            tokenPreview: this.token?.substring(0, 15) + '...' || 'EMPTY',
+            originalUrl: url,
+            timestamp: new Date().toISOString()
+        });
+        
         const separator = url.includes('?') ? '&' : '?';
-        return `${url}${separator}token=${this.token}`;
+        const finalUrl = `${url}${separator}token=${this.token}`;
+        
+        console.log('🔗 Final URL preview:', finalUrl.substring(0, 100) + '...');
+        return finalUrl;
     }
 
     /**
