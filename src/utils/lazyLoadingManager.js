@@ -27,21 +27,10 @@ class LazyLoadingManager {
             return;
         }
 
-        // DEBUG: Check if grid is already being managed
+        // Check if grid is already being managed
         if (this.loadingStates.has(gridId)) {
-            console.error(`🚨 DUPLICATE LAZY LOADING INITIALIZATION: ${gridId} is already being managed!`);
-            console.error(`🚨 Existing state:`, this.loadingStates.get(gridId));
-            console.error(`🚨 Current grid content:`, gridElement.children.length, 'items');
-            // Clear existing state to prevent conflicts
-            this.resetGrid(gridId);
-        }
-
-        // ADDITIONAL SAFEGUARD: Ensure grid is actually empty before proceeding
-        if (gridElement.children.length > 0) {
-            console.warn(`⚠️ Grid ${gridId} still has ${gridElement.children.length} items after reset, force clearing...`);
-            while (gridElement.firstChild) {
-                gridElement.removeChild(gridElement.firstChild);
-            }
+            console.warn(`⚠️ Grid ${gridId} already initialized, updating instead`);
+            return this.updateGridItems(gridId, items);
         }
         
         // Configuration
@@ -349,16 +338,41 @@ class LazyLoadingManager {
      */
     updateGridItems(gridId, newItems) {
         const state = this.loadingStates.get(gridId);
-        if (!state) return;
+        if (!state) {
+            console.warn(`⚠️ No loading state found for ${gridId}, initializing fresh`);
+            return false; // Signal that initialization is needed
+        }
         
-        // Update items
+        console.log(`🔄 Updating ${gridId} data: ${state.items.length} -> ${newItems.length} items`);
+        
+        // Update items in the existing state
         state.items = newItems;
+        state.currentPage = 0;
+        state.isLoading = false;
+        state.allLoaded = false;
         
-        // Reset and reload
-        this.resetGrid(gridId);
-        this.initializeLazyGrid(gridId, newItems, state.renderItem, state.config);
+        // Clear DOM content only (keep lazy loading state)
+        const gridElement = document.getElementById(gridId);
+        if (gridElement) {
+            gridElement.innerHTML = '';
+        }
         
-        console.log(`🔄 Updated ${gridId} with ${newItems.length} new items`);
+        // Remove existing sentinel
+        const sentinel = document.getElementById(`${gridId}-sentinel`);
+        if (sentinel) {
+            sentinel.remove();
+        }
+        
+        // Load first batch with existing render function
+        this.loadNextBatch(gridId);
+        
+        // Re-setup infinite scroll
+        if (state.config.enableInfiniteScroll) {
+            this.setupInfiniteScroll(gridId);
+        }
+        
+        console.log(`✅ Updated ${gridId} with ${newItems.length} items (no reinitialization)`);
+        return true; // Signal successful update
     }
     
     /**
