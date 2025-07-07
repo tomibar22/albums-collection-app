@@ -8452,12 +8452,15 @@ class AlbumCollectionApp {
 
     // Confirm album deletion
     confirmDeleteAlbum(albumId, albumTitle) {
+        // Escape the album title for safe HTML display
+        const escapedTitle = this.escapeHtmlAttribute(albumTitle);
+        
         const confirmationHtml = `
             <div class="confirmation-dialog">
                 <div class="confirmation-icon">⚠️</div>
                 <h3 class="confirmation-title">Delete Album</h3>
                 <p class="confirmation-message">
-                    Are you sure you want to delete "<strong>${albumTitle}</strong>"?<br>
+                    Are you sure you want to delete "<strong>${escapedTitle}</strong>"?<br>
                     This action cannot be undone.
                 </p>
                 <div class="confirmation-actions">
