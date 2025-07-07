@@ -701,20 +701,7 @@ class AlbumCollectionApp {
         // Clear existing card instances
         this.albumCardInstances.clear();
 
-        // ENHANCED DUPLICATE PREVENTION: Check if grid already has content BEFORE clearing
-        if (albumsGrid.children.length > 0) {
-            console.log(`⚠️ Albums grid already has ${albumsGrid.children.length} items - preventing duplicate initialization`);
-            return;
-        }
-
-        // ENHANCED DUPLICATE PREVENTION: Check if lazy loading is already managing this grid
-        if (this.lazyLoadingManager && this.lazyLoadingManager.loadingStates && this.lazyLoadingManager.loadingStates.has('albums-grid')) {
-            const currentState = this.lazyLoadingManager.loadingStates.get('albums-grid');
-            if (currentState && currentState.items && currentState.items.length > 0) {
-                console.log(`⚠️ Lazy loading manager already managing albums-grid with ${currentState.items.length} items - preventing duplicate initialization`);
-                return;
-            }
-        }
+        // Allow re-renders for sorting - only prevent duplicates during rapid successive calls (handled by debounce above)
 
         // Clear existing content but preserve CSS classes
         albumsGrid.innerHTML = '';
@@ -992,11 +979,7 @@ class AlbumCollectionApp {
             this.lazyLoadingManager.resetGrid(gridId);
         }
 
-        // ENHANCED DUPLICATE PREVENTION: Check if grid already has content after reset
-        if (grid.children.length > 0) {
-            console.log(`⚠️ ${gridId} already has ${grid.children.length} items - preventing duplicate initialization`);
-            return;
-        }
+        // Grid is cleared and ready for new content
 
         // Add optimized grid class for performance
         grid.classList.add('optimized-grid');
@@ -5278,11 +5261,7 @@ class AlbumCollectionApp {
             this.lazyLoadingManager.resetGrid(gridId);
         }
 
-        // ENHANCED DUPLICATE PREVENTION: Check if grid already has content after reset
-        if (grid.children.length > 0) {
-            console.log(`⚠️ ${gridId} already has ${grid.children.length} items - preventing duplicate initialization`);
-            return;
-        }
+        // Grid is cleared and ready for new content
 
         // Add optimized grid class for performance
         grid.classList.add('optimized-grid');
