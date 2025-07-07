@@ -4749,65 +4749,127 @@ class AlbumCollectionApp {
     }
 
     // Tracks View Implementation
-    renderTracksGrid() {
+    async renderTracksGrid() {
         console.log('🎵 Starting renderTracksGrid...');
         const tracksGrid = document.getElementById('tracks-grid');
         
-        // Only generate tracks if they don't exist or are empty
-        if (!this.collection.tracks || this.collection.tracks.length === 0) {
-            console.log('🔄 Generating tracks from albums...');
-            this.collection.tracks = this.generateTracksFromAlbums();
-        }
+        // Mobile detection for performance optimization
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        console.log(`📱 Mobile device detected: ${isMobile}`);
         
-        if (this.collection.tracks.length === 0) {
-            this.displayEmptyState('tracks');
-            return;
-        }
-        
-        // Add optimized grid class for performance
-        tracksGrid.classList.add('optimized-grid');
-        
-        // Initialize lazy loading for tracks grid
-        const trackRenderFunction = (trackData, index) => {
-            const trackCard = this.createTrackCard(trackData);
-            trackCard.classList.add('grid-item');
-            return trackCard;
-        };
-        
-        // For tracks, load more items initially since users want to browse/search
-        // Use a larger batch size to show more tracks upfront
-        const itemsPerPage = Math.max(100, Math.ceil(this.collection.tracks.length / 3)); // Show at least 1/3 of tracks initially
-        
-        this.lazyLoadingManager.initializeLazyGrid('tracks-grid', this.collection.tracks, trackRenderFunction, {
-            itemsPerPage: itemsPerPage,
-            loadingMessage: '🎶 Loading more tracks...',
-            noMoreMessage: '✅ All tracks loaded',
-            enableInfiniteScroll: true
-        });
-        
-        console.log(`🚀 Lazy loading initialized for ${this.collection.tracks.length} tracks (${itemsPerPage} per page)`);
-        
-        // Add debug function to check lazy loading state
-        window.debugTracksLoading = () => {
-            const stats = this.lazyLoadingManager.getStats('tracks-grid');
-            console.log('🎵 Tracks Loading Stats:', stats);
+        try {
+            // Show loading state immediately
+            tracksGrid.innerHTML = '<div class="loading-placeholder">🎵 Generating tracks data...</div>';
             
-            // Check if sentinel exists and is visible
-            const sentinel = document.getElementById('tracks-grid-sentinel');
-            console.log('🎯 Sentinel element:', sentinel ? 'exists' : 'missing');
-            if (sentinel) {
-                const rect = sentinel.getBoundingClientRect();
-                console.log('🎯 Sentinel position:', rect);
-                console.log('🎯 Sentinel visible:', rect.top < window.innerHeight);
+            // Only generate tracks if they don't exist or are empty
+            if (!this.collection.tracks || this.collection.tracks.length === 0) {
+                console.log('🔄 Generating tracks from albums (async for mobile compatibility)...');
+                
+                // Use async generation to prevent blocking the main thread
+                if (isMobile) {
+                    // For mobile, use smaller batches to prevent memory pressure
+                    this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+                } else {
+                    // For desktop, can use synchronous method
+                    this.collection.tracks = this.generateTracksFromAlbums();
+                }
             }
             
-            return stats;
-        };
-        
-        // Add manual load more button as backup
-        this.addManualLoadMoreButton('tracks-grid');
+            if (this.collection.tracks.length === 0) {
+                this.displayEmptyState('tracks');
+                return;
+            }
+            
+            // Add optimized grid class for performance
+            tracksGrid.classList.add('optimized-grid');
+            
+            // Initialize lazy loading for tracks grid
+            const trackRenderFunction = (trackData, index) => {
+                try {
+                    const trackCard = this.createTrackCard(trackData);
+                    trackCard.classList.add('grid-item');
+                    return trackCard;
+                } catch (error) {
+                    console.warn(`⚠️ Error rendering track card at index ${index}:`, error);
+                    return document.createElement('div'); // Return empty div as fallback
+                }
+            };
+            
+            // Mobile-optimized batch sizes to prevent memory issues
+            let itemsPerPage;
+            if (isMobile) {
+                // For mobile (especially iPhone), use much smaller initial batch
+                itemsPerPage = Math.min(24, Math.ceil(this.collection.tracks.length / 10)); // Max 24 items initially
+                console.log('📱 Using mobile-optimized batch size:', itemsPerPage);
+            } else {
+                // For desktop, can load more initially
+                itemsPerPage = Math.max(50, Math.ceil(this.collection.tracks.length / 5));
+            }
+            
+            // Clear loading placeholder
+            tracksGrid.innerHTML = '';
+            
+            this.lazyLoadingManager.initializeLazyGrid('tracks-grid', this.collection.tracks, trackRenderFunction, {
+                itemsPerPage: itemsPerPage,
+                loadingMessage: '🎶 Loading more tracks...',
+                noMoreMessage: '✅ All tracks loaded',
+                enableInfiniteScroll: true
+            });
+            
+            console.log(`🚀 Lazy loading initialized for ${this.collection.tracks.length} tracks (${itemsPerPage} per page)`);
+            
+            // Add debug function to check lazy loading state
+            window.debugTracksLoading = () => {
+                const stats = this.lazyLoadingManager.getStats('tracks-grid');
+                console.log('🎵 Tracks Loading Stats:', stats);
+                
+                // Check if sentinel exists and is visible
+                const sentinel = document.getElementById('tracks-grid-sentinel');
+                console.log('🎯 Sentinel element:', sentinel ? 'exists' : 'missing');
+                if (sentinel) {
+                    const rect = sentinel.getBoundingClientRect();
+                    console.log('🎯 Sentinel position:', rect);
+                    console.log('🎯 Sentinel visible:', rect.top < window.innerHeight);
+                }
+                
+                return stats;
+            };
+            
+            // Add manual load more button as backup
+            this.addManualLoadMoreButton('tracks-grid');
+            
+        } catch (error) {
+            console.error('❌ Critical error in renderTracksGrid:', error);
+            
+            // Graceful error handling - show error state instead of crashing
+            tracksGrid.innerHTML = `
+                <div class="error-state">
+                    <div class="error-content">
+                        <h3>⚠️ Unable to load tracks</h3>
+                        <p>There was an issue loading the tracks page. This might be due to memory constraints on your device.</p>
+                        <button onclick="window.albumApp.retryTracksLoad()" class="retry-btn">🔄 Retry</button>
+                    </div>
+                </div>
+            `;
+        }
     }
     
+    // Retry tracks loading (for error recovery)
+    async retryTracksLoad() {
+        console.log('🔄 Retrying tracks load...');
+        const tracksGrid = document.getElementById('tracks-grid');
+        tracksGrid.innerHTML = '<div class="loading-placeholder">🔄 Retrying...</div>';
+        
+        // Clear tracks data to force regeneration
+        this.collection.tracks = [];
+        
+        // Wait a moment to let memory clear
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Try loading again
+        await this.renderTracksGrid();
+    }
+
     // Add manual "Load More" button for debugging and backup
     addManualLoadMoreButton(gridId) {
         const viewContainer = document.querySelector(`#${gridId}`).closest('.view-container');
@@ -5089,15 +5151,20 @@ class AlbumCollectionApp {
         return tracksArray;
     }
 
-    // Async version with progress updates - optimized for performance
+    // Async version with progress updates - optimized for mobile performance
     async generateTracksFromAlbumsAsync() {
         const trackMap = new Map();
         const totalAlbums = this.collection.albums?.length || 0;
         let processedAlbums = 0;
         
+        // Mobile detection for batch size optimization
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const batchSize = isMobile ? 25 : 100; // Smaller batches for mobile
+        
+        console.log(`🎵 Generating tracks async (mobile: ${isMobile}, batch size: ${batchSize})...`);
+        
         try {
-            // Process albums in batches to avoid blocking the UI
-            const batchSize = 100;
+            // Process albums in batches to avoid blocking the UI and reduce memory pressure
             for (let i = 0; i < totalAlbums; i += batchSize) {
                 const albumBatch = this.collection.albums.slice(i, i + batchSize);
                 
@@ -5119,6 +5186,73 @@ class AlbumCollectionApp {
                                         existingTrack.albums.push({
                                             albumId: album.id,
                                             albumTitle: album.title,
+                                            albumYear: album.year,
+                                            albumArtists: albumArtists,
+                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null,
+                                            trackPosition: track.position,
+                                            trackDuration: track.duration
+                                        });
+                                    } else {
+                                        // Create new track entry
+                                        trackMap.set(trackTitle, {
+                                            id: `track-${trackTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                            title: trackTitle,
+                                            frequency: 1,
+                                            albums: [{
+                                                albumId: album.id,
+                                                albumTitle: album.title,
+                                                albumYear: album.year,
+                                                albumArtists: albumArtists,
+                                                albumImage: album.images && album.images[0] ? album.images[0].uri : null,
+                                                trackPosition: track.position,
+                                                trackDuration: track.duration
+                                            }]
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    } catch (albumError) {
+                        console.warn(`⚠️ Error processing tracks for album "${album.title}":`, albumError);
+                    }
+                });
+                
+                processedAlbums += albumBatch.length;
+                
+                // Update progress for mobile users (they need more feedback)
+                if (isMobile && i % (batchSize * 2) === 0) {
+                    const progress = Math.round((processedAlbums / totalAlbums) * 100);
+                    console.log(`📱 Mobile tracks generation progress: ${progress}% (${processedAlbums}/${totalAlbums})`);
+                    
+                    // Update loading text if possible
+                    const loadingElement = document.querySelector('.loading-placeholder');
+                    if (loadingElement) {
+                        loadingElement.textContent = `🎵 Processing tracks... ${progress}%`;
+                    }
+                }
+                
+                // Yield to main thread to prevent blocking, especially important on mobile
+                if (i % batchSize === 0) {
+                    await new Promise(resolve => setTimeout(resolve, isMobile ? 10 : 5));
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error generating tracks from albums (async):', error);
+            return []; // Return empty array on error
+        }
+        
+        // Convert map to array
+        const tracksArray = Array.from(trackMap.values());
+        console.log(`🎵 Generated ${tracksArray.length} tracks from ${totalAlbums} albums (async method)`);
+        
+        // Log sample track for debugging
+        if (tracksArray.length > 0) {
+            const sampleTrack = tracksArray[0];
+            console.log(`🎵 Sample track: "${sampleTrack.title}" (frequency: ${sampleTrack.frequency}, albums: ${sampleTrack.albums.length})`);
+        }
+        
+        return tracksArray;
+    }
                                             albumYear: album.year,
                                             albumArtists: albumArtists,
                                             albumImage: album.images && album.images[0] ? album.images[0].uri : null,
