@@ -650,10 +650,6 @@ class AlbumCollectionApp {
 
     // Album Card Rendering and Management with Lazy Loading
     renderAlbumsGrid() {
-        // Debug tracking to identify duplicate calls
-        console.log(`🎵 DEBUG: renderAlbumsGrid() called at ${Date.now()}`);
-        console.trace('🔍 Call stack for renderAlbumsGrid()');
-        
         // Debounce mechanism to prevent rapid successive calls
         const now = Date.now();
         if (now - this.lastAlbumRenderTime < this.albumRenderDebounceMs) {
@@ -680,6 +676,11 @@ class AlbumCollectionApp {
 
         // Clear existing card instances
         this.albumCardInstances.clear();
+
+        // Reset the albums grid specifically to prevent duplication
+        if (this.lazyLoadingManager) {
+            this.lazyLoadingManager.resetGrid('albums-grid');
+        }
 
         // Add optimized grid class for performance
         albumsGrid.classList.add('optimized-grid');

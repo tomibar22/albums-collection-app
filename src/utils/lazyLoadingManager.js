@@ -21,9 +21,6 @@ class LazyLoadingManager {
      * @param {Object} options - Configuration options
      */
     initializeLazyGrid(gridId, items, renderItem, options = {}) {
-        console.log(`🔧 DEBUG: initializeLazyGrid called for ${gridId} with ${items.length} items at ${Date.now()}`);
-        console.trace('🔍 Call stack for initializeLazyGrid()');
-        
         const gridElement = document.getElementById(gridId);
         if (!gridElement) {
             console.warn(`⚠️ Grid element with ID '${gridId}' not found`);
@@ -50,10 +47,6 @@ class LazyLoadingManager {
         });
         
         // Clear existing content
-        const existingItems = gridElement.children.length;
-        if (existingItems > 0) {
-            console.log(`🧹 DEBUG: Clearing ${existingItems} existing items from ${gridId}`);
-        }
         gridElement.innerHTML = '';
         
         // Load initial batch
