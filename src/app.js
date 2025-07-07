@@ -8436,11 +8436,26 @@ class AlbumCollectionApp {
             </div>
         `;
 
+        // Check if modal elements exist, fallback to browser confirm if not
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const moreInfoModal = document.getElementById('more-info-modal');
+
+        if (!modalTitle || !modalBody || !moreInfoModal) {
+            // Fallback to browser confirm dialog when modal elements are missing
+            console.warn('⚠️ Modal elements not found, using browser confirm dialog');
+            const confirmed = confirm(`Are you sure you want to delete "${albumTitle}"?\n\nThis action cannot be undone.`);
+            if (confirmed) {
+                this.deleteAlbum(albumId);
+            }
+            return;
+        }
+
         // Show confirmation directly without outer modal wrapper
-        document.getElementById('modal-title').innerHTML = '';
-        document.getElementById('modal-body').innerHTML = confirmationHtml;
-        document.getElementById('modal-body').scrollTop = 0;
-        document.getElementById('more-info-modal').classList.remove('hidden');
+        modalTitle.innerHTML = '';
+        modalBody.innerHTML = confirmationHtml;
+        modalBody.scrollTop = 0;
+        moreInfoModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 
