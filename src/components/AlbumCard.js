@@ -86,7 +86,7 @@ class AlbumCard {
                         <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${this.album.id}'); event.stopPropagation();" title="Edit Album">
                             ✏️
                         </button>
-                        <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${this.album.id}', ${JSON.stringify(this.album.title)}); event.stopPropagation();" title="Delete Album">
+                        <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${this.album.id}', '${this.escapeAttributeValue(this.album.title)}'); event.stopPropagation();" title="Delete Album">
                             🗑️
                         </button>
                     </div>
