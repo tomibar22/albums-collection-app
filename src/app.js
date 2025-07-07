@@ -4936,12 +4936,10 @@ class AlbumCollectionApp {
                 break;
         }
 
-        // Smart grid update: try updating existing lazy loading, fallback to full render
-        const updateSuccess = this.lazyLoadingManager.updateGridItems('albums-grid', albumsToDisplay);
-        if (!updateSuccess) {
-            console.log('🔄 Lazy loading not initialized, doing full render');
-            this.renderAlbumsGrid(albumsToDisplay);
-        }
+        // SIMPLIFIED: Always use clean render for consistent behavior
+        // This eliminates timing issues between updateGridItems and renderAlbumsGrid
+        console.log('🔄 Using clean render for consistent lazy loading behavior');
+        this.renderAlbumsGrid(albumsToDisplay);
 
         console.log(`✅ Sorted and displayed ${albumsToDisplay.length} albums`);
     }
@@ -5027,16 +5025,9 @@ class AlbumCollectionApp {
         document.getElementById('musical-artists-count').textContent = `(${this.musicalArtists.length})`;
         document.getElementById('technical-artists-count').textContent = `(${this.technicalArtists.length})`;
 
-        // Smart grid update for active tab: try updating existing lazy loading, fallback to full render
-        const activeTab = this.currentArtistsTab || 'musical';
-        const activeGridId = activeTab === 'musical' ? 'musical-artists-grid' : 'technical-artists-grid';
-        const activeArtists = activeTab === 'musical' ? this.musicalArtists : this.technicalArtists;
-        
-        const updateSuccess = this.lazyLoadingManager.updateGridItems(activeGridId, activeArtists);
-        if (!updateSuccess) {
-            console.log('🔄 Artists lazy loading not initialized, doing full render');
-            this.renderActiveArtistsTab();
-        }
+        // SIMPLIFIED: Always use clean render for consistent behavior
+        console.log('🔄 Using clean render for consistent artists lazy loading behavior');
+        this.renderActiveArtistsTab();
     }
 
     // Tracks View Implementation
@@ -6824,11 +6815,9 @@ class AlbumCollectionApp {
         const activeGridId = activeTab === 'musical' ? 'musical-roles-grid' : 'technical-roles-grid';
         const activeRoles = activeTab === 'musical' ? this.musicalRoles : this.technicalRoles;
         
-        const updateSuccess = this.lazyLoadingManager.updateGridItems(activeGridId, activeRoles);
-        if (!updateSuccess) {
-            console.log('🔄 Roles lazy loading not initialized, doing full render');
-            this.renderActiveRolesTab();
-        }
+        // SIMPLIFIED: Always use clean render for consistent behavior
+        console.log('🔄 Using clean render for consistent roles lazy loading behavior');
+        this.renderActiveRolesTab();
         console.log(`✅ Sorted and displayed ${rolesToSort.length} roles (${musicalRoles.length} musical, ${technicalRoles.length} technical)`);
     }
 
@@ -6860,16 +6849,9 @@ class AlbumCollectionApp {
 
         this.shuffleArray(albumsToShuffle);
 
-        // Smart grid update: try updating existing lazy loading, fallback to full render
-        const updateSuccess = this.lazyLoadingManager.updateGridItems('albums-grid', albumsToShuffle);
-        if (!updateSuccess) {
-            console.log('🔄 Albums lazy loading not initialized for shuffle, doing full render');
-            // Temporarily replace collection.albums with shuffled data for rendering
-            const originalAlbums = this.collection.albums;
-            this.collection.albums = albumsToShuffle;
-            this.renderAlbumsGrid();
-            this.collection.albums = originalAlbums;
-        }
+        // SIMPLIFIED: Always use clean render for consistent behavior
+        console.log('🔄 Using clean render for consistent albums shuffle behavior');
+        this.renderAlbumsGrid(albumsToShuffle);
 
         console.log(`✅ Shuffled and displayed ${albumsToShuffle.length} albums`);
     }
@@ -6894,16 +6876,9 @@ class AlbumCollectionApp {
 
         console.log(`🔀 Shuffled ${this.musicalArtists?.length || 0} musical + ${this.technicalArtists?.length || 0} technical artists`);
 
-        // Smart grid update for active tab: try updating existing lazy loading, fallback to full render
-        const activeTab = this.currentArtistsTab || 'musical';
-        const activeGridId = activeTab === 'musical' ? 'musical-artists-grid' : 'technical-artists-grid';
-        const activeArtists = activeTab === 'musical' ? this.musicalArtists : this.technicalArtists;
-        
-        const updateSuccess = this.lazyLoadingManager.updateGridItems(activeGridId, activeArtists);
-        if (!updateSuccess) {
-            console.log('🔄 Artists lazy loading not initialized for shuffle, doing full render');
-            this.renderActiveArtistsTab();
-        }
+        // SIMPLIFIED: Always use clean render for consistent behavior  
+        console.log('🔄 Using clean render for consistent artists shuffle behavior');
+        this.renderActiveArtistsTab();
     }
 
     // Sort artist albums in modal (respects active role filtering)
