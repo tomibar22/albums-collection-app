@@ -52,7 +52,8 @@ class AlbumCollectionApp {
     async init() {
         try {
             // Show loading modal immediately with better messaging
-            this.showLoadingModal('🎧 Albums Collection', 'Starting your music library...', 0);
+            const startMessage = isMobile ? 'Optimizing for mobile performance...' : 'Starting your music library...';
+            this.showLoadingModal('🎧 Albums Collection', startMessage, 0);
             
             // Start Supabase initialization immediately (non-blocking)
             this.updateLoadingProgress('🔗 Connecting to database...', 'Establishing secure connection...', 5);
@@ -67,7 +68,12 @@ class AlbumCollectionApp {
             this.updateLoadingProgress('🎯 Interface ready', 'Loading your music collection...', 25);
             
             // Enhanced data loading with granular progress
-            await this.loadDataFromSupabaseEnhanced();
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                await this.loadDataFromSupabaseMobileOptimized();
+            } else {
+                await this.loadDataFromSupabaseEnhanced();
+            }
             
             this.updateLoadingProgress('🎉 Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
             
@@ -180,6 +186,117 @@ class AlbumCollectionApp {
         } catch (error) {
             console.error('❌ Failed to load data from Supabase:', error);
             throw error;
+        }
+    }
+
+    // Mobile-optimized data loading with lazy generation
+    async loadDataFromSupabaseMobileOptimized() {
+        try {
+            this.updateLoadingProgress('📚 Loading albums...', 'Optimized for mobile performance...', 30);
+
+            // Load core data with smaller batch sizes for mobile
+            const albums = await this.loadAlbumsWithProgressMobile();
+            this.updateLoadingProgress('🎯 Albums loaded', 'Setting up interface...', 70);
+            
+            // For mobile, only load core data and defer heavy processing
+            const [artists, fetchedScrapedHistory] = await Promise.all([
+                this.supabaseService.getArtists().catch(() => []), // Graceful fallback
+                this.supabaseService.getScrapedArtistsHistory().catch(() => [])
+            ]);
+
+            this.updateLoadingProgress('🔄 Preparing collection...', 'Almost ready...', 85);
+
+            // Update collection with core data
+            this.collection.albums = albums;
+            
+            // For mobile, defer expensive operations until needed
+            this.collection.artists = []; // Will be generated on-demand
+            this.collection.tracks = []; // Will be generated on-demand  
+            this.collection.roles = [];  // Will be generated on-demand
+            
+            this.artistsNeedRegeneration = true; // Mark for lazy generation
+            
+            // Store scraped history
+            this.scrapedHistory = fetchedScrapedHistory || [];
+
+            this.updateLoadingProgress('🎯 Mobile optimization complete', 'Interface ready...', 90);
+
+            // Quick collection stats (minimal processing)
+            this.generateBasicCollectionStats();
+            
+            // Update UI elements
+            this.updatePageTitleCounts();
+            this.loadInitialView();
+            
+            console.log(`✅ Mobile-optimized data loaded: ${albums.length} albums (lazy loading enabled for artists/tracks/roles)`);
+            
+        } catch (error) {
+            console.error('❌ Failed to load data from Supabase (mobile):', error);
+            throw error;
+        }
+    }
+
+    // Mobile-optimized album loading with smaller batches
+    async loadAlbumsWithProgressMobile() {
+        if (!this.supabaseService?.initialized) {
+            throw new Error('Supabase service not initialized');
+        }
+
+        // Mobile-optimized batch size (smaller for better responsiveness)
+        const batchSize = 250; // Much smaller than desktop (1000)
+        let allAlbums = [];
+        let start = 0;
+        let hasMore = true;
+        let batchCount = 0;
+
+        while (hasMore) {
+            batchCount++;
+            
+            this.updateLoadingProgress(
+                `📚 Loading batch ${batchCount}...`,
+                `📱 Mobile-optimized loading... ${allAlbums.length} albums`,
+                30 + (batchCount * 8) // Slower progress for mobile batches
+            );
+
+            const { data: batch, error } = await this.supabaseService.client
+                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                .select('*')
+                .order('year', { ascending: true })
+                .range(start, start + batchSize - 1);
+
+            if (error) throw error;
+
+            if (batch && batch.length > 0) {
+                allAlbums = allAlbums.concat(batch);
+                start += batchSize;
+                hasMore = batch.length === batchSize;
+                
+                console.log(`📱 Mobile batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`);
+                
+                // Yield to main thread more frequently on mobile
+                await new Promise(resolve => setTimeout(resolve, 10));
+            } else {
+                hasMore = false;
+            }
+        }
+
+        console.log(`📱 Mobile loading complete: ${allAlbums.length} albums in ${batchCount} batches`);
+        return allAlbums;
+    }
+
+    // Basic collection stats for mobile (minimal processing)
+    generateBasicCollectionStats() {
+        if (this.collection.albums.length === 0) return;
+
+        // Only basic year analysis for mobile startup
+        const years = this.collection.albums
+            .filter(album => album.year)
+            .map(album => album.year);
+        
+        if (years.length > 0) {
+            const earliestYear = Math.min(...years);
+            const latestYear = Math.max(...years);
+            console.log(`📊 Basic stats: ${this.collection.albums.length} albums spanning ${earliestYear}-${latestYear}`);
         }
     }
 
@@ -4451,8 +4568,11 @@ class AlbumCollectionApp {
         this.loadViewContent(this.currentView);
     }
 
-    loadViewContent(viewType) {
+    async loadViewContent(viewType) {
         console.log(`Loading content for view: ${viewType}`);
+        
+        // Mobile detection for lazy loading
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         
         switch(viewType) {
             case 'albums':
@@ -4468,7 +4588,13 @@ class AlbumCollectionApp {
                     this.sortAlbums('recently-added');
                 }
                 break;
+                
             case 'artists':
+                // Mobile lazy loading for artists
+                if (isMobile && this.artistsNeedRegeneration) {
+                    await this.generateArtistsLazyMobile();
+                }
+                
                 // Don't call renderArtistsGrid() here - sortArtists() will handle it
                 // Apply current sort after rendering
                 const artistsSort = document.getElementById('artists-sort');
@@ -4480,7 +4606,13 @@ class AlbumCollectionApp {
                     this.renderArtistsGrid();
                 }
                 break;
+                
             case 'tracks':
+                // Mobile lazy loading for tracks
+                if (isMobile && (!this.collection.tracks || this.collection.tracks.length === 0)) {
+                    await this.generateTracksLazyMobile();
+                }
+                
                 // Don't call renderTracksGrid() here - sortTracks() will handle it
                 // Apply current sort after rendering
                 const tracksSort = document.getElementById('tracks-sort');
@@ -4493,7 +4625,13 @@ class AlbumCollectionApp {
                     this.sortTracks('frequency');
                 }
                 break;
+                
             case 'roles':
+                // Mobile lazy loading for roles
+                if (isMobile && (!this.collection.roles || this.collection.roles.length === 0)) {
+                    await this.generateRolesLazyMobile();
+                }
+                
                 // Don't call renderRolesGrid() here - sortRoles() will handle it
                 // Apply current sort after rendering
                 const rolesSort = document.getElementById('roles-sort');
@@ -4506,6 +4644,7 @@ class AlbumCollectionApp {
                     this.sortRoles('frequency');
                 }
                 break;
+                
             case 'scraper':
                 // Refresh scraped content display when switching to scraper view
                 this.refreshScrapedContentDisplay();
@@ -9988,3 +10127,64 @@ function showCredentialsSetupScreen() {
         console.log('✅ Regeneration complete! Artist modals should now show specific instruments.');
         console.log('=============================================================');
     };
+
+    // Mobile lazy loading methods for performance optimization
+    
+    async generateArtistsLazyMobile() {
+        console.log('📱 Generating artists data (mobile lazy loading)...');
+        
+        // Show loading state
+        const musicalGrid = document.getElementById('musical-artists-grid');
+        const technicalGrid = document.getElementById('technical-artists-grid');
+        
+        if (musicalGrid) musicalGrid.innerHTML = '<div class="loading-placeholder">📱 Generating artists...</div>';
+        if (technicalGrid) technicalGrid.innerHTML = '<div class="loading-placeholder">📱 Processing credits...</div>';
+        
+        try {
+            // Generate artists with progress feedback
+            this.collection.artists = this.generateArtistsFromAlbums();
+            this.artistsNeedRegeneration = false;
+            
+            console.log(`📱 Generated ${this.collection.artists.length} artists for mobile`);
+        } catch (error) {
+            console.error('❌ Error generating artists for mobile:', error);
+            if (musicalGrid) musicalGrid.innerHTML = '<div class="error-state">Error generating artists</div>';
+            if (technicalGrid) technicalGrid.innerHTML = '<div class="error-state">Error generating artists</div>';
+        }
+    }
+    
+    async generateTracksLazyMobile() {
+        console.log('📱 Generating tracks data (mobile lazy loading)...');
+        
+        // Show loading state
+        const tracksGrid = document.getElementById('tracks-grid');
+        if (tracksGrid) tracksGrid.innerHTML = '<div class="loading-placeholder">📱 Processing tracks...</div>';
+        
+        try {
+            // Use async generation for mobile
+            this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+            
+            console.log(`📱 Generated ${this.collection.tracks.length} tracks for mobile`);
+        } catch (error) {
+            console.error('❌ Error generating tracks for mobile:', error);
+            if (tracksGrid) tracksGrid.innerHTML = '<div class="error-state">Error generating tracks</div>';
+        }
+    }
+    
+    async generateRolesLazyMobile() {
+        console.log('📱 Generating roles data (mobile lazy loading)...');
+        
+        // Show loading state 
+        const rolesGrid = document.getElementById('roles-grid');
+        if (rolesGrid) rolesGrid.innerHTML = '<div class="loading-placeholder">📱 Processing roles...</div>';
+        
+        try {
+            // Use async generation for mobile
+            this.collection.roles = await this.generateRolesFromAlbumsAsync();
+            
+            console.log(`📱 Generated ${this.collection.roles.length} roles for mobile`);
+        } catch (error) {
+            console.error('❌ Error generating roles for mobile:', error);
+            if (rolesGrid) rolesGrid.innerHTML = '<div class="error-state">Error generating roles</div>';
+        }
+    }

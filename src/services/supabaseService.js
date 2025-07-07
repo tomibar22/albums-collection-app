@@ -389,10 +389,13 @@ async ensureRole(roleName) {
         if (!this.initialized) throw new Error('Supabase service not initialized');
 
         try {
+            // Mobile detection for optimized batch sizes
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const batchSize = isMobile ? 250 : 1000; // Smaller batches for mobile
+            
             // Get all albums using pagination to bypass 1000 limit
             let allAlbums = [];
             let start = 0;
-            const batchSize = 1000;
             let hasMore = true;
 
             while (hasMore) {
@@ -412,7 +415,13 @@ async ensureRole(roleName) {
                     hasMore = batch.length === batchSize;
                     
                     if (this.debug) {
-                        console.log(`📚 Loaded batch: ${batch.length} albums (total: ${allAlbums.length})`);
+                        const deviceType = isMobile ? '📱' : '💻';
+                        console.log(`${deviceType} Loaded batch: ${batch.length} albums (total: ${allAlbums.length})`);
+                    }
+                    
+                    // Yield to main thread more frequently on mobile
+                    if (isMobile) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
                     }
                 } else {
                     hasMore = false;
@@ -420,7 +429,8 @@ async ensureRole(roleName) {
             }
 
             if (this.debug) {
-                console.log(`📚 Retrieved ${allAlbums.length} albums from Supabase (via pagination)`);
+                const deviceType = isMobile ? '📱 Mobile' : '💻 Desktop';
+                console.log(`${deviceType} retrieved ${allAlbums.length} albums from Supabase (batch size: ${batchSize})`);
             }
 
             return allAlbums;
