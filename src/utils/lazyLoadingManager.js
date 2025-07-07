@@ -291,13 +291,10 @@ class LazyLoadingManager {
     resetGrid(gridId) {
         console.log(`🔄 Resetting grid: ${gridId}`);
         
-        const state = this.loadingStates.get(gridId);
-        if (state) {
-            console.log(`🔄 Found existing state for ${gridId}, clearing...`);
-            // Reset state
-            state.currentPage = 0;
-            state.isLoading = false;
-            state.allLoaded = false;
+        // CRITICAL FIX: Remove the loading state entirely, don't just reset properties
+        if (this.loadingStates.has(gridId)) {
+            console.log(`🔄 Removing loading state for ${gridId} to prevent duplication`);
+            this.loadingStates.delete(gridId);
         }
         
         // AGGRESSIVE DOM CLEARING - Clear grid multiple ways to ensure it's clean
@@ -330,7 +327,7 @@ class LazyLoadingManager {
             this.observers.delete(gridId);
         }
         
-        console.log(`🔄 Reset lazy loading for ${gridId}`);
+        console.log(`🔄 Reset lazy loading for ${gridId} - fresh initialization ready`);
     }
     
     /**
