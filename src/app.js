@@ -10158,6 +10158,59 @@ function showCredentialsSetupScreen() {
         console.log('===========================================');
     };
 
+    // Test Discogs API with current credentials
+    window.testUserDiscogsAPI = async () => {
+        console.log('🧪 TESTING USER DISCOGS API...');
+        console.log('=====================================');
+        
+        const apiKey = window.CONFIG?.DISCOGS?.API_KEY;
+        console.log('🔑 API Key:', apiKey ? apiKey.substring(0, 10) + '...' : 'NOT SET');
+        
+        if (!apiKey) {
+            console.error('❌ No Discogs API key found');
+            return;
+        }
+        
+        try {
+            // Test simple artist search
+            const testUrl = `https://api.discogs.com/database/search?q=miles+davis&type=artist&per_page=1&token=${apiKey}`;
+            console.log('🔗 Testing URL:', testUrl.replace(apiKey, 'TOKEN_HIDDEN'));
+            
+            const response = await fetch(testUrl, {
+                headers: {
+                    'User-Agent': window.CONFIG.DISCOGS.HEADERS['User-Agent']
+                }
+            });
+            
+            console.log('📡 Response status:', response.status);
+            
+            if (response.status === 200) {
+                const data = await response.json();
+                console.log('✅ SUCCESS! API working properly');
+                console.log('📊 Results:', data.results?.length || 0, 'artists found');
+                if (data.results?.[0]) {
+                    console.log('🎵 First result:', data.results[0].title);
+                }
+            } else if (response.status === 401) {
+                console.error('❌ 401 UNAUTHORIZED - Invalid token or authentication method');
+                const errorText = await response.text();
+                console.error('📄 Error details:', errorText);
+            } else {
+                console.error(`❌ HTTP ${response.status} error`);
+                const errorText = await response.text();
+                console.error('📄 Error details:', errorText);
+            }
+            
+        } catch (error) {
+            console.error('❌ Network error:', error);
+        }
+        
+        console.log('=====================================');
+    };
+
+    // Quick test function to call from console
+    window.quickTest = () => window.testUserDiscogsAPI();
+
     // Force regenerate artists with enhanced instrument extraction
     window.regenerateArtistsWithInstruments = () => {
         console.log('🔄 REGENERATING ARTISTS WITH ENHANCED INSTRUMENT EXTRACTION...');
@@ -10201,9 +10254,38 @@ function showCredentialsSetupScreen() {
         console.log('=============================================================');
     };
 
-// Initialize the app when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.albumApp = new AlbumCollectionApp();
-    window.albumApp.init();
+// Initialize the app when the DOM is loaded AND authentication is complete
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 DOM loaded, waiting for authentication...');
+    
+    try {
+        // Wait for authentication to complete before initializing app
+        if (window.authPromise) {
+            const authSuccess = await window.authPromise;
+            console.log('🔐 Authentication result:', authSuccess);
+            
+            if (authSuccess) {
+                console.log('✅ Authentication successful, user credentials applied');
+                console.log('🔑 Current Discogs API key:', window.CONFIG?.DISCOGS?.API_KEY ? 
+                    window.CONFIG.DISCOGS.API_KEY.substring(0, 10) + '...' : 'NOT SET');
+            } else {
+                console.log('⚠️ Authentication failed or user not logged in');
+            }
+        } else {
+            console.log('⚠️ No authentication promise found, proceeding without auth');
+        }
+
+        // NOW initialize the app with proper credentials
+        window.albumApp = new AlbumCollectionApp();
+        await window.albumApp.init();
+        
+    } catch (error) {
+        console.error('❌ App initialization failed:', error);
+        
+        // Fallback: initialize anyway for offline mode
+        console.log('🔄 Falling back to offline mode...');
+        window.albumApp = new AlbumCollectionApp();
+        await window.albumApp.init();
+    }
 });
 

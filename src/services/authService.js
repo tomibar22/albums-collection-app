@@ -431,9 +431,17 @@ class AuthService {
             });
 
             // Update app configuration with user's credentials
+            const oldDiscogsKey = window.CONFIG.DISCOGS.API_KEY;
             window.CONFIG.DISCOGS.API_KEY = credentials.discogsApiKey;
             window.CONFIG.SUPABASE.URL = `https://${credentials.supabaseProjectId}.supabase.co`;
             window.CONFIG.SUPABASE.ANON_KEY = credentials.supabaseApiKey;
+
+            console.log('🔄 Credentials applied to CONFIG:', {
+                oldDiscogsKey: oldDiscogsKey ? oldDiscogsKey.substring(0, 10) + '...' : 'EMPTY',
+                newDiscogsKey: credentials.discogsApiKey ? credentials.discogsApiKey.substring(0, 10) + '...' : 'EMPTY',
+                keyChanged: oldDiscogsKey !== credentials.discogsApiKey,
+                supabaseUrl: window.CONFIG.SUPABASE.URL
+            });
 
             // Recreate the Discogs API instance with new credentials
             if (window.DiscogsAPI && credentials.discogsApiKey) {
