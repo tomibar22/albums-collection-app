@@ -3282,8 +3282,23 @@ class AlbumCollectionApp {
         // Initialize album cart
         this.albumCart = [];
 
-        // Initialize Discogs API and Parser
-        this.discogsAPI = new window.DiscogsAPI();
+        // Use existing global DiscogsAPI instance (already initialized with user credentials)
+        // instead of creating a new one that might have empty config
+        this.discogsAPI = window.discogsAPI || new window.DiscogsAPI();
+        
+        // If we had to create a new instance, make it global too
+        if (!window.discogsAPI) {
+            window.discogsAPI = this.discogsAPI;
+        }
+
+        // Debug: Verify API key is properly configured
+        console.log('🎵 Discogs API initialization:', {
+            hasApiKey: !!this.discogsAPI.token,
+            apiKeyLength: this.discogsAPI.token?.length || 0,
+            apiKeyPreview: this.discogsAPI.token?.substring(0, 10) + '...' || 'EMPTY',
+            configApiKey: !!window.CONFIG?.DISCOGS?.API_KEY,
+            timestamp: new Date().toISOString()
+        });
 
         // Use the singleton parser instance instead of creating a new one
         this.parser = window.discogsParser;
