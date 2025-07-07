@@ -130,13 +130,15 @@ class AlbumCard {
             this.handleYouTubeClick();
         });
 
-        // Optional: Make entire card clickable for "More Info"
-        this.element.addEventListener('click', (e) => {
-            // Don't trigger if clicking on action buttons or edit buttons
-            if (!e.target.closest('.overlay-circle-btn, .card-edit-btn')) {
-                this.handleMoreInfoClick();
-            }
-        });
+        // Only make card clickable for "More Info" when NOT in selection mode
+        if (!this.selectionMode) {
+            this.element.addEventListener('click', (e) => {
+                // Don't trigger if clicking on action buttons or edit buttons
+                if (!e.target.closest('.overlay-circle-btn, .card-edit-btn, .selection-checkbox')) {
+                    this.handleMoreInfoClick();
+                }
+            });
+        }
     }
 
     /**
@@ -367,6 +369,8 @@ class AlbumCard {
             this.element.classList.add('selection-mode');
             this.addSelectionCheckbox();
             this.setupSelectionEvents();
+            // Re-initialize event listeners to remove "More Info" click handler
+            this.reinitializeEventListeners();
         }
     }
 
@@ -380,6 +384,8 @@ class AlbumCard {
             this.element.classList.remove('selection-mode', 'selected');
             this.removeSelectionCheckbox();
             this.removeSelectionEvents();
+            // Re-initialize event listeners to restore "More Info" click handler
+            this.reinitializeEventListeners();
         }
     }
 
@@ -447,9 +453,10 @@ class AlbumCard {
             });
         }
         
-        // Also allow clicking on the card itself in selection mode
+        // In selection mode, clicking anywhere on the card should toggle selection
         this.element.addEventListener('click', (e) => {
-            if (this.selectionMode && !e.target.closest('.overlay-circle-btn, .card-edit-btn')) {
+            // Don't trigger if clicking on buttons
+            if (!e.target.closest('.overlay-circle-btn, .card-edit-btn')) {
                 e.preventDefault();
                 e.stopPropagation();
                 this.toggleSelection();
@@ -467,6 +474,26 @@ class AlbumCard {
             const newElement = this.element.cloneNode(true);
             this.element.parentNode?.replaceChild(newElement, this.element);
             this.element = newElement;
+        }
+    }
+
+    /**
+     * Re-initialize all event listeners based on current mode
+     */
+    reinitializeEventListeners() {
+        if (!this.element) return;
+        
+        // Clone element to remove all existing event listeners
+        const newElement = this.element.cloneNode(true);
+        this.element.parentNode?.replaceChild(newElement, this.element);
+        this.element = newElement;
+        
+        // Re-setup event listeners based on current mode
+        this.setupEventListeners();
+        
+        // If in selection mode, also setup selection events
+        if (this.selectionMode) {
+            this.setupSelectionEvents();
         }
     }
 
