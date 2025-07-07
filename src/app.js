@@ -651,8 +651,7 @@ class AlbumCollectionApp {
 
     // Album Card Rendering and Management with Lazy Loading
     renderAlbumsGrid(albumsToRender = null) {
-        console.log(`🎵 DEBUG: renderAlbumsGrid called with ${albumsToRender?.length || 'null'} albums`);
-        console.log(`🎵 DEBUG: Call stack:`, new Error().stack.split('\n').slice(1,4).join('\n'));
+        console.log(`🎵 renderAlbumsGrid called with ${albumsToRender?.length || 'default collection'} albums`);
         
         // Debounce mechanism to prevent rapid successive calls
         const now = Date.now();
@@ -706,10 +705,8 @@ class AlbumCollectionApp {
 
         // Allow re-renders for sorting - only prevent duplicates during rapid successive calls (handled by debounce above)
 
-        // Clear existing content but preserve CSS classes
-        albumsGrid.innerHTML = '';
-        
         // CRITICAL: Reset the albums grid specifically to prevent duplication
+        // This will clear DOM content and reset lazy loading state
         if (this.lazyLoadingManager) {
             this.lazyLoadingManager.resetGrid('albums-grid');
         }

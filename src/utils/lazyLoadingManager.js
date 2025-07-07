@@ -35,6 +35,14 @@ class LazyLoadingManager {
             // Clear existing state to prevent conflicts
             this.resetGrid(gridId);
         }
+
+        // ADDITIONAL SAFEGUARD: Ensure grid is actually empty before proceeding
+        if (gridElement.children.length > 0) {
+            console.warn(`⚠️ Grid ${gridId} still has ${gridElement.children.length} items after reset, force clearing...`);
+            while (gridElement.firstChild) {
+                gridElement.removeChild(gridElement.firstChild);
+            }
+        }
         
         // Configuration
         const config = {
@@ -292,18 +300,34 @@ class LazyLoadingManager {
      * Reset grid to initial state
      */
     resetGrid(gridId) {
+        console.log(`🔄 Resetting grid: ${gridId}`);
+        
         const state = this.loadingStates.get(gridId);
-        if (!state) return;
+        if (state) {
+            console.log(`🔄 Found existing state for ${gridId}, clearing...`);
+            // Reset state
+            state.currentPage = 0;
+            state.isLoading = false;
+            state.allLoaded = false;
+        }
         
-        // Reset state
-        state.currentPage = 0;
-        state.isLoading = false;
-        state.allLoaded = false;
-        
-        // Clear grid
+        // AGGRESSIVE DOM CLEARING - Clear grid multiple ways to ensure it's clean
         const gridElement = document.getElementById(gridId);
         if (gridElement) {
+            console.log(`🧹 Clearing DOM content for ${gridId} (had ${gridElement.children.length} items)`);
+            
+            // Method 1: innerHTML
             gridElement.innerHTML = '';
+            
+            // Method 2: Remove all children manually (more aggressive)
+            while (gridElement.firstChild) {
+                gridElement.removeChild(gridElement.firstChild);
+            }
+            
+            // Method 3: Clear any remaining content
+            gridElement.textContent = '';
+            
+            console.log(`✅ DOM cleared for ${gridId} (now has ${gridElement.children.length} items)`);
         }
         
         // Remove sentinel and observer
