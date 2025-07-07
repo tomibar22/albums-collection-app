@@ -138,6 +138,7 @@ class LazyLoadingManager {
             
             this.hideLoadingIndicator(gridId); // Remove loading indicator
             
+<<<<<<< HEAD
             const renderedIdsInBatch = new Set(); // To prevent duplicates within the current batch
             let actuallyAddedCount = 0;
             
@@ -162,13 +163,21 @@ class LazyLoadingManager {
                     }
                     
                     // Render the item using the provided renderItem function
+=======
+            // Render batch items
+            batch.forEach((item, index) => {
+                try {
+>>>>>>> parent of 6d0402b (🔧 CRITICAL FIX: Resolve card duplication bug in lazy loading)
                     const element = renderItem(item, startIndex + index);
                     
                     if (element instanceof HTMLElement) {
                         // Ensure the rendered element has the data-item-id for future checks
                         element.setAttribute('data-item-id', itemId);
                         gridElement.appendChild(element);
+<<<<<<< HEAD
                         actuallyAddedCount++;
+=======
+>>>>>>> parent of 6d0402b (🔧 CRITICAL FIX: Resolve card duplication bug in lazy loading)
                         
                         // Apply subtle animation for newly loaded items
                         this.animateNewItem(element);
@@ -189,7 +198,11 @@ class LazyLoadingManager {
                 this.showNoMoreMessage(gridId);
             }
             
+<<<<<<< HEAD
             console.log(`✅ LazyLoadingManager: Loaded batch for '${gridId}'. Items ${startIndex} to ${endIndex-1} (${batch.length} requested, ${actuallyAddedCount} added to DOM).`);
+=======
+            console.log(`✅ Loaded batch for ${gridId}: items ${startIndex}-${endIndex-1} (${batch.length} items)`);
+>>>>>>> parent of 6d0402b (🔧 CRITICAL FIX: Resolve card duplication bug in lazy loading)
             
         }, 50); // Small delay for a smooth loading effect
     }
@@ -543,5 +556,10 @@ class LazyLoadingManager {
     }
 }
 
+<<<<<<< HEAD
 // Export for global access in a browser environment
 window.LazyLoadingManager = LazyLoadingManager;
+=======
+// Export for global access
+window.LazyLoadingManager = LazyLoadingManager;
+>>>>>>> parent of 6d0402b (🔧 CRITICAL FIX: Resolve card duplication bug in lazy loading)

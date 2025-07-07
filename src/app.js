@@ -1,759 +1,1508 @@
 // Main Application Entry Point
 class AlbumCollectionApp {
+
     constructor() {
-        this.currentView = 'albums';
-        this.currentRolesTab = 'musical'; // Default to musical roles tab
-        this.currentArtistsTab = 'musical'; // Default to musical artists tab
-        this.savingInProgress = false; // Flag to prevent modal opening during save
-        this.collection = {
-            albums: [],
-            artists: [],
-            tracks: [],
-            roles: []
-        };
 
-        this.scrapedHistory = [];
+    this.currentView = 'albums';
 
-        // Modal stack for nested modal navigation
-        this.modalStack = [];
+    this.currentRolesTab = 'musical'; // Default to musical roles tab
 
-        // Main page scroll position preservation
-        this.mainPageScrollPosition = 0;
+    this.currentArtistsTab = 'musical'; // Default to musical artists tab
 
-        // Initialize Supabase service
-        this.supabaseService = null;
+    this.savingInProgress = false; // Flag to prevent modal opening during save
 
-        // Initialize Lazy Loading Manager
-        this.lazyLoadingManager = new LazyLoadingManager();
+    this.collection = {
 
-        // Debounce mechanism to prevent double rendering
-        this.lastArtistRenderTime = 0;
-        this.artistRenderDebounceMs = 100; // 100ms debounce
-        
-        // Debounce mechanism for album rendering to prevent duplicates
-        this.lastAlbumRenderTime = 0;
-        this.albumRenderDebounceMs = 100; // 100ms debounce
+    albums: [],
 
-        // Performance optimization flags
-        this.artistsNeedRegeneration = true; // Flag to track when artists need to be regenerated
+    artists: [],
 
-        // Selection mode state
-        this.selectionMode = false;
-        this.selectedAlbums = new Set(); // Store selected album IDs
-        this.albumCardInstances = new Map(); // Store AlbumCard instances by ID
+    tracks: [],
 
-        // Search state tracking to fix search+sort interaction
-        this.currentSearchQueries = {
-            albums: '',
-            artists: '',
-            tracks: '',
-            roles: ''
-        };
+    roles: []
 
-        // Mobile detection for responsive features
-        this.isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    };
 
-        // Don't initialize here - wait for credentials to be applied first
+
+
+    this.scrapedHistory = [];
+
+
+
+    // Modal stack for nested modal navigation
+
+    this.modalStack = [];
+
+
+
+    // Main page scroll position preservation
+
+    this.mainPageScrollPosition = 0;
+
+
+
+    // Initialize Supabase service
+
+    this.supabaseService = null;
+
+
+
+    // Initialize Lazy Loading Manager
+
+    this.lazyLoadingManager = new LazyLoadingManager();
+
+
+
+    // Debounce mechanism to prevent double rendering
+
+    this.lastArtistRenderTime = 0;
+
+    this.artistRenderDebounceMs = 100; // 100ms debounce
+
+
+    // Debounce mechanism for album rendering to prevent duplicates
+
+    this.lastAlbumRenderTime = 0;
+
+    this.albumRenderDebounceMs = 100; // 100ms debounce
+
+
+
+    // Performance optimization flags
+
+    this.artistsNeedRegeneration = true; // Flag to track when artists need to be regenerated
+
+
+
+    // Selection mode state
+
+    this.selectionMode = false;
+
+    this.selectedAlbums = new Set(); // Store selected album IDs
+
+    this.albumCardInstances = new Map(); // Store AlbumCard instances by ID
+
+
+
+    // Search state tracking to fix search+sort interaction
+
+    this.currentSearchQueries = {
+
+    albums: '',
+
+    artists: '',
+
+    tracks: '',
+
+    roles: ''
+
+    };
+
+
+
+    // Mobile detection for responsive features
+
+    this.isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+
+
+    // Don't initialize here - wait for credentials to be applied first
+
     }
+
+
 
     async init() {
-        console.log('🚀 AlbumCollectionApp initializing... v2.1 - DUPLICATE PREVENTION ENHANCED');
-        try {
-            // Show loading modal immediately with better messaging
-            const startMessage = this.isMobile ? 'Optimizing for mobile performance...' : 'Starting your music library...';
-            this.showLoadingModal('🎧 Albums Collection', startMessage, 0);
 
-            // Start Supabase initialization immediately (non-blocking)
-            this.updateLoadingProgress('🔗 Connecting to database...', 'Establishing secure connection...', 5);
+    console.log('🚀 AlbumCollectionApp initializing... v2.1 - DUPLICATE PREVENTION ENHANCED');
 
-            // Initialize Supabase and UI setup in parallel
-            const supabasePromise = this.initializeSupabase();
-            const uiPromise = this.initializeUIComponents();
+    try {
 
-            // Wait for both to complete
-            await Promise.all([supabasePromise, uiPromise]);
+    // Show loading modal immediately with better messaging
 
-            this.updateLoadingProgress('🎯 Interface ready', 'Loading your music collection...', 25);
+    const startMessage = this.isMobile ? 'Optimizing for mobile performance...' : 'Starting your music library...';
 
-            // Enhanced data loading with granular progress
-            if (this.isMobile) {
-                await this.loadDataFromSupabaseMobileOptimized();
-            } else {
-                await this.loadDataFromSupabaseEnhanced();
-            }
+    this.showLoadingModal('🎧 Albums Collection', startMessage, 0);
 
-            this.updateLoadingProgress('🎉 Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
 
-            // Hide loading modal with shorter delay for faster UX
-            setTimeout(() => {
-                this.hideLoadingModal();
-            }, 800); // Reduced from 1500ms
 
-        } catch (error) {
-            console.error('❌ Failed to initialize app:', error);
+    // Start Supabase initialization immediately (non-blocking)
 
-            // Enhanced error handling with recovery options
-            this.updateLoadingProgress('⚠️ Connection failed', 'Starting in offline mode...', 60);
+    this.updateLoadingProgress('🔗 Connecting to database...', 'Establishing secure connection...', 5);
 
-            // Fallback to in-memory mode
-            await this.initializeUIComponents();
-            this.loadInitialView();
 
-            // Hide loading modal
-            setTimeout(() => {
-                this.hideLoadingModal();
-                this.showOfflineNotification();
-            }, 1000);
-        }
+
+    // Initialize Supabase and UI setup in parallel
+
+    const supabasePromise = this.initializeSupabase();
+
+    const uiPromise = this.initializeUIComponents();
+
+
+
+    // Wait for both to complete
+
+    await Promise.all([supabasePromise, uiPromise]);
+
+
+
+    this.updateLoadingProgress('🎯 Interface ready', 'Loading your music collection...', 25);
+
+
+
+    // Enhanced data loading with granular progress
+
+    if (this.isMobile) {
+
+    await this.loadDataFromSupabaseMobileOptimized();
+
+    } else {
+
+    await this.loadDataFromSupabaseEnhanced();
+
     }
+
+
+
+    this.updateLoadingProgress('🎉 Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
+
+
+
+    // Hide loading modal with shorter delay for faster UX
+
+    setTimeout(() => {
+
+    this.hideLoadingModal();
+
+    }, 800); // Reduced from 1500ms
+
+
+
+    } catch (error) {
+
+    console.error('❌ Failed to initialize app:', error);
+
+
+
+    // Enhanced error handling with recovery options
+
+    this.updateLoadingProgress('⚠️ Connection failed', 'Starting in offline mode...', 60);
+
+
+
+    // Fallback to in-memory mode
+
+    await this.initializeUIComponents();
+
+    this.loadInitialView();
+
+
+
+    // Hide loading modal
+
+    setTimeout(() => {
+
+    this.hideLoadingModal();
+
+    this.showOfflineNotification();
+
+    }, 1000);
+
+    }
+
+    }
+
+
 
     // Enhanced Supabase initialization with better error handling
+
     async initializeSupabase() {
-        this.supabaseService = new SupabaseService();
 
-        // Progressive wait with timeout
-        const maxWaitTime = 5000; // 5 seconds max
-        const startTime = Date.now();
+    this.supabaseService = new SupabaseService();
 
-        while (!this.supabaseService.initialized && (Date.now() - startTime) < maxWaitTime) {
-            await new Promise(resolve => setTimeout(resolve, 50)); // Check every 50ms
-        }
 
-        if (!this.supabaseService.initialized) {
-            throw new Error('Supabase initialization timeout');
-        }
 
-        console.log('✅ Supabase service initialized');
-        this.updateLoadingProgress('✅ Database connected', 'Setting up interface...', 15);
+    // Progressive wait with timeout
+
+    const maxWaitTime = 5000; // 5 seconds max
+
+    const startTime = Date.now();
+
+
+
+    while (!this.supabaseService.initialized && (Date.now() - startTime) < maxWaitTime) {
+
+    await new Promise(resolve => setTimeout(resolve, 50)); // Check every 50ms
+
     }
+
+
+
+    if (!this.supabaseService.initialized) {
+
+    throw new Error('Supabase initialization timeout');
+
+    }
+
+
+
+    console.log('✅ Supabase service initialized');
+
+    this.updateLoadingProgress('✅ Database connected', 'Setting up interface...', 15);
+
+    }
+
+
 
     // UI initialization separated for parallel loading
-    async initializeUIComponents() {
-        this.updateLoadingProgress('🎨 Setting up interface...', 'Initializing components...', 20);
 
-        // Setup all UI components
-        this.setupEventListeners();
-        this.setupAlbumCardEvents();
-        this.setupArtistCardEvents();
-        this.setupScraperEvents();
-        this.initializeSortControls();
+    async initializeUIComponents() {
+
+    this.updateLoadingProgress('🎨 Setting up interface...', 'Initializing components...', 20);
+
+
+
+    // Setup all UI components
+
+    this.setupEventListeners();
+
+    this.setupAlbumCardEvents();
+
+    this.setupArtistCardEvents();
+
+    this.setupScraperEvents();
+
+    this.initializeSortControls();
+
+
 
     }
+
+
 
     // Enhanced data loading with granular progress tracking
+
     async loadDataFromSupabaseEnhanced() {
-        try {
-            this.updateLoadingProgress('📚 Loading albums...', 'Fetching album database...', 30);
 
-            // Load data with individual progress tracking
-            const albums = await this.loadAlbumsWithProgress();
-            this.updateLoadingProgress('👥 Loading artists...', 'Fetching artist information...', 55);
+    try {
 
-            const [artists, tracks, roles, fetchedScrapedHistory] = await Promise.all([
-                this.supabaseService.getArtists(),
-                this.supabaseService.getTracks(),
-                this.supabaseService.getRoles(),
-                this.supabaseService.getScrapedArtistsHistory()
-            ]);
+    this.updateLoadingProgress('📚 Loading albums...', 'Fetching album database...', 30);
 
-            this.updateLoadingProgress('🔄 Processing data...', 'Organizing your collection...', 80);
 
-            // Update collection (faster assignment)
-            this.collection.albums = albums;
-            this.collection.artists = artists;
-            // Don't use database tracks/roles - generate from albums for rich data
-            // this.collection.tracks = tracks;
-            // this.collection.roles = roles;
-            this.scrapedHistory = fetchedScrapedHistory;
 
-            this.updateLoadingProgress('📊 Generating tracks...', 'Processing album tracklists...', 85);
+    // Load data with individual progress tracking
 
-            // Generate tracks and roles from albums with progress updates
-            this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+    const albums = await this.loadAlbumsWithProgress();
 
-            this.updateLoadingProgress('🎭 Generating roles...', 'Processing album credits...', 88);
-            this.collection.roles = await this.generateRolesFromAlbumsAsync();
+    this.updateLoadingProgress('👥 Loading artists...', 'Fetching artist information...', 55);
 
-            this.updateLoadingProgress('👥 Generating artists...', 'Processing artist relationships...', 92);
-            // Generate and cache artists during startup for better performance
-            this.collection.artists = this.generateArtistsFromAlbums();
-            this.artistsNeedRegeneration = false; // Mark as freshly generated
 
-            this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
 
-            // Generate collection statistics (moved to after loading)
-            this.generateCollectionStats();
+    const [artists, tracks, roles, fetchedScrapedHistory] = await Promise.all([
 
-            // Update UI elements
-            this.updatePageTitleCounts();
-            this.loadInitialView();
+    this.supabaseService.getArtists(),
 
-            console.log(`✅ Data loaded: ${albums.length} albums, ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
+    this.supabaseService.getTracks(),
 
-        } catch (error) {
-            console.error('❌ Failed to load data from Supabase:', error);
-            throw error;
-        }
+    this.supabaseService.getRoles(),
+
+    this.supabaseService.getScrapedArtistsHistory()
+
+    ]);
+
+
+
+    this.updateLoadingProgress('🔄 Processing data...', 'Organizing your collection...', 80);
+
+
+
+    // Update collection (faster assignment)
+
+    this.collection.albums = albums;
+
+    this.collection.artists = artists;
+
+    // Don't use database tracks/roles - generate from albums for rich data
+
+    // this.collection.tracks = tracks;
+
+    // this.collection.roles = roles;
+
+    this.scrapedHistory = fetchedScrapedHistory;
+
+
+
+    this.updateLoadingProgress('📊 Generating tracks...', 'Processing album tracklists...', 85);
+
+
+
+    // Generate tracks and roles from albums with progress updates
+
+    this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+
+
+
+    this.updateLoadingProgress('🎭 Generating roles...', 'Processing album credits...', 88);
+
+    this.collection.roles = await this.generateRolesFromAlbumsAsync();
+
+
+
+    this.updateLoadingProgress('👥 Generating artists...', 'Processing artist relationships...', 92);
+
+    // Generate and cache artists during startup for better performance
+
+    this.collection.artists = this.generateArtistsFromAlbums();
+
+    this.artistsNeedRegeneration = false; // Mark as freshly generated
+
+
+
+    this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
+
+
+
+    // Generate collection statistics (moved to after loading)
+
+    this.generateCollectionStats();
+
+
+
+    // Update UI elements
+
+    this.updatePageTitleCounts();
+
+    this.loadInitialView();
+
+
+
+    console.log(`✅ Data loaded: ${albums.length} albums, ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
+
+
+
+    } catch (error) {
+
+    console.error('❌ Failed to load data from Supabase:', error);
+
+    throw error;
+
     }
+
+    }
+
+
 
     // Mobile-optimized data loading with lazy generation
+
     async loadDataFromSupabaseMobileOptimized() {
-        try {
-            this.updateLoadingProgress('📚 Loading albums...', 'Optimized for mobile performance...', 30);
 
-            // Load core data with smaller batch sizes for mobile
-            const albums = await this.loadAlbumsWithProgressMobile();
-            this.updateLoadingProgress('🎯 Albums loaded', 'Setting up interface...', 70);
+    try {
 
-            // For mobile, only load core data and defer heavy processing
-            const [artists, fetchedScrapedHistory] = await Promise.all([
-                this.supabaseService.getArtists().catch(() => []), // Graceful fallback
-                this.supabaseService.getScrapedArtistsHistory().catch(() => [])
-            ]);
+    this.updateLoadingProgress('📚 Loading albums...', 'Optimized for mobile performance...', 30);
 
-            this.updateLoadingProgress('🔄 Preparing collection...', 'Almost ready...', 85);
 
-            // Update collection with core data
-            this.collection.albums = albums;
 
-            // For mobile, defer expensive operations until needed
-            this.collection.artists = []; // Will be generated on-demand
-            this.collection.tracks = []; // Will be generated on-demand
-            this.collection.roles = [];  // Will be generated on-demand
+    // Load core data with smaller batch sizes for mobile
 
-            this.artistsNeedRegeneration = true; // Mark for lazy generation
+    const albums = await this.loadAlbumsWithProgressMobile();
 
-            // Store scraped history
-            this.scrapedHistory = fetchedScrapedHistory || [];
+    this.updateLoadingProgress('🎯 Albums loaded', 'Setting up interface...', 70);
 
-            this.updateLoadingProgress('🎯 Mobile optimization complete', 'Interface ready...', 90);
 
-            // Quick collection stats (minimal processing)
-            this.generateBasicCollectionStats();
 
-            // Update UI elements
-            this.updatePageTitleCounts();
-            this.loadInitialView();
+    // For mobile, only load core data and defer heavy processing
 
-            console.log(`✅ Mobile-optimized data loaded: ${albums.length} albums (lazy loading enabled for artists/tracks/roles)`);
+    const [artists, fetchedScrapedHistory] = await Promise.all([
 
-        } catch (error) {
-            console.error('❌ Failed to load data from Supabase (mobile):', error);
-            throw error;
-        }
+    this.supabaseService.getArtists().catch(() => []), // Graceful fallback
+
+    this.supabaseService.getScrapedArtistsHistory().catch(() => [])
+
+    ]);
+
+
+
+    this.updateLoadingProgress('🔄 Preparing collection...', 'Almost ready...', 85);
+
+
+
+    // Update collection with core data
+
+    this.collection.albums = albums;
+
+
+
+    // For mobile, defer expensive operations until needed
+
+    this.collection.artists = []; // Will be generated on-demand
+
+    this.collection.tracks = []; // Will be generated on-demand
+
+    this.collection.roles = []; // Will be generated on-demand
+
+
+
+    this.artistsNeedRegeneration = true; // Mark for lazy generation
+
+
+
+    // Store scraped history
+
+    this.scrapedHistory = fetchedScrapedHistory || [];
+
+
+
+    this.updateLoadingProgress('🎯 Mobile optimization complete', 'Interface ready...', 90);
+
+
+
+    // Quick collection stats (minimal processing)
+
+    this.generateBasicCollectionStats();
+
+
+
+    // Update UI elements
+
+    this.updatePageTitleCounts();
+
+    this.loadInitialView();
+
+
+
+    console.log(`✅ Mobile-optimized data loaded: ${albums.length} albums (lazy loading enabled for artists/tracks/roles)`);
+
+
+
+    } catch (error) {
+
+    console.error('❌ Failed to load data from Supabase (mobile):', error);
+
+    throw error;
+
     }
+
+    }
+
+
 
     // Mobile-optimized album loading with smaller batches
+
     async loadAlbumsWithProgressMobile() {
-        if (!this.supabaseService?.initialized) {
-            throw new Error('Supabase service not initialized');
-        }
 
-        // Mobile-optimized batch size (smaller for better responsiveness)
-        const batchSize = 250; // Much smaller than desktop (1000)
-        let allAlbums = [];
-        let start = 0;
-        let hasMore = true;
-        let batchCount = 0;
+    if (!this.supabaseService?.initialized) {
 
-        while (hasMore) {
-            batchCount++;
+    throw new Error('Supabase service not initialized');
 
-            this.updateLoadingProgress(
-                `📚 Loading batch ${batchCount}...`,
-                `📱 Mobile-optimized loading... ${allAlbums.length} albums`,
-                30 + (batchCount * 8) // Slower progress for mobile batches
-            );
-
-            const { data: batch, error } = await this.supabaseService.client
-                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .select('*')
-                .order('year', { ascending: true })
-                .range(start, start + batchSize - 1);
-
-            if (error) throw error;
-
-            if (batch && batch.length > 0) {
-                allAlbums = allAlbums.concat(batch);
-                start += batchSize;
-                hasMore = batch.length === batchSize;
-
-                console.log(`📱 Mobile batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`);
-
-                // Yield to main thread more frequently on mobile
-                await new Promise(resolve => setTimeout(resolve, 10));
-            } else {
-                hasMore = false;
-            }
-        }
-
-        console.log(`📱 Mobile loading complete: ${allAlbums.length} albums in ${batchCount} batches`);
-        return allAlbums;
     }
+
+
+
+    // Mobile-optimized batch size (smaller for better responsiveness)
+
+    const batchSize = 250; // Much smaller than desktop (1000)
+
+    let allAlbums = [];
+
+    let start = 0;
+
+    let hasMore = true;
+
+    let batchCount = 0;
+
+
+
+    while (hasMore) {
+
+    batchCount++;
+
+
+
+    this.updateLoadingProgress(
+
+    `📚 Loading batch ${batchCount}...`,
+
+    `📱 Mobile-optimized loading... ${allAlbums.length} albums`,
+
+    30 + (batchCount * 8) // Slower progress for mobile batches
+
+    );
+
+
+
+    const { data: batch, error } = await this.supabaseService.client
+
+    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+
+    .select('*')
+
+    .order('year', { ascending: true })
+
+    .range(start, start + batchSize - 1);
+
+
+
+    if (error) throw error;
+
+
+
+    if (batch && batch.length > 0) {
+
+    allAlbums = allAlbums.concat(batch);
+
+    start += batchSize;
+
+    hasMore = batch.length === batchSize;
+
+
+
+    console.log(`📱 Mobile batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`);
+
+
+
+    // Yield to main thread more frequently on mobile
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    } else {
+
+    hasMore = false;
+
+    }
+
+    }
+
+
+
+    console.log(`📱 Mobile loading complete: ${allAlbums.length} albums in ${batchCount} batches`);
+
+    return allAlbums;
+
+    }
+
+
 
     // Basic collection stats for mobile (minimal processing)
+
     generateBasicCollectionStats() {
-        if (this.collection.albums.length === 0) return;
 
-        // Only basic year analysis for mobile startup
-        const years = this.collection.albums
-            .filter(album => album.year)
-            .map(album => album.year);
+    if (this.collection.albums.length === 0) return;
 
-        if (years.length > 0) {
-            const earliestYear = Math.min(...years);
-            const latestYear = Math.max(...years);
-            console.log(`📊 Basic stats: ${this.collection.albums.length} albums spanning ${earliestYear}-${latestYear}`);
-        }
+
+
+    // Only basic year analysis for mobile startup
+
+    const years = this.collection.albums
+
+    .filter(album => album.year)
+
+    .map(album => album.year);
+
+
+
+    if (years.length > 0) {
+
+    const earliestYear = Math.min(...years);
+
+    const latestYear = Math.max(...years);
+
+    console.log(`📊 Basic stats: ${this.collection.albums.length} albums spanning ${earliestYear}-${latestYear}`);
+
     }
+
+    }
+
+
 
     // Enhanced album loading with real-time progress
+
     async loadAlbumsWithProgress() {
-        if (!this.supabaseService?.initialized) {
-            throw new Error('Supabase service not initialized');
-        }
 
-        // First, get the total count to calculate expected batches
-        this.updateLoadingProgress('📊 Calculating collection size...', 'Checking album count...', 32);
+    if (!this.supabaseService?.initialized) {
 
-        const { count: totalCount, error: countError } = await this.supabaseService.client
-            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-            .select('*', { count: 'exact', head: true });
+    throw new Error('Supabase service not initialized');
 
-        if (countError) {
-            console.warn('⚠️ Could not get exact count, proceeding with estimation');
-        }
-
-        const batchSize = 1000;
-        const estimatedBatches = totalCount ? Math.ceil(totalCount / batchSize) : '?';
-
-        console.log(`📊 Total albums: ${totalCount || 'unknown'}, Expected batches: ${estimatedBatches}`);
-
-        let allAlbums = [];
-        let start = 0;
-        let hasMore = true;
-        let batchCount = 0;
-
-        while (hasMore) {
-            batchCount++;
-
-            // Enhanced progress with batch X/Y format
-            const batchProgress = 30 + (batchCount * 15); // More conservative progress increment
-            const batchText = estimatedBatches !== '?'
-                ? `📚 Loading batch ${batchCount}/${estimatedBatches}...`
-                : `📚 Loading batch ${batchCount}...`;
-
-            this.updateLoadingProgress(
-                batchText,
-                `${allAlbums.length} albums loaded so far...`,
-                Math.min(batchProgress, 50)
-            );
-
-            const { data: batch, error } = await this.supabaseService.client
-                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .select('*')
-                .order('year', { ascending: true })
-                .range(start, start + batchSize - 1);
-
-            if (error) throw error;
-
-            if (batch && batch.length > 0) {
-                allAlbums = allAlbums.concat(batch);
-                start += batchSize;
-                hasMore = batch.length === batchSize;
-
-                const progressText = estimatedBatches !== '?'
-                    ? `📚 Loaded batch ${batchCount}/${estimatedBatches}: ${batch.length} albums (total: ${allAlbums.length})`
-                    : `📚 Loaded batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`;
-
-                console.log(progressText);
-            } else {
-                hasMore = false;
-            }
-        }
-
-        // Final confirmation with exact totals
-        if (estimatedBatches !== '?' && batchCount !== estimatedBatches) {
-            console.log(`📊 Actual batches: ${batchCount} (estimated: ${estimatedBatches})`);
-        }
-
-        return allAlbums;
     }
+
+
+
+    // First, get the total count to calculate expected batches
+
+    this.updateLoadingProgress('📊 Calculating collection size...', 'Checking album count...', 32);
+
+
+
+    const { count: totalCount, error: countError } = await this.supabaseService.client
+
+    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+
+    .select('*', { count: 'exact', head: true });
+
+
+
+    if (countError) {
+
+    console.warn('⚠️ Could not get exact count, proceeding with estimation');
+
+    }
+
+
+
+    const batchSize = 1000;
+
+    const estimatedBatches = totalCount ? Math.ceil(totalCount / batchSize) : '?';
+
+
+
+    console.log(`📊 Total albums: ${totalCount || 'unknown'}, Expected batches: ${estimatedBatches}`);
+
+
+
+    let allAlbums = [];
+
+    let start = 0;
+
+    let hasMore = true;
+
+    let batchCount = 0;
+
+
+
+    while (hasMore) {
+
+    batchCount++;
+
+
+
+    // Enhanced progress with batch X/Y format
+
+    const batchProgress = 30 + (batchCount * 15); // More conservative progress increment
+
+    const batchText = estimatedBatches !== '?'
+
+    ? `📚 Loading batch ${batchCount}/${estimatedBatches}...`
+
+    : `📚 Loading batch ${batchCount}...`;
+
+
+
+    this.updateLoadingProgress(
+
+    batchText,
+
+    `${allAlbums.length} albums loaded so far...`,
+
+    Math.min(batchProgress, 50)
+
+    );
+
+
+
+    const { data: batch, error } = await this.supabaseService.client
+
+    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+
+    .select('*')
+
+    .order('year', { ascending: true })
+
+    .range(start, start + batchSize - 1);
+
+
+
+    if (error) throw error;
+
+
+
+    if (batch && batch.length > 0) {
+
+    allAlbums = allAlbums.concat(batch);
+
+    start += batchSize;
+
+    hasMore = batch.length === batchSize;
+
+
+
+    const progressText = estimatedBatches !== '?'
+
+    ? `📚 Loaded batch ${batchCount}/${estimatedBatches}: ${batch.length} albums (total: ${allAlbums.length})`
+
+    : `📚 Loaded batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`;
+
+
+
+    console.log(progressText);
+
+    } else {
+
+    hasMore = false;
+
+    }
+
+    }
+
+
+
+    // Final confirmation with exact totals
+
+    if (estimatedBatches !== '?' && batchCount !== estimatedBatches) {
+
+    console.log(`📊 Actual batches: ${batchCount} (estimated: ${estimatedBatches})`);
+
+    }
+
+
+
+    return allAlbums;
+
+    }
+
+
 
     // Optimized collection stats (moved out of critical loading path)
+
     generateCollectionStats() {
-        if (this.collection.albums.length === 0) return;
 
-        // Basic year analysis (much faster)
-        const years = this.collection.albums
-            .filter(album => album.year)
-            .map(album => album.year);
+    if (this.collection.albums.length === 0) return;
 
-        if (years.length > 0) {
-            const minYear = Math.min(...years);
-            const maxYear = Math.max(...years);
-            const post1994Count = years.filter(year => year > 1994).length;
 
-            console.log(`📊 Collection stats: ${this.collection.albums.length} albums (${minYear}-${maxYear}), ${post1994Count} modern albums`);
-        }
+
+    // Basic year analysis (much faster)
+
+    const years = this.collection.albums
+
+    .filter(album => album.year)
+
+    .map(album => album.year);
+
+
+
+    if (years.length > 0) {
+
+    const minYear = Math.min(...years);
+
+    const maxYear = Math.max(...years);
+
+    const post1994Count = years.filter(year => year > 1994).length;
+
+
+
+    console.log(`📊 Collection stats: ${this.collection.albums.length} albums (${minYear}-${maxYear}), ${post1994Count} modern albums`);
+
     }
+
+    }
+
+
 
     // Offline notification for failed connections
-    showOfflineNotification() {
-        const notification = document.createElement('div');
-        notification.className = 'offline-notification';
-        notification.innerHTML = `
-            <div class="offline-content">
-                <span class="offline-icon">📡</span>
-                <span class="offline-text">Running in offline mode</span>
-                <button class="offline-retry" onclick="location.reload()">🔄 Retry</button>
-            </div>
-        `;
-        document.body.appendChild(notification);
 
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 5000);
+    showOfflineNotification() {
+
+    const notification = document.createElement('div');
+
+    notification.className = 'offline-notification';
+
+    notification.innerHTML = `
+
+    <div class="offline-content">
+
+    <span class="offline-icon">📡</span>
+
+    <span class="offline-text">Running in offline mode</span>
+
+    <button class="offline-retry" onclick="location.reload()">🔄 Retry</button>
+
+    </div>
+
+    `;
+
+    document.body.appendChild(notification);
+
+
+
+    // Auto-hide after 5 seconds
+
+    setTimeout(() => {
+
+    if (notification.parentNode) {
+
+    notification.remove();
+
     }
+
+    }, 5000);
+
+    }
+
+
 
     // Loading Modal Control Methods
-    showLoadingModal(message = 'Loading...', step = 'Please wait...', progress = 0) {
-        const overlay = document.getElementById('loading-overlay');
-        const loadingText = document.getElementById('loading-text');
-        const progressStep = document.getElementById('progress-step');
-        const progressFill = document.getElementById('progress-fill');
 
-        if (overlay) {
-            overlay.classList.remove('hidden');
-            loadingText.textContent = message;
-            progressStep.textContent = step;
-            progressFill.style.width = `${progress}%`;
-        }
+    showLoadingModal(message = 'Loading...', step = 'Please wait...', progress = 0) {
+
+    const overlay = document.getElementById('loading-overlay');
+
+    const loadingText = document.getElementById('loading-text');
+
+    const progressStep = document.getElementById('progress-step');
+
+    const progressFill = document.getElementById('progress-fill');
+
+
+
+    if (overlay) {
+
+    overlay.classList.remove('hidden');
+
+    loadingText.textContent = message;
+
+    progressStep.textContent = step;
+
+    progressFill.style.width = `${progress}%`;
+
     }
+
+    }
+
+
 
     updateLoadingProgress(message, step, progress, count = '') {
-        const loadingText = document.getElementById('loading-text');
-        const progressStep = document.getElementById('progress-step');
-        const progressFill = document.getElementById('progress-fill');
-        const progressCount = document.getElementById('progress-count');
 
-        if (loadingText) loadingText.textContent = message;
-        if (progressStep) progressStep.textContent = step;
-        if (progressFill) progressFill.style.width = `${progress}%`;
-        if (progressCount) progressCount.textContent = count;
+    const loadingText = document.getElementById('loading-text');
+
+    const progressStep = document.getElementById('progress-step');
+
+    const progressFill = document.getElementById('progress-fill');
+
+    const progressCount = document.getElementById('progress-count');
+
+
+
+    if (loadingText) loadingText.textContent = message;
+
+    if (progressStep) progressStep.textContent = step;
+
+    if (progressFill) progressFill.style.width = `${progress}%`;
+
+    if (progressCount) progressCount.textContent = count;
+
     }
+
+
 
     hideLoadingModal() {
-        const overlay = document.getElementById('loading-overlay');
-        if (overlay) {
-            overlay.style.animation = 'fadeOut 0.5s ease-out forwards';
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                overlay.style.animation = '';
-            }, 500);
-        }
+
+    const overlay = document.getElementById('loading-overlay');
+
+    if (overlay) {
+
+    overlay.style.animation = 'fadeOut 0.5s ease-out forwards';
+
+    setTimeout(() => {
+
+    overlay.classList.add('hidden');
+
+    overlay.style.animation = '';
+
+    }, 500);
+
     }
+
+    }
+
+
 
     initializeSortControls() {
-        // Initialize shuffle button visibility based on default sort values
-        const albumsSort = document.getElementById('albums-sort');
-        const artistsSort = document.getElementById('artists-sort');
-        const tracksSort = document.getElementById('tracks-sort');
-        const rolesSort = document.getElementById('roles-sort');
 
-        if (albumsSort) {
-            this.sortAlbums(albumsSort.value);
-        }
-        if (artistsSort) {
-            this.sortArtists(artistsSort.value);
-        }
-        if (tracksSort) {
-            this.sortTracks(tracksSort.value);
-        }
-        if (rolesSort) {
-            this.sortRoles(rolesSort.value);
-        }
+    // Initialize shuffle button visibility based on default sort values
+
+    const albumsSort = document.getElementById('albums-sort');
+
+    const artistsSort = document.getElementById('artists-sort');
+
+    const tracksSort = document.getElementById('tracks-sort');
+
+    const rolesSort = document.getElementById('roles-sort');
+
+
+
+    if (albumsSort) {
+
+    this.sortAlbums(albumsSort.value);
+
     }
+
+    if (artistsSort) {
+
+    this.sortArtists(artistsSort.value);
+
+    }
+
+    if (tracksSort) {
+
+    this.sortTracks(tracksSort.value);
+
+    }
+
+    if (rolesSort) {
+
+    this.sortRoles(rolesSort.value);
+
+    }
+
+    }
+
+
 
     // Update page title counts
+
     updatePageTitleCounts() {
 
-        // Update Albums count
-        const albumsCountEl = document.getElementById('albums-count');
-        if (albumsCountEl) {
-            albumsCountEl.textContent = `(${this.collection.albums.length})`;
-        }
 
-        // Update Artists count (total unique artists)
-        const artistsCountEl = document.getElementById('artists-count');
-        if (artistsCountEl) {
-            artistsCountEl.textContent = `(${this.collection.artists.length})`;
-        }
 
-        // Update Tracks count
-        const tracksCountEl = document.getElementById('tracks-count');
-        if (tracksCountEl) {
-            tracksCountEl.textContent = `(${this.collection.tracks.length})`;
-        }
+    // Update Albums count
 
-        // Update Roles count
-        const rolesCountEl = document.getElementById('roles-count');
-        if (rolesCountEl) {
-            rolesCountEl.textContent = `(${this.collection.roles.length})`;
-        }
+    const albumsCountEl = document.getElementById('albums-count');
 
-        console.log(`📊 Updated counts - Albums: ${this.collection.albums.length}, Artists: ${this.collection.artists.length}, Tracks: ${this.collection.tracks.length}, Roles: ${this.collection.roles.length}`);
+    if (albumsCountEl) {
+
+    albumsCountEl.textContent = `(${this.collection.albums.length})`;
+
     }
+
+
+
+    // Update Artists count (total unique artists)
+
+    const artistsCountEl = document.getElementById('artists-count');
+
+    if (artistsCountEl) {
+
+    artistsCountEl.textContent = `(${this.collection.artists.length})`;
+
+    }
+
+
+
+    // Update Tracks count
+
+    const tracksCountEl = document.getElementById('tracks-count');
+
+    if (tracksCountEl) {
+
+    tracksCountEl.textContent = `(${this.collection.tracks.length})`;
+
+    }
+
+
+
+    // Update Roles count
+
+    const rolesCountEl = document.getElementById('roles-count');
+
+    if (rolesCountEl) {
+
+    rolesCountEl.textContent = `(${this.collection.roles.length})`;
+
+    }
+
+
+
+    console.log(`📊 Updated counts - Albums: ${this.collection.albums.length}, Artists: ${this.collection.artists.length}, Tracks: ${this.collection.tracks.length}, Roles: ${this.collection.roles.length}`);
+
+    }
+
+
 
     setupEventListeners() {
-        // Navigation event listeners
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const view = e.target.getAttribute('data-view');
-                this.switchView(view);
-            });
-        });
 
-        // Modal event listeners
-        const modal = document.getElementById('more-info-modal');
-        const closeModal = document.getElementById('close-modal');
+    // Navigation event listeners
 
-        // Only add listeners if elements exist
-        if (closeModal) {
-            closeModal.addEventListener('click', () => this.closeModal(true)); // Force close on X button
-        } else {
-            console.warn('⚠️ Close modal button not found');
-        }
-        
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) this.closeModal(true); // Force close when clicking outside
-            });
-        } else {
-            console.warn('⚠️ Modal element not found');
-        }
+    document.querySelectorAll('.nav-btn').forEach(btn => {
 
-        // Escape key to close modal
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') this.closeModal(true); // Force close on escape key
-        });
+    btn.addEventListener('click', (e) => {
 
-        // Fullscreen image viewer event delegation
-        document.addEventListener('click', (e) => {
-            // Check if clicked element is a modal cover image
-            if (e.target.classList.contains('modal-cover-image')) {
-                e.stopPropagation();
-                const imageSrc = e.target.src;
-                const title = e.target.closest('.album-modal-content')?.querySelector('.modal-album-title')?.textContent || 'Unknown Album';
-                const artist = e.target.closest('.album-modal-content')?.querySelector('.modal-album-artist')?.textContent || 'Unknown Artist';
+    const view = e.target.getAttribute('data-view');
 
-                console.log('🖼️ Modal cover image clicked:', { imageSrc, title, artist });
-                this.openFullscreenImage(imageSrc, title, artist);
-            }
-        });
+    this.switchView(view);
 
-        // Sort event listeners
-        const albumsSort = document.getElementById('albums-sort');
-        const artistsSort = document.getElementById('artists-sort');
+    });
 
-        if (albumsSort) {
-            albumsSort.addEventListener('change', (e) => {
-                console.log('Albums sort change event fired:', e.target.value);
-                this.sortAlbums(e.target.value);
-            });
-        }
+    });
 
-        if (artistsSort) {
-            artistsSort.addEventListener('change', (e) => {
-                console.log('Artists sort change event fired:', e.target.value);
-                this.sortArtists(e.target.value);
-            });
-        }
 
-        const tracksSort = document.getElementById('tracks-sort');
-        const rolesSort = document.getElementById('roles-sort');
 
-        if (tracksSort) {
-            tracksSort.addEventListener('change', (e) => {
-                console.log('Tracks sort change event fired:', e.target.value);
-                this.sortTracks(e.target.value);
-            });
-        }
+    // Modal event listeners
 
-        if (rolesSort) {
-            rolesSort.addEventListener('change', (e) => {
-                console.log('Roles sort change event fired:', e.target.value);
-                this.sortRoles(e.target.value);
-            });
-        }
+    const modal = document.getElementById('more-info-modal');
 
-        // Shuffle buttons
-        const shuffleAlbumsBtn = document.getElementById('shuffle-albums');
-        const shuffleArtistsBtn = document.getElementById('shuffle-artists');
+    const closeModal = document.getElementById('close-modal');
 
-        if (shuffleAlbumsBtn) {
-            shuffleAlbumsBtn.addEventListener('click', () => {
-                console.log('Albums shuffle button clicked');
-                this.shuffleAlbums();
-            });
-        }
 
-        if (shuffleArtistsBtn) {
-            shuffleArtistsBtn.addEventListener('click', () => {
-                console.log('Artists shuffle button clicked');
-                this.shuffleArtists();
-            });
-        }
 
-        // Search event listeners
-        this.setupSearchEventListeners();
+    // Only add listeners if elements exist
 
-        // Selection mode event listeners
-        this.setupSelectionEventListeners();
+    if (closeModal) {
+
+    closeModal.addEventListener('click', () => this.closeModal(true)); // Force close on X button
+
+    } else {
+
+    console.warn('⚠️ Close modal button not found');
+
     }
+
+
+    if (modal) {
+
+    modal.addEventListener('click', (e) => {
+
+    if (e.target === modal) this.closeModal(true); // Force close when clicking outside
+
+    });
+
+    } else {
+
+    console.warn('⚠️ Modal element not found');
+
+    }
+
+
+
+    // Escape key to close modal
+
+    document.addEventListener('keydown', (e) => {
+
+    if (e.key === 'Escape') this.closeModal(true); // Force close on escape key
+
+    });
+
+
+
+    // Fullscreen image viewer event delegation
+
+    document.addEventListener('click', (e) => {
+
+    // Check if clicked element is a modal cover image
+
+    if (e.target.classList.contains('modal-cover-image')) {
+
+    e.stopPropagation();
+
+    const imageSrc = e.target.src;
+
+    const title = e.target.closest('.album-modal-content')?.querySelector('.modal-album-title')?.textContent || 'Unknown Album';
+
+    const artist = e.target.closest('.album-modal-content')?.querySelector('.modal-album-artist')?.textContent || 'Unknown Artist';
+
+
+
+    console.log('🖼️ Modal cover image clicked:', { imageSrc, title, artist });
+
+    this.openFullscreenImage(imageSrc, title, artist);
+
+    }
+
+    });
+
+
+
+    // Sort event listeners
+
+    const albumsSort = document.getElementById('albums-sort');
+
+    const artistsSort = document.getElementById('artists-sort');
+
+
+
+    if (albumsSort) {
+
+    albumsSort.addEventListener('change', (e) => {
+
+    console.log('Albums sort change event fired:', e.target.value);
+
+    this.sortAlbums(e.target.value);
+
+    });
+
+    }
+
+
+
+    if (artistsSort) {
+
+    artistsSort.addEventListener('change', (e) => {
+
+    console.log('Artists sort change event fired:', e.target.value);
+
+    this.sortArtists(e.target.value);
+
+    });
+
+    }
+
+
+
+    const tracksSort = document.getElementById('tracks-sort');
+
+    const rolesSort = document.getElementById('roles-sort');
+
+
+
+    if (tracksSort) {
+
+    tracksSort.addEventListener('change', (e) => {
+
+    console.log('Tracks sort change event fired:', e.target.value);
+
+    this.sortTracks(e.target.value);
+
+    });
+
+    }
+
+
+
+    if (rolesSort) {
+
+    rolesSort.addEventListener('change', (e) => {
+
+    console.log('Roles sort change event fired:', e.target.value);
+
+    this.sortRoles(e.target.value);
+
+    });
+
+    }
+
+
+
+    // Shuffle buttons
+
+    const shuffleAlbumsBtn = document.getElementById('shuffle-albums');
+
+    const shuffleArtistsBtn = document.getElementById('shuffle-artists');
+
+
+
+    if (shuffleAlbumsBtn) {
+
+    shuffleAlbumsBtn.addEventListener('click', () => {
+
+    console.log('Albums shuffle button clicked');
+
+    this.shuffleAlbums();
+
+    });
+
+    }
+
+
+
+    if (shuffleArtistsBtn) {
+
+    shuffleArtistsBtn.addEventListener('click', () => {
+
+    console.log('Artists shuffle button clicked');
+
+    this.shuffleArtists();
+
+    });
+
+    }
+
+
+
+    // Search event listeners
+
+    this.setupSearchEventListeners();
+
+
+
+    // Selection mode event listeners
+
+    this.setupSelectionEventListeners();
+
+    }
+
+
 
     setupSelectionEventListeners() {
-        // Select mode toggle button
-        const selectModeToggle = document.getElementById('select-mode-toggle');
-        if (selectModeToggle) {
-            selectModeToggle.addEventListener('click', () => {
-                this.toggleSelectionMode();
-            });
-        }
 
-        // Select all button
-        const selectAllBtn = document.getElementById('select-all-albums');
-        if (selectAllBtn) {
-            selectAllBtn.addEventListener('click', () => {
-                this.selectAllAlbums();
-            });
-        }
+    // Select mode toggle button
 
-        // Delete selected button
-        const deleteSelectedBtn = document.getElementById('delete-selected-albums');
-        if (deleteSelectedBtn) {
-            deleteSelectedBtn.addEventListener('click', () => {
-                this.deleteSelectedAlbums();
-            });
-        }
+    const selectModeToggle = document.getElementById('select-mode-toggle');
 
-        // Cancel selection button
-        const cancelSelectionBtn = document.getElementById('cancel-selection');
-        if (cancelSelectionBtn) {
-            cancelSelectionBtn.addEventListener('click', () => {
-                this.cancelSelection();
-            });
-        }
+    if (selectModeToggle) {
+
+    selectModeToggle.addEventListener('click', () => {
+
+    this.toggleSelectionMode();
+
+    });
+
     }
+
+
+
+    // Select all button
+
+    const selectAllBtn = document.getElementById('select-all-albums');
+
+    if (selectAllBtn) {
+
+    selectAllBtn.addEventListener('click', () => {
+
+    this.selectAllAlbums();
+
+    });
+
+    }
+
+
+
+    // Delete selected button
+
+    const deleteSelectedBtn = document.getElementById('delete-selected-albums');
+
+    if (deleteSelectedBtn) {
+
+    deleteSelectedBtn.addEventListener('click', () => {
+
+    this.deleteSelectedAlbums();
+
+    });
+
+    }
+
+
+
+    // Cancel selection button
+
+    const cancelSelectionBtn = document.getElementById('cancel-selection');
+
+    if (cancelSelectionBtn) {
+
+    cancelSelectionBtn.addEventListener('click', () => {
+
+    this.cancelSelection();
+
+    });
+
+    }
+
+    }
+
+
 
     // Album Card Rendering and Management with Lazy Loading
+
     renderAlbumsGrid(albumsToRender = null) {
-        console.log(`🎵 renderAlbumsGrid called with ${albumsToRender?.length || 'default collection'} albums`);
-        
-        // Debounce mechanism to prevent rapid successive calls
-        const now = Date.now();
-        if (now - this.lastAlbumRenderTime < this.albumRenderDebounceMs) {
-            console.log(`🎵 DEBUG: Debouncing album render (${now - this.lastAlbumRenderTime}ms since last render)`);
-            return;
-        }
-        this.lastAlbumRenderTime = now;
 
-        const albumsGrid = document.getElementById('albums-grid');
+    console.log(`🎵 renderAlbumsGrid called with ${albumsToRender?.length || 'default collection'} albums`);
 
-        // Use provided albums or default to collection albums
-        const albumsToDisplay = albumsToRender || this.collection.albums;
 
-        if (albumsToDisplay.length === 0) {
-            this.displayEmptyState('albums');
-            return;
-        }
+    // Debounce mechanism to prevent rapid successive calls
 
-        // Check for duplicate albums in data before rendering
-        const albumIds = albumsToDisplay.map(a => a.id);
-        const uniqueIds = new Set(albumIds);
-        if (albumIds.length !== uniqueIds.size) {
-            console.error(`❌ DUPLICATE ALBUMS IN DATA: ${albumIds.length} albums but only ${uniqueIds.size} unique IDs`);
-            // Remove duplicates from the data
-            const seenIds = new Set();
-            const cleanedAlbums = albumsToDisplay.filter(album => {
-                if (seenIds.has(album.id)) {
-                    console.log(`🗑️ Removing duplicate album: ${album.title} (ID: ${album.id})`);
-                    return false;
-                }
-                seenIds.add(album.id);
-                return true;
-            });
-            console.log(`✅ Cleaned data: now ${cleanedAlbums.length} unique albums`);
-            // Re-render with cleaned data
-            return this.renderAlbumsGrid(cleanedAlbums);
-        }
+    const now = Date.now();
 
-        // 🔍 DEBUG: Check what albums are being rendered
-        const post1994Albums = this.collection.albums.filter(album => album.year > 1994);
-        console.log(`🔍 DEBUG: Rendering albums grid:`);
-        console.log(`   Total albums in collection: ${this.collection.albums.length}`);
-        console.log(`   Albums after 1994 in collection: ${post1994Albums.length}`);
-        if (post1994Albums.length > 0) {
-            console.log(`   Sample post-1994 albums:`, post1994Albums.slice(0, 5).map(a => `${a.title} (${a.year})`));
-        }
+    if (now - this.lastAlbumRenderTime < this.albumRenderDebounceMs) {
 
-        // Clear existing card instances
-        this.albumCardInstances.clear();
+    console.log(`🎵 DEBUG: Debouncing album render (${now - this.lastAlbumRenderTime}ms since last render)`);
 
-        // Allow re-renders for sorting - only prevent duplicates during rapid successive calls (handled by debounce above)
+    return;
 
-        // CRITICAL: Reset the albums grid specifically to prevent duplication
-        // This will clear DOM content and reset lazy loading state
-        if (this.lazyLoadingManager) {
-            this.lazyLoadingManager.resetGrid('albums-grid');
-        }
-
-        // Add optimized grid class for performance
-        albumsGrid.classList.add('optimized-grid');
-
-        // Initialize lazy loading for albums grid
-        const albumRenderFunction = (albumData, index) => {
-            const options = {
-                selectionMode: this.selectionMode,
-                selected: this.selectedAlbums.has(albumData.id),
-                onSelectionChange: (albumId, isSelected) => {
-                    this.handleAlbumSelectionChange(albumId, isSelected);
-                }
-            };
-            const albumCard = new AlbumCard(albumData, options);
-            const cardElement = albumCard.render();
-            cardElement.classList.add('grid-item');
-
-            // Store the card instance for later reference
-            this.albumCardInstances.set(albumData.id, albumCard);
-
-            return cardElement;
-        };
-
-        // Mobile-aware batch sizing to prevent timing issues on desktop
-        let itemsPerPage;
-        if (this.isMobile) {
-            // For mobile, use smaller batches for performance
-            itemsPerPage = Math.min(16, Math.ceil(albumsToDisplay.length / 12)); // Max 16 items initially
-            console.log('📱 Using mobile-optimized album batch size:', itemsPerPage);
-        } else {
-            // For desktop, use conservative batch size to prevent duplication timing issues
-            itemsPerPage = 12; // Smaller than the problematic 20 to avoid race conditions
-            console.log('🖥️ Using desktop-conservative album batch size:', itemsPerPage);
-        }
-
-        this.lazyLoadingManager.initializeLazyGrid('albums-grid', albumsToDisplay, albumRenderFunction, {
-            itemsPerPage: itemsPerPage,
-            loadingMessage: '🎵 Loading more albums...',
-            noMoreMessage: '✅ All albums loaded'
-        });
-
-        console.log(`🚀 Lazy loading initialized for ${albumsToDisplay.length} albums`);
     }
 
+    this.lastAlbumRenderTime = now;
+
+
+
+    const albumsGrid = document.getElementById('albums-grid');
+
+
+
+    // Use provided albums or default to collection albums
+
+    const albumsToDisplay = albumsToRender || this.collection.albums;
+
+
+
+    if (albumsToDisplay.length === 0) {
+
+    this.displayEmptyState('albums');
+
+    return;
+
+    }
+
+
+
+    // Check for duplicate albums in data before rendering
+
+    const albumIds = albumsToDisplay.map(a => a.id);
+
+    const uniqueIds = new Set(albumIds);
+
+    if (albumIds.length !== uniqueIds.size) {
+
+    console.error(`❌ DUPLICATE ALBUMS IN DATA: ${albumIds.length} albums but only ${uniqueIds.size} unique IDs`);
+
+    // Remove duplicates from the data
+
+    const seenIds = new Set();
+
+    const cleanedAlbums = albumsToDisplay.filter(album => {
+
+    if (seenIds.has(album.id)) {
+
+    console.log(`🗑️ Removing duplicate album: ${album.title} (ID: ${album.id})`);
+
+    return false;
+
+    }
+
+    seenIds.add(album.id);
+
+    return true;
+
+    });
+
+    console.log(`✅ Cleaned data: now ${cleanedAlbums.length} unique albums`);
+
+    // Re-render with cleaned data
+
+    return this.renderAlbumsGrid(cleanedAlbums);
+
+    }
+
+
+
+    // 🔍 DEBUG: Check what albums are being rendered
+
+    const post1994Albums = this.collection.albums.filter(album => album.year > 1994);
+
+    console.log(`🔍 DEBUG: Rendering albums grid:`);
+
+    console.log(` Total albums in collection: ${this.collection.albums.length}`);
+
+    console.log(` Albums after 1994 in collection: ${post1994Albums.length}`);
+
+    if (post1994Albums.length > 0) {
+
+    console.log(` Sample post-1994 albums:`, post1994Albums.slice(0, 5).map(a => `${a.title} (${a.year})`));
+
+    }
+
+
+
+    // Clear existing card instances
+
+    this.albumCardInstances.clear();
+
+
+
+    // Allow re-renders for sorting - only prevent duplicates during rapid successive calls (handled by debounce above)
+
+
+
+    // CRITICAL: Reset the albums grid specifically to prevent duplication
+
+    // This will clear DOM content and reset lazy loading state
+
+    if (this.lazyLoadingManager) {
+
+    this.lazyLoadingManager.resetGrid('albums-grid');
+
+    }
+
+
+
+    // Add optimized grid class for performance
+
+    albumsGrid.classList.add('optimized-grid');
+
+
+
+    // Initialize lazy loading for albums grid
+
+    const albumRenderFunction = (albumData, index) => {
+
+    const options = {
+
+    selectionMode: this.selectionMode,
+
+    selected: this.selectedAlbums.has(albumData.id),
+
+    onSelectionChange: (albumId, isSelected) => {
+
+    this.handleAlbumSelectionChange(albumId, isSelected);
+
+    }
+
+    };
+
+    const albumCard = new AlbumCard(albumData, options);
+
+    const cardElement = albumCard.render();
+
+    cardElement.classList.add('grid-item');
+
+
+
+    // Store the card instance for later reference
+
+    this.albumCardInstances.set(albumData.id, albumCard);
+
+
+
+    return cardElement;
+
+    };
+
+
+
+    // Mobile-aware batch sizing to prevent timing issues on desktop
+
+    let itemsPerPage;
+
+    if (this.isMobile) {
+
+    // For mobile, use smaller batches for performance
+
+    itemsPerPage = Math.min(16, Math.ceil(albumsToDisplay.length / 12)); // Max 16 items initially
+
+    console.log('📱 Using mobile-optimized album batch size:', itemsPerPage);
+
+    } else {
+
+    // For desktop, use conservative batch size to prevent duplication timing issues
+
+    itemsPerPage = 12; // Smaller than the problematic 20 to avoid race conditions
+
+    console.log('🖥️ Using desktop-conservative album batch size:', itemsPerPage);
+
+    }
+
+
+
+    this.lazyLoadingManager.initializeLazyGrid('albums-grid', albumsToDisplay, albumRenderFunction, {
+
+    itemsPerPage: itemsPerPage,
+
+    loadingMessage: '🎵 Loading more albums...',
+
+    noMoreMessage: '✅ All albums loaded'
+
+    });
+
+
+
+    console.log(`🚀 Lazy loading initialized for ${albumsToDisplay.length} albums`);
+
+    }
     // ===== ALBUM SELECTION MODE METHODS =====
 
     /**
