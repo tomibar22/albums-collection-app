@@ -112,7 +112,8 @@ class SupabaseService {
             if (albumError) throw albumError;
 
             // Process relationships
-            await this.processAlbumRelationships(album.id, albumData);
+            // PHASE 1a: Disable relationship processing for BOTH scrapers
+            // await this.processAlbumRelationships(album.id, albumData);
 
             if (this.debug) {
                 console.log('✅ Album added successfully:', album.title);
