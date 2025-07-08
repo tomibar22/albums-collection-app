@@ -1155,7 +1155,7 @@ class AlbumCollectionApp {
 
     tracksSort.addEventListener('change', (e) => {
 
-    console.log('Tracks sort change event fired:', e.target.value);
+    // console.log('Tracks sort change event fired:', e.target.value);
 
     this.sortTracks(e.target.value);
 
@@ -1169,7 +1169,7 @@ class AlbumCollectionApp {
 
     rolesSort.addEventListener('change', (e) => {
 
-    console.log('Roles sort change event fired:', e.target.value);
+    // console.log('Roles sort change event fired:', e.target.value);
 
     this.sortRoles(e.target.value);
 
@@ -2544,17 +2544,17 @@ class AlbumCollectionApp {
             }));
 
             // 🔧 FIX: Regenerate tracks and roles from albums to ensure proper relationships
-            console.log('🔄 Regenerating tracks and roles from albums to fix relationship data...');
+            // console.log('🔄 Regenerating tracks and roles from albums to fix relationship data...');
             this.collection.tracks = this.generateTracksFromAlbums();
             this.collection.roles = this.generateRolesFromAlbums();
-            console.log(`✅ Regenerated ${this.collection.tracks.length} tracks and ${this.collection.roles.length} roles with proper relationships`);
+            // console.log(`✅ Regenerated ${this.collection.tracks.length} tracks and ${this.collection.roles.length} roles with proper relationships`);
 
             this.updateLoadingProgress('Finalizing interface...', 'Rendering your collection...', 90, `${albums.length} albums, ${artists.length} artists`);
 
             // Log the loaded data, including scraped history length
-            console.log(`✅ Data loaded from Supabase: ${albums.length} albums, ${artists.length} artists`);
-            console.log(`✅ Regenerated from albums: ${this.collection.tracks.length} tracks, ${this.collection.roles.length} roles`);
-            console.log(`✅ Scraped history: ${this.scrapedHistory.length} items`);
+            // console.log(`✅ Data loaded from Supabase: ${albums.length} albums, ${artists.length} artists`);
+            // console.log(`✅ Regenerated from albums: ${this.collection.tracks.length} tracks, ${this.collection.roles.length} roles`);
+            // console.log(`✅ Scraped history: ${this.scrapedHistory.length} items`);
 
             // Render the current view
             this.renderCurrentView();
@@ -3133,7 +3133,7 @@ class AlbumCollectionApp {
                     }
                     result.tracks.get(trackInfo).push(displayRole);
                 } else {
-                    console.log(`🚫 Filtered out non-role in track context: "${roleWithInstrument}"`);
+                    // console.log(`🚫 Filtered out non-role in track context: "${roleWithInstrument}"`);
                 }
             } else {
                 // General role (no track context) - validate it's actually a role
@@ -6393,7 +6393,7 @@ class AlbumCollectionApp {
         card.addEventListener('click', (e) => {
             // Don't trigger if clicking the button
             if (!e.target.classList.contains('role-view-artists-btn')) {
-                console.log(`🎭 Role clicked: ${roleData.name} (${category})`);
+                // console.log(`🎭 Role clicked: ${roleData.name} (${category})`);
                 this.showRoleArtists(roleData);
             }
         });
@@ -6410,23 +6410,23 @@ class AlbumCollectionApp {
 
     // Show artists that have a specific role
     showRoleArtists(roleData) {
-        console.log(`🎭 Showing artists for role: ${roleData?.name || 'Unknown'}`, roleData);
+        // console.log(`🎭 Showing artists for role: ${roleData?.name || 'Unknown'}`, roleData);
 
         if (!roleData || !roleData.name) {
-            console.error('❌ Invalid role data - missing role name:', roleData);
+            // console.error('❌ Invalid role data - missing role name:', roleData);
             this.showModal('Error', '<p>No role data available.</p>');
             return;
         }
 
         // Ensure artists array exists
         if (!roleData.artists || !Array.isArray(roleData.artists)) {
-            console.error('❌ Invalid role data - missing or invalid artists array:', roleData);
+            // console.error('❌ Invalid role data - missing or invalid artists array:', roleData);
             this.showModal('Error', `<p>No artists found for role "${roleData.name}".</p>`);
             return;
         }
 
         if (roleData.artists.length === 0) {
-            console.warn('⚠️ Role has no artists:', roleData.name);
+            // console.warn('⚠️ Role has no artists:', roleData.name);
             const category = window.roleCategorizer.categorizeRole(roleData.name);
             const personTerm = category === 'musical' ? 'Artists' : 'Contributors';
             this.showModal(`Role: "${roleData.name}"`, `<p>No ${personTerm.toLowerCase()} found with the role "${roleData.name}".</p>`);
