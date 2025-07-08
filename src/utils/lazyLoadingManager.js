@@ -87,6 +87,18 @@ class LazyLoadingManager {
             this.setupInfiniteScroll(gridId);
         }
         
+        // iOS Safari fallback: If no content is visible after a timeout, force load more
+        const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOSSafari) {
+            setTimeout(() => {
+                const gridElement = document.getElementById(gridId);
+                if (gridElement && gridElement.children.length < config.itemsPerPage) {
+                    console.log(`📱 iOS Safari fallback: Loading more items for ${gridId}`);
+                    this.loadNextBatch(gridId);
+                }
+            }, 2000); // Check after 2 seconds
+        }
+        
         console.log(`📊 LazyLoadingManager: Initialized lazy loading for grid '${gridId}' with ${items.length} total items.`);
         
         // Return control methods for the initialized grid
@@ -187,6 +199,12 @@ class LazyLoadingManager {
             if (endIndex >= items.length) {
                 state.allLoaded = true;
                 this.showNoMoreMessage(gridId);
+                // Remove mobile fallback button if all loaded
+                const mobileBtn = document.getElementById(`${gridId}-mobile-fallback`);
+                if (mobileBtn) mobileBtn.remove();
+            } else {
+                // Create mobile fallback button for iOS Safari
+                this.createMobileFallbackButton(gridId);
             }
             
             console.log(`✅ LazyLoadingManager: Loaded batch for '${gridId}'. Items ${startIndex} to ${endIndex-1} (${batch.length} requested, ${actuallyAddedCount} added to DOM).`);
@@ -242,7 +260,16 @@ class LazyLoadingManager {
             return;
         }
         
-        // Create a new Intersection Observer
+        // Create a new Intersection Observer with iOS Safari compatibility
+        const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const observerOptions = {
+            root: null, // Observe intersection with the viewport
+            rootMargin: isIOSSafari ? '100px' : `${this.loadingBufferDistance}px`, // Smaller margin for iOS Safari
+            threshold: isIOSSafari ? [0, 0.1, 0.25] : 0.1 // Multiple thresholds for iOS Safari
+        };
+        
+        console.log(`👁️ LazyLoadingManager: Setting up observer for '${gridId}' (iOS Safari: ${isIOSSafari})`);
+        
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 // If the sentinel is intersecting the viewport
@@ -255,11 +282,7 @@ class LazyLoadingManager {
                     }
                 }
             });
-        }, {
-            root: null, // Observe intersection with the viewport
-            rootMargin: `${this.loadingBufferDistance}px`, // Trigger when sentinel is within this distance from viewport bottom
-            threshold: 0.1 // Trigger when 10% of sentinel is visible
-        });
+        }, observerOptions);
         
         observer.observe(sentinel); // Start observing the sentinel
         this.observers.set(gridId, observer); // Store the observer
@@ -342,6 +365,60 @@ class LazyLoadingManager {
                 messageDiv.remove();
             }
         }, 3000);
+    }
+    
+    /**
+     * Creates a mobile fallback "Load More" button for iOS Safari compatibility
+     * @param {string} gridId - The ID of the grid element
+     */
+    createMobileFallbackButton(gridId) {
+        const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (!isIOSSafari) return; // Only for iOS Safari
+        
+        const gridElement = document.getElementById(gridId);
+        if (!gridElement) return;
+        
+        // Remove existing fallback button
+        const existingBtn = document.getElementById(`${gridId}-mobile-fallback`);
+        if (existingBtn) {
+            existingBtn.remove();
+        }
+        
+        const state = this.loadingStates.get(gridId);
+        if (!state || state.allLoaded) return;
+        
+        const fallbackBtn = document.createElement('button');
+        fallbackBtn.id = `${gridId}-mobile-fallback`;
+        fallbackBtn.className = 'mobile-fallback-btn';
+        fallbackBtn.innerHTML = '📱 Load More Items';
+        fallbackBtn.style.cssText = `
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        
+        fallbackBtn.addEventListener('click', () => {
+            console.log(`📱 Mobile fallback button clicked for ${gridId}`);
+            this.loadNextBatch(gridId);
+            
+            // Check if all loaded and remove button
+            setTimeout(() => {
+                const currentState = this.loadingStates.get(gridId);
+                if (currentState && currentState.allLoaded) {
+                    fallbackBtn.remove();
+                }
+            }, 500);
+        });
+        
+        gridElement.parentElement.appendChild(fallbackBtn);
+        console.log(`📱 Created mobile fallback button for ${gridId}`);
     }
     
     /**
