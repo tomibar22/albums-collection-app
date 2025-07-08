@@ -4447,6 +4447,28 @@
     right: auto;
 }
 
+/* iPhone-specific: Move edit buttons to bottom-left to give overlay buttons more room */
+@media (max-width: 480px) and (-webkit-min-device-pixel-ratio: 2) {
+    .card-edit-overlay {
+        top: auto;
+        bottom: 0.5rem;
+        left: 0.5rem;
+        right: auto;
+    }
+}
+
+/* Alternative iPhone detection for other iOS devices */
+@supports (-webkit-touch-callout: none) {
+    @media (max-width: 480px) {
+        .card-edit-overlay {
+            top: auto;
+            bottom: 0.5rem;
+            left: 0.5rem;
+            right: auto;
+        }
+    }
+}
+
 .album-card:hover .card-edit-overlay,
 .artist-card:hover .card-edit-overlay,
 .track-card:hover .card-edit-overlay,
