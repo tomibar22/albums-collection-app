@@ -318,14 +318,11 @@ class AlbumCollectionApp {
 
 
 
-    const [artists, tracks, roles, fetchedScrapedHistory] = await Promise.all([
-
-    this.supabaseService.getArtists(),
-
-    this.supabaseService.getTracks(),
-
-    this.supabaseService.getRoles(),
-
+    const [fetchedScrapedHistory] = await Promise.all([
+    // PHASE 1b: Skip loading relationship data (saves 36MB transfer)
+    // this.supabaseService.getArtists(),     // ← DISABLED (saves 3.8MB)
+    // this.supabaseService.getTracks(),      // ← DISABLED (saves 5.8MB)
+    // this.supabaseService.getRoles(),       // ← DISABLED (saves 2.3MB)
     this.supabaseService.getScrapedArtistsHistory()
 
     ]);
@@ -338,17 +335,17 @@ class AlbumCollectionApp {
 
     // Update collection (faster assignment)
     console.log('📚 iPhone Debug: Assigning albums to collection...', {
-        albumsLength: albums?.length || 0,
-        artistsLength: artists?.length || 0
+        albumsLength: albums?.length || 0
+        // artistsLength: artists?.length || 0  // ← DISABLED (no longer loading artists)
     });
 
     this.collection.albums = albums || [];
-    this.collection.artists = artists || [];
+    // this.collection.artists = artists || [];     // ← DISABLED (will be generated instead)
     
     // CRITICAL DEBUG: Verify assignment worked
     console.log('📚 iPhone Debug: Collection assignment result:', {
         collectionAlbumsLength: this.collection.albums?.length || 0,
-        collectionArtistsLength: this.collection.artists?.length || 0,
+        // collectionArtistsLength: this.collection.artists?.length || 0,  // ← DISABLED (will be generated)
         actualCollectionAlbums: this.collection.albums,
         isCollectionArray: Array.isArray(this.collection.albums)
     });
