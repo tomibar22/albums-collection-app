@@ -376,7 +376,7 @@ class AlbumCollectionApp {
 
 
 
-    console.log(`✅ Data loaded: ${albums.length} albums, ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
+    // console.log(`✅ Data loaded: ${albums.length} albums, ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
 
 
 
@@ -470,7 +470,7 @@ class AlbumCollectionApp {
 
 
 
-    console.log(`✅ Mobile-optimized data loaded: ${albums.length} albums (lazy loading enabled for artists/tracks/roles)`);
+    // console.log(`✅ Mobile-optimized data loaded: ${albums.length} albums (lazy loading enabled for artists/tracks/roles)`);
 
 
 
@@ -1010,7 +1010,7 @@ class AlbumCollectionApp {
 
 
 
-    console.log(`📊 Updated counts - Albums: ${this.collection.albums.length}, Artists: ${this.collection.artists.length}, Tracks: ${this.collection.tracks.length}, Roles: ${this.collection.roles.length}`);
+    // console.log(`📊 Updated counts - Albums: ${this.collection.albums.length}, Artists: ${this.collection.artists.length}, Tracks: ${this.collection.tracks.length}, Roles: ${this.collection.roles.length}`);
 
     }
 
@@ -2132,10 +2132,10 @@ class AlbumCollectionApp {
                         };
 
                         artistMap.set(artistName, newArtist);
-                        console.log(`     ✨ Created new artist ${artistName} (musical: ${newArtist.musicalAlbumCount}, technical: ${newArtist.technicalAlbumCount})`);
+                        // console.log(`     ✨ Created new artist ${artistName} (musical: ${newArtist.musicalAlbumCount}, technical: ${newArtist.technicalAlbumCount})`);
                     }
                 } else {
-                    console.log(`   ⚠️ Skipping incomplete credit: ${artistName || 'No name'} (${cleanRole || 'No role'})`);
+                    // console.log(`   ⚠️ Skipping incomplete credit: ${artistName || 'No name'} (${cleanRole || 'No role'})`);
                 }
             });
         });
