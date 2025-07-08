@@ -2705,6 +2705,8 @@ class AlbumCollectionApp {
         // Check if a modal is currently open to determine if this should be nested
         const modal = document.getElementById('more-info-modal');
         const isModalCurrentlyOpen = !modal.classList.contains('hidden');
+        
+        console.log(`🎭 showAlbumModal: modalHidden=${modal.classList.contains('hidden')}, isCurrentlyOpen=${isModalCurrentlyOpen}, modalStack.length=${this.modalStack.length}`);
 
         this.showModal(`${album.title} (${album.year})`, modalContent, isModalCurrentlyOpen);
     }
@@ -8233,6 +8235,16 @@ class AlbumCollectionApp {
     }
 
     // Modal methods
+    clearModalState() {
+        console.log('🧹 Clearing all modal state');
+        this.modalStack = [];
+        const modal = document.getElementById('more-info-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+    }
+
     showModal(title, content, isNestedModal = false) {
         // Debug logging to track modal stack pollution
         console.log(`🔍 showModal called with title: "${title}", isNestedModal: ${isNestedModal}, current stack size: ${this.modalStack.length}`);
@@ -8318,6 +8330,7 @@ class AlbumCollectionApp {
         const shouldShowBackBtn = this.modalStack.length > 0;
 
         console.log(`🔄 updateModalNavigation: stack size=${this.modalStack.length}, shouldShow=${shouldShowBackBtn}, exists=${!!existingBackBtn}`);
+        console.log(`📚 Current modal stack:`, this.modalStack.map(m => m.title));
 
         // Only remove back button if it exists but shouldn't
         if (existingBackBtn && !shouldShowBackBtn) {
