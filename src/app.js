@@ -8283,7 +8283,18 @@ class AlbumCollectionApp {
                 console.log('Spotify button clicked, search query:', searchQuery);
                 if (searchQuery) {
                     const encodedQuery = encodeURIComponent(searchQuery);
-                    window.open(`https://open.spotify.com/search/${encodedQuery}/albums`, '_blank');
+                    
+                    // iPhone-specific URL handling
+                    const isIPhone = /iPhone/i.test(navigator.userAgent);
+                    const spotifyUrl = isIPhone 
+                        ? `https://open.spotify.com/search/${encodedQuery}`
+                        : `https://open.spotify.com/search/${encodedQuery}/albums`;
+                    
+                    console.log('🎵 Opening Spotify search for:', searchQuery);
+                    console.log('🔗 Spotify URL:', spotifyUrl);
+                    console.log('📱 iPhone detected:', isIPhone);
+                    
+                    window.open(spotifyUrl, '_blank');
                 }
                 return;
             }

@@ -186,15 +186,41 @@ class AlbumCard {
     }
 
     /**
+     * Check if user is on iPhone
+     * @returns {boolean} True if on iPhone
+     */
+    isIPhone() {
+        return /iPhone/i.test(navigator.userAgent);
+    }
+
+    /**
+     * Generate appropriate Spotify URL for device
+     * @param {string} searchQuery The search query
+     * @returns {string} Spotify URL
+     */
+    getSpotifyUrl(searchQuery) {
+        const encodedQuery = encodeURIComponent(searchQuery);
+        
+        // For iPhone, use URL format that works better with Spotify app
+        if (this.isIPhone()) {
+            return `https://open.spotify.com/search/${encodedQuery}`;
+        }
+        
+        // For desktop and other devices, use the albums-specific URL
+        return `https://open.spotify.com/search/${encodedQuery}/albums`;
+    }
+
+    /**
      * Handle "Spotify" button click - opens Spotify search
      */
     handleSpotifyClick() {
         const primaryArtist = this.getPrimaryArtist();
         const searchQuery = `${primaryArtist} ${this.album.title}`;
-        const spotifyUrl = `https://open.spotify.com/search/${encodeURIComponent(searchQuery)}/albums`;
+        const spotifyUrl = this.getSpotifyUrl(searchQuery);
         
         console.log('🎵 Opening Spotify search for:', searchQuery);
         console.log('🔗 Spotify URL:', spotifyUrl);
+        console.log('📱 iPhone detected:', this.isIPhone());
         
         // Open Spotify search in new tab
         window.open(spotifyUrl, '_blank');
@@ -204,7 +230,8 @@ class AlbumCard {
             detail: {
                 album: this.album,
                 searchQuery: searchQuery,
-                url: spotifyUrl
+                url: spotifyUrl,
+                isIPhone: this.isIPhone()
             },
             bubbles: true
         });
