@@ -138,13 +138,37 @@ class LazyLoadingManager {
             
             this.hideLoadingIndicator(gridId); // Remove loading indicator
             
-            // Render batch items
+            const renderedIdsInBatch = new Set(); // To prevent duplicates within the current batch
+            let actuallyAddedCount = 0;
+            
             batch.forEach((item, index) => {
                 try {
+                    // Generate a unique ID for the item, prioritizing item.id
+                    const itemId = item.id || `lazy-item-${gridId}-${startIndex + index}`;
+                    
+                    // Comprehensive duplicate prevention:
+                    // 1. Check if already processed in this batch
+                    if (renderedIdsInBatch.has(itemId)) {
+                        console.warn(`⚠️ LazyLoadingManager: Skipping duplicate item ID '${itemId}' within the current batch for grid '${gridId}'.`);
+                        return;
+                    }
+                    renderedIdsInBatch.add(itemId);
+                    
+                    // 2. Check if an element with this data-item-id already exists in the DOM
+                    const existingElement = gridElement.querySelector(`[data-item-id="${itemId}"]`);
+                    if (existingElement) {
+                        console.warn(`⚠️ LazyLoadingManager: Element with data-item-id='${itemId}' already exists in grid '${gridId}', skipping rendering.`);
+                        return;
+                    }
+                    
+                    // Render the item using the provided renderItem function
                     const element = renderItem(item, startIndex + index);
                     
                     if (element instanceof HTMLElement) {
+                        // Ensure the rendered element has the data-item-id for future checks
+                        element.setAttribute('data-item-id', itemId);
                         gridElement.appendChild(element);
+                        actuallyAddedCount++;
                         
                         // Apply subtle animation for newly loaded items
                         this.animateNewItem(element);
@@ -165,7 +189,7 @@ class LazyLoadingManager {
                 this.showNoMoreMessage(gridId);
             }
             
-            console.log(`✅ Loaded batch for ${gridId}: items ${startIndex}-${endIndex-1} (${batch.length} items)`);
+            console.log(`✅ LazyLoadingManager: Loaded batch for '${gridId}'. Items ${startIndex} to ${endIndex-1} (${batch.length} requested, ${actuallyAddedCount} added to DOM).`);
             
         }, 50); // Small delay for a smooth loading effect
     }
@@ -519,5 +543,5 @@ class LazyLoadingManager {
     }
 }
 
-// Export for global access
+// Export for global access in a browser environment
 window.LazyLoadingManager = LazyLoadingManager;
