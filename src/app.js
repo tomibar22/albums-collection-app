@@ -1429,32 +1429,29 @@ class AlbumCollectionApp {
     // Initialize lazy loading for albums grid
 
     const albumRenderFunction = (albumData, index) => {
+        const options = {
+            selectionMode: this.selectionMode,
+            selected: this.selectedAlbums.has(albumData.id),
+            onSelectionChange: (albumId, isSelected) => {
+                this.handleAlbumSelectionChange(albumId, isSelected);
+            }
+        };
+        const albumCard = new AlbumCard(albumData, options);
+        const cardElement = albumCard.render();
+        cardElement.classList.add('grid-item');
 
-    const options = {
+        // CRITICAL FIX: Force image loading for initial batch (first 24 items) to prevent missing images
+        if (index < 24) {
+            const imgElement = cardElement.querySelector('.album-cover img');
+            if (imgElement && imgElement.dataset.src) {
+                imgElement.src = imgElement.dataset.src;
+                imgElement.classList.remove('lazy-load');
+                console.log(`🖼️ Force loaded image for initial album: ${albumData.title}`);
+            }
+        }
 
-    selectionMode: this.selectionMode,
-
-    selected: this.selectedAlbums.has(albumData.id),
-
-    onSelectionChange: (albumId, isSelected) => {
-
-    this.handleAlbumSelectionChange(albumId, isSelected);
-
-    }
-
-    };
-
-    const albumCard = new AlbumCard(albumData, options);
-
-    const cardElement = albumCard.render();
-
-    cardElement.classList.add('grid-item');
-
-
-
-    // Store the card instance for later reference
-
-    this.albumCardInstances.set(albumData.id, albumCard);
+        // Store the card instance for later reference
+        this.albumCardInstances.set(albumData.id, albumCard);
 
 
 
@@ -1472,33 +1469,36 @@ class AlbumCollectionApp {
 
     // For mobile, use smaller batches for performance
 
-    itemsPerPage = Math.min(16, Math.ceil(albumsToDisplay.length / 12)); // Max 16 items initially
+    itemsPerPage = Math.min(18, Math.ceil(albumsToDisplay.length / 10)); // Increased for better coverage
 
     console.log('📱 Using mobile-optimized album batch size:', itemsPerPage);
 
     } else {
 
-    // For desktop, use conservative batch size to prevent duplication timing issues
+    // For desktop, use larger initial batch to show more content upfront
 
-    itemsPerPage = 12; // Smaller than the problematic 20 to avoid race conditions
+    itemsPerPage = 24; // Increased from 12 to show 4 rows (6 columns x 4 rows)
 
-    console.log('🖥️ Using desktop-conservative album batch size:', itemsPerPage);
+    console.log('🖥️ Using desktop album batch size:', itemsPerPage);
 
     }
 
 
 
     this.lazyLoadingManager.initializeLazyGrid('albums-grid', albumsToDisplay, albumRenderFunction, {
-
-    itemsPerPage: itemsPerPage,
-
-    loadingMessage: '🎵 Loading more albums...',
-
-    noMoreMessage: '✅ All albums loaded'
-
+        itemsPerPage: itemsPerPage,
+        loadingMessage: '🎵 Loading more albums...',
+        noMoreMessage: '✅ All albums loaded'
     });
 
-
+    // CRITICAL FIX: Ensure lazy loading observer works after sorting
+    // Add a small delay to reinitialize observer after DOM is fully settled
+    setTimeout(() => {
+        if (this.lazyLoadingManager) {
+            this.lazyLoadingManager.reinitializeObserver('albums-grid');
+            console.log('🔄 Reinitialized lazy loading observer for better scroll detection');
+        }
+    }, 100);
 
     console.log(`🚀 Lazy loading initialized for ${albumsToDisplay.length} albums`);
 

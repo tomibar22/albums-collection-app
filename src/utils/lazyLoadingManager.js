@@ -138,46 +138,13 @@ class LazyLoadingManager {
             
             this.hideLoadingIndicator(gridId); // Remove loading indicator
             
-<<<<<<< HEAD
-            const renderedIdsInBatch = new Set(); // To prevent duplicates within the current batch
-            let actuallyAddedCount = 0;
-            
-            batch.forEach((item, index) => {
-                try {
-                    // Generate a unique ID for the item, prioritizing item.id
-                    const itemId = item.id || `lazy-item-${gridId}-${startIndex + index}`;
-                    
-                    // Comprehensive duplicate prevention:
-                    // 1. Check if already processed in this batch
-                    if (renderedIdsInBatch.has(itemId)) {
-                        console.warn(`⚠️ LazyLoadingManager: Skipping duplicate item ID '${itemId}' within the current batch for grid '${gridId}'.`);
-                        return;
-                    }
-                    renderedIdsInBatch.add(itemId);
-                    
-                    // 2. Check if an element with this data-item-id already exists in the DOM
-                    const existingElement = gridElement.querySelector(`[data-item-id="${itemId}"]`);
-                    if (existingElement) {
-                        console.warn(`⚠️ LazyLoadingManager: Element with data-item-id='${itemId}' already exists in grid '${gridId}', skipping rendering.`);
-                        return;
-                    }
-                    
-                    // Render the item using the provided renderItem function
-=======
             // Render batch items
             batch.forEach((item, index) => {
                 try {
->>>>>>> parent of 6d0402b (🔧 CRITICAL FIX: Resolve card duplication bug in lazy loading)
                     const element = renderItem(item, startIndex + index);
                     
                     if (element instanceof HTMLElement) {
-                        // Ensure the rendered element has the data-item-id for future checks
-                        element.setAttribute('data-item-id', itemId);
                         gridElement.appendChild(element);
-<<<<<<< HEAD
-                        actuallyAddedCount++;
-=======
->>>>>>> parent of 6d0402b (🔧 CRITICAL FIX: Resolve card duplication bug in lazy loading)
                         
                         // Apply subtle animation for newly loaded items
                         this.animateNewItem(element);
@@ -198,11 +165,7 @@ class LazyLoadingManager {
                 this.showNoMoreMessage(gridId);
             }
             
-<<<<<<< HEAD
-            console.log(`✅ LazyLoadingManager: Loaded batch for '${gridId}'. Items ${startIndex} to ${endIndex-1} (${batch.length} requested, ${actuallyAddedCount} added to DOM).`);
-=======
             console.log(`✅ Loaded batch for ${gridId}: items ${startIndex}-${endIndex-1} (${batch.length} items)`);
->>>>>>> parent of 6d0402b (🔧 CRITICAL FIX: Resolve card duplication bug in lazy loading)
             
         }, 50); // Small delay for a smooth loading effect
     }
@@ -556,10 +519,5 @@ class LazyLoadingManager {
     }
 }
 
-<<<<<<< HEAD
-// Export for global access in a browser environment
-window.LazyLoadingManager = LazyLoadingManager;
-=======
 // Export for global access
 window.LazyLoadingManager = LazyLoadingManager;
->>>>>>> parent of 6d0402b (🔧 CRITICAL FIX: Resolve card duplication bug in lazy loading)
