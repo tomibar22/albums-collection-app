@@ -168,23 +168,23 @@ class AlbumCollectionApp {
 
     this.updateLoadingProgress('🎉 Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
     
-    // CRITICAL DEBUG: Check collection state immediately after data loading
-    console.log('🎯 POST-LOADING COLLECTION CHECK:', {
-        albumsAfterLoading: this.collection.albums?.length || 0,
-        collectionObject: this.collection,
-        hasAlbumsArray: Array.isArray(this.collection.albums),
-        timestamp: new Date().toISOString()
-    });
+    // Collection state verified - debug log commented for performance
+    // console.log('🎯 POST-LOADING COLLECTION CHECK:', {
+    //     albumsAfterLoading: this.collection.albums?.length || 0,
+    //     collectionObject: this.collection,
+    //     hasAlbumsArray: Array.isArray(this.collection.albums),
+    //     timestamp: new Date().toISOString()
+    // });
 
 
 
-    // Hide loading modal with shorter delay for faster UX
+    // Hide loading modal with faster delay for improved UX
 
     setTimeout(() => {
 
     this.hideLoadingModal();
 
-    }, 800); // Reduced from 1500ms
+    }, 400); // Optimized from 800ms
 
 
 
@@ -302,42 +302,17 @@ class AlbumCollectionApp {
 
     // Load data with individual progress tracking
 
-    // Load data with individual progress tracking and iPhone debugging
-    console.log('📚 iPhone Debug: Starting loadAlbumsWithProgress...');
+    // Load albums with optimized loading
     let albums = await this.loadAlbumsWithProgress();
-    console.log('📚 iPhone Debug: Albums result after loadAlbumsWithProgress:', {
-        albumsVariable: albums,
-        isArray: Array.isArray(albums),
-        length: albums?.length || 0,
-        firstAlbum: albums?.[0]?.title || 'No first album',
-        typeOfAlbums: typeof albums
-    });
     
-    // CRITICAL DEBUG: The user shows batches loading but albums = 0, let's trace this
+    // Fallback if loading fails
     if (!albums || albums.length === 0) {
-        console.error('❌ iPhone Debug: albums variable is empty even though batches showed loading!');
-        console.log('🔄 iPhone Debug: This suggests loadAlbumsWithProgress is not returning correctly');
-        console.log('🔄 iPhone Debug: Attempting direct Supabase call as fallback...');
         try {
-            const directAlbums = await this.supabaseService.getAlbums();
-            console.log('🔄 iPhone Debug: Direct Supabase call result:', directAlbums?.length || 0);
-            if (directAlbums && directAlbums.length > 0) {
-                console.log('✅ iPhone Debug: Direct call successful, using direct result');
-                albums = directAlbums; // Use direct result
-            }
+            albums = await this.supabaseService.getAlbums();
         } catch (directError) {
-            console.error('❌ iPhone Debug: Direct Supabase call also failed:', directError);
+            console.error('❌ Failed to load albums:', directError);
         }
-    } else {
-        console.log('✅ iPhone Debug: Albums loaded successfully, proceeding with assignment');
     }
-    
-    // CRITICAL DEBUG: Log exactly what we're about to assign to collection
-    console.log('📚 iPhone Debug: About to assign to collection.albums:', {
-        albumsToAssign: albums,
-        length: albums?.length || 0,
-        collectionBefore: this.collection?.albums?.length || 0
-    });
 
     this.updateLoadingProgress('👥 Loading artists...', 'Fetching artist information...', 55);
 
@@ -1531,17 +1506,17 @@ class AlbumCollectionApp {
 
     // For mobile, use smaller batches for performance
 
-    itemsPerPage = Math.min(18, Math.ceil(albumsToDisplay.length / 10)); // Increased for better coverage
+    itemsPerPage = Math.min(20, Math.ceil(albumsToDisplay.length / 10)); // Slightly increased for better coverage
 
-    console.log('📱 Using mobile-optimized album batch size:', itemsPerPage);
+    // console.log('📱 Using mobile-optimized album batch size:', itemsPerPage);
 
     } else {
 
     // For desktop, use larger initial batch to show more content upfront
 
-    itemsPerPage = 24; // Increased from 12 to show 4 rows (6 columns x 4 rows)
+    itemsPerPage = 30; // Increased from 24 to show 5 rows (6 columns x 5 rows)
 
-    console.log('🖥️ Using desktop album batch size:', itemsPerPage);
+    // console.log('🖥️ Using desktop album batch size:', itemsPerPage);
 
     }
 
