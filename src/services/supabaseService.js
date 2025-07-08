@@ -1088,21 +1088,34 @@ class SupabaseService {
         if (!this.initialized) throw new Error('Supabase service not initialized');
 
         try {
-            let query = this.client
-                .from(window.CONFIG.SUPABASE.TABLES.SCRAPED_ARTISTS_HISTORY)
-                .select('*');
-            
-            if (discogsId) {
-                query = query.or(`artist_name.eq.${artistName},discogs_id.eq.${discogsId}`);
-            } else {
-                query = query.eq('artist_name', artistName);
-            }
+            let data = [];
+            let error = null;
 
-            const { data, error } = await query.limit(1);
+            if (discogsId) {
+                // Try both artist name and discogs ID
+                const result = await this.client
+                    .from(window.CONFIG.SUPABASE.TABLES.SCRAPED_ARTISTS_HISTORY)
+                    .select('*')
+                    .or(`artist_name.eq."${artistName}",discogs_id.eq.${discogsId}`)
+                    .limit(1);
+                
+                data = result.data;
+                error = result.error;
+            } else {
+                // Just search by artist name
+                const result = await this.client
+                    .from(window.CONFIG.SUPABASE.TABLES.SCRAPED_ARTISTS_HISTORY)
+                    .select('*')
+                    .eq('artist_name', artistName)
+                    .limit(1);
+                
+                data = result.data;
+                error = result.error;
+            }
 
             if (error) throw error;
 
-            return data.length > 0 ? data[0] : null;
+            return data && data.length > 0 ? data[0] : null;
         } catch (error) {
             console.error('❌ Failed to check if artist already scraped:', error);
             throw error;
