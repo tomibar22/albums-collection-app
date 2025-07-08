@@ -30,8 +30,10 @@ class AlbumCollectionApp {
 
 
     // Modal stack for nested modal navigation
-
     this.modalStack = [];
+    
+    // Track if a modal is actually open (more reliable than DOM state)
+    this.isModalCurrentlyOpen = false;
 
 
 
@@ -2702,11 +2704,10 @@ class AlbumCollectionApp {
     showAlbumModal(album) {
         const modalContent = this.generateAlbumModalContent(album);
 
-        // Check if a modal is currently open to determine if this should be nested
-        const modal = document.getElementById('more-info-modal');
-        const isModalCurrentlyOpen = !modal.classList.contains('hidden');
+        // Use reliable modal state tracking instead of DOM classes
+        const isModalCurrentlyOpen = this.isModalCurrentlyOpen;
         
-        console.log(`🎭 showAlbumModal: modalHidden=${modal.classList.contains('hidden')}, isCurrentlyOpen=${isModalCurrentlyOpen}, modalStack.length=${this.modalStack.length}`);
+        console.log(`🎭 showAlbumModal: isModalCurrentlyOpen=${isModalCurrentlyOpen}, modalStack.length=${this.modalStack.length}`);
 
         // Force clear modal stack if opening from main page (not nested)
         if (!isModalCurrentlyOpen) {
@@ -2724,9 +2725,8 @@ class AlbumCollectionApp {
         const artistAlbums = artist.albums || [];
         const modalContent = this.generateArtistAlbumsModalContent(artist, artistAlbums);
 
-        // Check if a modal is currently open to determine if this should be nested
-        const modal = document.getElementById('more-info-modal');
-        const isModalCurrentlyOpen = !modal.classList.contains('hidden');
+        // Use reliable modal state tracking instead of DOM classes
+        const isModalCurrentlyOpen = this.isModalCurrentlyOpen;
 
         // Force clear modal stack if opening from main page (not nested)
         if (!isModalCurrentlyOpen) {
@@ -8250,6 +8250,7 @@ class AlbumCollectionApp {
     clearModalState() {
         console.log('🧹 Clearing all modal state');
         this.modalStack = [];
+        this.isModalCurrentlyOpen = false;
         const modal = document.getElementById('more-info-modal');
         if (modal) {
             modal.classList.add('hidden');
@@ -8334,6 +8335,9 @@ class AlbumCollectionApp {
 
         document.getElementById('more-info-modal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        
+        // Set reliable modal state flag
+        this.isModalCurrentlyOpen = true;
     }
 
     updateModalNavigation() {
@@ -8773,6 +8777,7 @@ class AlbumCollectionApp {
             document.getElementById('more-info-modal').classList.add('hidden');
             document.body.style.overflow = '';
             this.modalStack = [];
+            this.isModalCurrentlyOpen = false;
             this.cleanupModalObservers();
             return;
         }
@@ -8810,6 +8815,9 @@ class AlbumCollectionApp {
         console.log('📚 Closing modal stack entirely');
         document.getElementById('more-info-modal').classList.add('hidden');
         document.body.style.overflow = '';
+        
+        // Clear reliable modal state flag
+        this.isModalCurrentlyOpen = false;
 
         // Clear any remaining modal stack
         this.modalStack = [];
