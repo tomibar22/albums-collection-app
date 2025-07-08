@@ -2708,6 +2708,12 @@ class AlbumCollectionApp {
         
         console.log(`🎭 showAlbumModal: modalHidden=${modal.classList.contains('hidden')}, isCurrentlyOpen=${isModalCurrentlyOpen}, modalStack.length=${this.modalStack.length}`);
 
+        // Force clear modal stack if opening from main page (not nested)
+        if (!isModalCurrentlyOpen) {
+            console.log('🧹 Force clearing modal stack for main page modal');
+            this.modalStack = [];
+        }
+
         this.showModal(`${album.title} (${album.year})`, modalContent, isModalCurrentlyOpen);
     }
 
@@ -2721,6 +2727,12 @@ class AlbumCollectionApp {
         // Check if a modal is currently open to determine if this should be nested
         const modal = document.getElementById('more-info-modal');
         const isModalCurrentlyOpen = !modal.classList.contains('hidden');
+
+        // Force clear modal stack if opening from main page (not nested)
+        if (!isModalCurrentlyOpen) {
+            console.log('🧹 Force clearing modal stack for main page artist modal');
+            this.modalStack = [];
+        }
 
         // ALWAYS use total album count from main collection (not filtered count)
         // Find the complete artist data to get total album count across ALL roles
