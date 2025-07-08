@@ -8238,6 +8238,12 @@ class AlbumCollectionApp {
         console.log(`🔍 showModal called with title: "${title}", isNestedModal: ${isNestedModal}, current stack size: ${this.modalStack.length}`);
         console.trace('🔍 showModal call stack');
 
+        // If this is NOT a nested modal (opening from main page), clear the stack
+        if (!isNestedModal) {
+            console.log('🧹 Clearing modal stack for non-nested modal');
+            this.modalStack = [];
+        }
+
         // If this is a nested modal (opened from another modal), save current modal state
         if (isNestedModal) {
             const currentTitle = document.getElementById('modal-title').innerHTML;
@@ -8311,18 +8317,29 @@ class AlbumCollectionApp {
         const existingBackBtn = modalHeader.querySelector('.modal-back-btn');
         const shouldShowBackBtn = this.modalStack.length > 0;
 
+        console.log(`🔄 updateModalNavigation: stack size=${this.modalStack.length}, shouldShow=${shouldShowBackBtn}, exists=${!!existingBackBtn}`);
+
         // Only remove back button if it exists but shouldn't
         if (existingBackBtn && !shouldShowBackBtn) {
+            console.log('🗑️ Removing back button (no longer needed)');
             existingBackBtn.remove();
         }
 
         // Only add back button if it should exist but doesn't
         if (shouldShowBackBtn && !existingBackBtn) {
+            console.log('➕ Adding back button (stack has items)');
             const backBtn = document.createElement('button');
             backBtn.className = 'modal-back-btn';
             backBtn.innerHTML = '← Back';
             backBtn.title = 'Return to previous view';
-            backBtn.onclick = () => this.closeModal();
+            
+            // Prevent double-click issues with proper event handling
+            backBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                console.log('🔙 Back button clicked, modal stack size:', this.modalStack.length);
+                this.closeModal();
+            });
 
             // Insert before the close button
             const closeBtn = modalHeader.querySelector('.modal-close');
