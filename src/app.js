@@ -165,6 +165,14 @@ class AlbumCollectionApp {
 
 
     this.updateLoadingProgress('🎉 Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
+    
+    // CRITICAL DEBUG: Check collection state immediately after data loading
+    console.log('🎯 POST-LOADING COLLECTION CHECK:', {
+        albumsAfterLoading: this.collection.albums?.length || 0,
+        collectionObject: this.collection,
+        hasAlbumsArray: Array.isArray(this.collection.albums),
+        timestamp: new Date().toISOString()
+    });
 
 
 
@@ -295,15 +303,18 @@ class AlbumCollectionApp {
     // Load data with individual progress tracking and iPhone debugging
     console.log('📚 iPhone Debug: Starting loadAlbumsWithProgress...');
     let albums = await this.loadAlbumsWithProgress();
-    console.log('📚 iPhone Debug: Albums result:', {
-        albumsArray: albums,
+    console.log('📚 iPhone Debug: Albums result after loadAlbumsWithProgress:', {
+        albumsVariable: albums,
         isArray: Array.isArray(albums),
         length: albums?.length || 0,
-        firstAlbum: albums?.[0]?.title || 'No first album'
+        firstAlbum: albums?.[0]?.title || 'No first album',
+        typeOfAlbums: typeof albums
     });
     
+    // CRITICAL DEBUG: The user shows batches loading but albums = 0, let's trace this
     if (!albums || albums.length === 0) {
-        console.error('❌ iPhone Debug: NO ALBUMS LOADED FROM SUPABASE - Critical error!');
+        console.error('❌ iPhone Debug: albums variable is empty even though batches showed loading!');
+        console.log('🔄 iPhone Debug: This suggests loadAlbumsWithProgress is not returning correctly');
         console.log('🔄 iPhone Debug: Attempting direct Supabase call as fallback...');
         try {
             const directAlbums = await this.supabaseService.getAlbums();
@@ -315,7 +326,16 @@ class AlbumCollectionApp {
         } catch (directError) {
             console.error('❌ iPhone Debug: Direct Supabase call also failed:', directError);
         }
+    } else {
+        console.log('✅ iPhone Debug: Albums loaded successfully, proceeding with assignment');
     }
+    
+    // CRITICAL DEBUG: Log exactly what we're about to assign to collection
+    console.log('📚 iPhone Debug: About to assign to collection.albums:', {
+        albumsToAssign: albums,
+        length: albums?.length || 0,
+        collectionBefore: this.collection?.albums?.length || 0
+    });
 
     this.updateLoadingProgress('👥 Loading artists...', 'Fetching artist information...', 55);
 
@@ -340,18 +360,26 @@ class AlbumCollectionApp {
 
 
     // Update collection (faster assignment)
+    console.log('📚 iPhone Debug: Assigning albums to collection...', {
+        albumsLength: albums?.length || 0,
+        artistsLength: artists?.length || 0
+    });
 
-    this.collection.albums = albums;
-
-    this.collection.artists = artists;
-
+    this.collection.albums = albums || [];
+    this.collection.artists = artists || [];
+    
+    // CRITICAL DEBUG: Verify assignment worked
+    console.log('📚 iPhone Debug: Collection assignment result:', {
+        collectionAlbumsLength: this.collection.albums?.length || 0,
+        collectionArtistsLength: this.collection.artists?.length || 0,
+        actualCollectionAlbums: this.collection.albums,
+        isCollectionArray: Array.isArray(this.collection.albums)
+    });
+    
     // Don't use database tracks/roles - generate from albums for rich data
-
     // this.collection.tracks = tracks;
-
     // this.collection.roles = roles;
-
-    this.scrapedHistory = fetchedScrapedHistory;
+    this.scrapedHistory = fetchedScrapedHistory || [];
 
 
 
@@ -474,6 +502,15 @@ class AlbumCollectionApp {
     this.scrapedHistory = fetchedScrapedHistory || [];
 
 
+
+    // CRITICAL DEBUG: Verify the assignment worked at the end of data loading
+    console.log('🎯 CRITICAL ASSIGNMENT DEBUG (End of loadDataFromSupabaseEnhanced):', {
+        albumsVariableLength: albums?.length || 0,
+        assignedCollectionLength: this.collection.albums?.length || 0,
+        areTheyEqual: albums?.length === this.collection.albums?.length,
+        collectionObject: this.collection,
+        totalCollectionAlbums: this.collection?.albums?.length || 'undefined'
+    });
 
     this.updateLoadingProgress('🎯 Mobile optimization complete', 'Interface ready...', 90);
 
