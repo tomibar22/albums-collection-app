@@ -5546,6 +5546,13 @@ class AlbumCollectionApp {
                 break;
 
             case 'artists':
+                // MOBILE FIX: Check if artists need to be generated first
+                if (!this.collection.artists || this.collection.artists.length === 0) {
+                    console.log(`📱 Mobile: Generating artists data before rendering...`);
+                    this.collection.artists = this.generateArtistsFromAlbums();
+                    this.artistsNeedRegeneration = false;
+                }
+                
                 // Mobile lazy loading for artists
                 if (isMobile && this.artistsNeedRegeneration) {
                     await this.generateArtistsLazyMobile();
@@ -5564,9 +5571,14 @@ class AlbumCollectionApp {
                 break;
 
             case 'tracks':
-                // Mobile lazy loading for tracks
-                if (isMobile && (!this.collection.tracks || this.collection.tracks.length === 0)) {
-                    await this.generateTracksLazyMobile();
+                // MOBILE FIX: Check if tracks need to be generated first
+                if (!this.collection.tracks || this.collection.tracks.length === 0) {
+                    console.log(`📱 Mobile: Generating tracks data before rendering...`);
+                    if (isMobile) {
+                        this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+                    } else {
+                        this.collection.tracks = this.generateTracksFromAlbums();
+                    }
                 }
 
                 // Don't call renderTracksGrid() here - sortTracks() will handle it
@@ -5583,9 +5595,14 @@ class AlbumCollectionApp {
                 break;
 
             case 'roles':
-                // Mobile lazy loading for roles
-                if (isMobile && (!this.collection.roles || this.collection.roles.length === 0)) {
-                    await this.generateRolesLazyMobile();
+                // MOBILE FIX: Check if roles need to be generated first
+                if (!this.collection.roles || this.collection.roles.length === 0) {
+                    console.log(`📱 Mobile: Generating roles data before rendering...`);
+                    if (isMobile) {
+                        this.collection.roles = await this.generateRolesFromAlbumsAsync();
+                    } else {
+                        this.collection.roles = this.generateRolesFromAlbums();
+                    }
                 }
 
                 // Don't call renderRolesGrid() here - sortRoles() will handle it
