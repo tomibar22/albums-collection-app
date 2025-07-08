@@ -2025,7 +2025,7 @@ class AlbumCollectionApp {
                         });
                     });
                 });
-                console.log(`📀 Processing comprehensive credits for "${album.title}" (${creditsToProcess.length} individual roles from album+track credits)`);
+                // console.log(`📀 Processing comprehensive credits for "${album.title}" (${creditsToProcess.length} individual roles from album+track credits)`);
             } else if (album._rawData && album._rawData.extraartists) {
                 // FALLBACK: Use raw extraartists (album-level only - may miss track-level musical roles)
                 creditsToProcess = album._rawData.extraartists.map(credit => ({
@@ -2056,7 +2056,7 @@ class AlbumCollectionApp {
 
                 // Include everyone with a name and role - no filtering!
                 if (artistName && allRoles.length > 0) {
-                    console.log(`   🎵 Found artist: ${artistName} (${allRoles.join(', ')})`);
+                    // console.log(`   🎵 Found artist: ${artistName} (${allRoles.join(', ')})`);
 
                     // Categorize roles on this album for this artist
                     const musicalRolesOnAlbum = allRoles.filter(role => window.roleCategorizer.categorizeRole(role) === 'musical');
@@ -2082,9 +2082,9 @@ class AlbumCollectionApp {
                                 existingArtist.technicalAlbums.push(album);
                             }
 
-                            console.log(`     📈 Added new album for ${artistName} (total: ${existingArtist.albumCount}, musical: ${existingArtist.musicalAlbumCount}, technical: ${existingArtist.technicalAlbumCount})`);
+                            // console.log(`     📈 Added new album for ${artistName} (total: ${existingArtist.albumCount}, musical: ${existingArtist.musicalAlbumCount}, technical: ${existingArtist.technicalAlbumCount})`);
                         } else {
-                            console.log(`     🔄 Album "${album.title}" already counted for ${artistName}, adding only role`);
+                            // console.log(`     🔄 Album "${album.title}" already counted for ${artistName}, adding only role`);
                         }
 
                         // Track role frequency for sorting (using all roles)
@@ -2103,7 +2103,7 @@ class AlbumCollectionApp {
 
                         existingArtist.roles = sortedRoles;
 
-                        console.log(`     🎭 Roles by frequency: ${sortedRoles.slice(0, 3).join(', ')}${sortedRoles.length > 3 ? ` (+${sortedRoles.length - 3} more)` : ''}`);
+                        // console.log(`     🎭 Roles by frequency: ${sortedRoles.slice(0, 3).join(', ')}${sortedRoles.length > 3 ? ` (+${sortedRoles.length - 3} more)` : ''}`);
                     } else {
                         // Create new artist entry with role frequency tracking and separate album counts
                         const roleFrequency = new Map();
@@ -8598,7 +8598,7 @@ class AlbumCollectionApp {
         console.log(`📊 Artist search complete. Found ${artistAlbums.length} albums for "${artistName}"`);
 
         if (artistAlbums.length === 0) {
-            console.log(`❌ No albums found for artist: ${artistName}`);
+            // console.log(`❌ No albums found for artist: ${artistName}`);
             return null;
         }
 
@@ -8607,7 +8607,7 @@ class AlbumCollectionApp {
             .sort((a, b) => b[1] - a[1]) // Sort by frequency (descending)
             .map(entry => entry[0]); // Extract role names
 
-        console.log(`🎭 Roles by frequency: ${sortedRoles.join(', ')}`);
+        // console.log(`🎭 Roles by frequency: ${sortedRoles.join(', ')}`);
 
         // Create temporary artist object using the same structure as generateArtistsFromAlbums
         const artist = {
