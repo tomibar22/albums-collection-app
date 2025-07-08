@@ -56,6 +56,26 @@
     padding: 0.75rem;
 }
 
+/* iPhone-specific: Center overlay buttons since edit buttons moved to bottom */
+@media (max-width: 480px) and (-webkit-min-device-pixel-ratio: 2) {
+    .album-overlay {
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+}
+
+/* Alternative iPhone detection for centering */
+@supports (-webkit-touch-callout: none) {
+    @media (max-width: 480px) {
+        .album-overlay {
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+    }
+}
+
 .album-card:hover .album-overlay {
     opacity: 1;
 }
