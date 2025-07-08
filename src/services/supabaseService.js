@@ -386,12 +386,20 @@ async ensureRole(roleName) {
     // ===============================
 
     async getAlbums() {
-        if (!this.initialized) throw new Error('Supabase service not initialized');
+        if (!this.initialized) {
+            console.error('❌ iPhone Debug: Supabase service not initialized!');
+            throw new Error('Supabase service not initialized');
+        }
+
+        console.log('📚 iPhone Debug: getAlbums() starting...');
+        console.log('📚 iPhone Debug: Supabase client:', !!this.client);
+        console.log('📚 iPhone Debug: Config tables:', window.CONFIG?.SUPABASE?.TABLES?.ALBUMS);
 
         try {
             // Mobile detection for optimized batch sizes
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             const batchSize = isMobile ? 250 : 1000; // Smaller batches for mobile
+            console.log(`📱 iPhone Debug: Mobile detected: ${isMobile}, batch size: ${batchSize}`);
             
             // Get all albums using pagination to bypass 1000 limit
             let allAlbums = [];
@@ -399,13 +407,26 @@ async ensureRole(roleName) {
             let hasMore = true;
 
             while (hasMore) {
+                console.log(`📚 iPhone Debug: Querying batch starting at ${start}...`);
+                
                 const { data: batch, error } = await this.client
                     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                     .select('*')
                     .order('year', { ascending: true })
                     .range(start, start + batchSize - 1);
 
-                if (error) throw error;
+                console.log(`📚 iPhone Debug: Batch result:`, {
+                    batchData: batch,
+                    batchLength: batch?.length || 0,
+                    error: error,
+                    errorMessage: error?.message,
+                    errorCode: error?.code
+                });
+
+                if (error) {
+                    console.error('❌ iPhone Debug: Supabase query error:', error);
+                    throw error;
+                }
 
                 if (batch && batch.length > 0) {
                     allAlbums = allAlbums.concat(batch);

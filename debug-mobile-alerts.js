@@ -43,17 +43,44 @@ Viewport: ${window.innerWidth}x${window.innerHeight}`;
         }
     },
     
-    // Quick status check
-    quickCheck() {
+    // Quick status check with authentication
+    async quickCheck() {
         const hasData = window.app?.collection?.albums?.length > 0;
         const isIPhone = /iPhone/.test(navigator.userAgent);
         const gridCount = document.querySelectorAll('[id$="-grid"]').length;
+        
+        // Check authentication status
+        let authStatus = 'Unknown';
+        try {
+            if (window.iPhoneAuthDebug) {
+                const authResult = await window.iPhoneAuthDebug.checkAuthStatus();
+                authStatus = authResult.authenticated ? 'Authenticated' : 'NOT Authenticated';
+            }
+        } catch (e) {
+            authStatus = 'Error checking auth';
+        }
         
         alert(`📱 Quick Status:
 Has Data: ${hasData ? 'YES' : 'NO'}
 Is iPhone: ${isIPhone ? 'YES' : 'NO'}
 Grid Elements: ${gridCount}
+Auth Status: ${authStatus}
 Current View: ${window.app?.currentView || 'Unknown'}`);
+    },
+    
+    // New: Full diagnosis including auth
+    async fullDiagnosis() {
+        alert('📱 Running full diagnosis... Check console for details.');
+        
+        if (window.iPhoneAuthDebug) {
+            await window.iPhoneAuthDebug.runFullDiagnosis();
+        }
+        
+        if (window.mobileDebug) {
+            window.mobileDebug.runFullDebug();
+        }
+        
+        alert('📱 Full diagnosis complete! Check console for detailed results.');
     }
 };
 
@@ -87,8 +114,9 @@ if (/iPhone/.test(navigator.userAgent)) {
 2. Grid Status  
 3. Force Regenerate
 4. Quick Check
+5. Full Diagnosis (Auth + Data)
 
-Enter number (1-4):`;
+Enter number (1-5):`;
                 
                 const choice = prompt(menu);
                 switch(choice) {
@@ -96,6 +124,7 @@ Enter number (1-4):`;
                     case '2': window.mobileAlertDebug.checkLazyLoading(); break;
                     case '3': window.mobileAlertDebug.forceRegenerate(); break;
                     case '4': window.mobileAlertDebug.quickCheck(); break;
+                    case '5': window.mobileAlertDebug.fullDiagnosis(); break;
                     default: alert('Invalid choice');
                 }
             }

@@ -292,7 +292,30 @@ class AlbumCollectionApp {
 
     // Load data with individual progress tracking
 
-    const albums = await this.loadAlbumsWithProgress();
+    // Load data with individual progress tracking and iPhone debugging
+    console.log('📚 iPhone Debug: Starting loadAlbumsWithProgress...');
+    let albums = await this.loadAlbumsWithProgress();
+    console.log('📚 iPhone Debug: Albums result:', {
+        albumsArray: albums,
+        isArray: Array.isArray(albums),
+        length: albums?.length || 0,
+        firstAlbum: albums?.[0]?.title || 'No first album'
+    });
+    
+    if (!albums || albums.length === 0) {
+        console.error('❌ iPhone Debug: NO ALBUMS LOADED FROM SUPABASE - Critical error!');
+        console.log('🔄 iPhone Debug: Attempting direct Supabase call as fallback...');
+        try {
+            const directAlbums = await this.supabaseService.getAlbums();
+            console.log('🔄 iPhone Debug: Direct Supabase call result:', directAlbums?.length || 0);
+            if (directAlbums && directAlbums.length > 0) {
+                console.log('✅ iPhone Debug: Direct call successful, using direct result');
+                albums = directAlbums; // Use direct result
+            }
+        } catch (directError) {
+            console.error('❌ iPhone Debug: Direct Supabase call also failed:', directError);
+        }
+    }
 
     this.updateLoadingProgress('👥 Loading artists...', 'Fetching artist information...', 55);
 
