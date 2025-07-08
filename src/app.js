@@ -114,7 +114,7 @@ class AlbumCollectionApp {
 
     async init() {
 
-    console.log('🚀 AlbumCollectionApp initializing... v2.1 - DUPLICATE PREVENTION ENHANCED');
+    // console.log('🚀 AlbumCollectionApp initializing... v2.1 - DUPLICATE PREVENTION ENHANCED');
 
     try {
 
@@ -606,7 +606,7 @@ class AlbumCollectionApp {
 
     const latestYear = Math.max(...years);
 
-    console.log(`📊 Basic stats: ${this.collection.albums.length} albums spanning ${earliestYear}-${latestYear}`);
+    // console.log(`📊 Basic stats: ${this.collection.albums.length} albums spanning ${earliestYear}-${latestYear}`);
 
     }
 
