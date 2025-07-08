@@ -1682,7 +1682,7 @@ class AlbumCollectionApp {
             this.collection.artists = this.generateArtistsFromAlbums();
             this.artistsNeedRegeneration = false; // Reset flag
         } else {
-            console.log('🎭 Using cached artists for performance');
+            // console.log('🎭 Using cached artists for performance');
         }
 
         if (this.collection.artists.length === 0) {
@@ -2429,18 +2429,18 @@ class AlbumCollectionApp {
             // Add to musical tab if they have any musical roles
             if (hasMusicalRole) {
                 musicalArtists.push(artist);
-                console.log(`🎵 ${artist.name} → Musical tab (${musicalRoles.length} musical, ${technicalRoles.length} technical roles)`);
+                // console.log(`🎵 ${artist.name} → Musical tab (${musicalRoles.length} musical, ${technicalRoles.length} technical roles)`);
             }
 
             // Add to technical tab if they have any technical roles
             if (hasTechnicalRole) {
                 technicalArtists.push(artist);
-                console.log(`🔧 ${artist.name} → Technical tab (${technicalRoles.length} technical, ${musicalRoles.length} musical roles)`);
+                // console.log(`🔧 ${artist.name} → Technical tab (${technicalRoles.length} technical, ${musicalRoles.length} musical roles)`);
             }
 
             // Log cross-tab appearances for transparency
             if (hasMusicalRole && hasTechnicalRole) {
-                console.log(`👥 ${artist.name} → Appears in BOTH tabs (${musicalRoles.length} musical + ${technicalRoles.length} technical roles)`);
+                // console.log(`👥 ${artist.name} → Appears in BOTH tabs (${musicalRoles.length} musical + ${technicalRoles.length} technical roles)`);
             }
         });
 
@@ -4749,7 +4749,7 @@ class AlbumCollectionApp {
         try {
             // Always use in-memory regeneration for local collection updates
             // This avoids expensive Supabase reloads after album edits/deletions
-            console.log('🔄 Regenerating collection data (in-memory mode)...');
+            // console.log('🔄 Regenerating collection data (in-memory mode)...');
 
             // Flag that artists need regeneration for next Artists page visit
             this.artistsNeedRegeneration = true;
