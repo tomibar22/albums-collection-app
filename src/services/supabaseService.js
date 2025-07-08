@@ -126,6 +126,8 @@ class SupabaseService {
         }
     }
 
+    // PHASE 2B: Commented out unused relationship processing methods
+    /*
     async processAlbumRelationships(albumId, albumData) {
         // Process artists
         if (albumData.credits && albumData.credits.length > 0) {
@@ -137,7 +139,9 @@ class SupabaseService {
             await this.processAlbumTracks(albumId, albumData.tracklist);
         }
     }
+    */
 
+    /*
     async processAlbumCredits(albumId, credits) {
         try {
             for (const credit of credits) {
@@ -176,7 +180,9 @@ class SupabaseService {
             throw error;
         }
     }
+    */
 
+    /*
     async processAlbumTracks(albumId, tracklist) {
         try {
             for (const track of tracklist) {
@@ -200,11 +206,13 @@ class SupabaseService {
             throw error;
         }
     }
+    */
 
     // ===============================
-    // ARTIST OPERATIONS
+    // ARTIST OPERATIONS (UNUSED - Phase 2B cleanup)
     // ===============================
 
+    /*
     async ensureArtist(artistName) {
         if (!artistName) throw new Error('Artist name is required');
 
@@ -245,11 +253,13 @@ class SupabaseService {
             throw error;
         }
     }
+    */
 
     // ===============================
-    // TRACK OPERATIONS
+    // TRACK OPERATIONS (UNUSED - Phase 2B cleanup)
     // ===============================
 
+    /*
     async ensureTrack(trackTitle) {
         if (!trackTitle) throw new Error('Track title is required');
 
@@ -289,12 +299,14 @@ class SupabaseService {
             throw error;
         }
     }
+    */
 
     // ===============================
-    // ROLE OPERATIONS
+    // ROLE OPERATIONS (UNUSED - Phase 2B cleanup)
     // ===============================
 
-async ensureRole(roleName) {
+    /*
+    async ensureRole(roleName) {
         if (!roleName) throw new Error('Role name is required');
 
         try {
@@ -335,9 +347,11 @@ async ensureRole(roleName) {
             throw error;
         }
     }
+    */
 
+    /*
     // ===============================
-    // ROLE OPERATIONS
+    // ROLE OPERATIONS (DUPLICATE - Phase 2B cleanup)
     // ===============================
 
     async ensureRole(roleName) {
@@ -381,6 +395,7 @@ async ensureRole(roleName) {
             throw error;
         }
     }
+    */
 
     // ===============================
     // COLLECTION OPERATIONS
@@ -462,6 +477,7 @@ async ensureRole(roleName) {
         }
     }
 
+    /*
     async getArtists() {
         if (!this.initialized) throw new Error('Supabase service not initialized');
 
@@ -483,7 +499,9 @@ async ensureRole(roleName) {
             throw error;
         }
     }
+    */
 
+    /*
     async getTracks() {
         if (!this.initialized) throw new Error('Supabase service not initialized');
 
@@ -505,7 +523,9 @@ async ensureRole(roleName) {
             throw error;
         }
     }
+    */
 
+    /*
     async getRoles() {
         if (!this.initialized) throw new Error('Supabase service not initialized');
 
@@ -527,6 +547,7 @@ async ensureRole(roleName) {
             throw error;
         }
     }
+    */
 
     // ===============================
     // HELPER METHODS
