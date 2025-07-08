@@ -8309,14 +8309,15 @@ class AlbumCollectionApp {
     updateModalNavigation() {
         const modalHeader = document.querySelector('.modal-header');
         const existingBackBtn = modalHeader.querySelector('.modal-back-btn');
+        const shouldShowBackBtn = this.modalStack.length > 0;
 
-        // Remove existing back button if present
-        if (existingBackBtn) {
+        // Only remove back button if it exists but shouldn't
+        if (existingBackBtn && !shouldShowBackBtn) {
             existingBackBtn.remove();
         }
 
-        // Add back button if there are previous modals
-        if (this.modalStack.length > 0) {
+        // Only add back button if it should exist but doesn't
+        if (shouldShowBackBtn && !existingBackBtn) {
             const backBtn = document.createElement('button');
             backBtn.className = 'modal-back-btn';
             backBtn.innerHTML = '← Back';
