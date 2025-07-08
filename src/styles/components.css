@@ -196,7 +196,7 @@
     
     .album-actions {
         flex-direction: row;
-        gap: 0.5rem;
+        gap: 0.75rem; /* Increased gap for better spacing */
     }
     
     .overlay-circle-btn {
@@ -208,6 +208,10 @@
     .album-info {
         padding: 0.75rem;
     }
+    
+    .album-overlay {
+        padding: 1rem; /* Increased padding for mobile */
+    }
 }
 
 @media (max-width: 480px) {
@@ -215,10 +219,35 @@
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
     
+    .album-actions {
+        gap: 1rem; /* Even more spacing on small screens */
+    }
+    
     .overlay-circle-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
+        width: 34px; /* Slightly smaller for iPhone */
+        height: 34px;
+        font-size: 0.95rem;
+    }
+    
+    .album-overlay {
+        padding: 1.25rem; /* More padding on iPhone for thumb space */
+    }
+}
+
+/* iPhone-specific adjustments (iPhone 12/13/14 sizes ~390px) */
+@media (max-width: 420px) {
+    .album-actions {
+        gap: 1.25rem; /* Maximum spacing for iPhone */
+    }
+    
+    .overlay-circle-btn {
+        width: 32px; /* Compact but still tappable */
+        height: 32px;
+        font-size: 0.9rem;
+    }
+    
+    .album-overlay {
+        padding: 1.5rem; /* Generous padding for thumb navigation */
     }
 }
 
