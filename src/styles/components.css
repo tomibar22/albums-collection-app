@@ -58,7 +58,7 @@
 
 /* iPhone-specific: Center overlay buttons since edit buttons moved to bottom */
 @media (max-width: 480px) and (-webkit-min-device-pixel-ratio: 2) {
-    .album-overlay {
+    .album-card .album-overlay {
         align-items: center;
         justify-content: center;
         padding: 1rem;
@@ -68,7 +68,7 @@
 /* Alternative iPhone detection for centering */
 @supports (-webkit-touch-callout: none) {
     @media (max-width: 480px) {
-        .album-overlay {
+        .album-card .album-overlay {
             align-items: center;
             justify-content: center;
             padding: 1rem;
@@ -4469,7 +4469,7 @@
 
 /* iPhone-specific: Move edit buttons to bottom-left to give overlay buttons more room */
 @media (max-width: 480px) and (-webkit-min-device-pixel-ratio: 2) {
-    .card-edit-overlay {
+    .album-card .card-edit-overlay {
         top: auto;
         bottom: 0.5rem;
         left: 0.5rem;
@@ -4480,7 +4480,7 @@
 /* Alternative iPhone detection for other iOS devices */
 @supports (-webkit-touch-callout: none) {
     @media (max-width: 480px) {
-        .card-edit-overlay {
+        .album-card .card-edit-overlay {
             top: auto;
             bottom: 0.5rem;
             left: 0.5rem;
