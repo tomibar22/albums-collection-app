@@ -373,10 +373,11 @@
                 }
             },
 
-            // Google Sheets Configuration (Alternative Backend)
+            // Google Sheets Configuration (Service Account Authentication)
             GOOGLE_SHEETS: {
                 SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg', // Your music collection spreadsheet
-                API_KEY: '', // Will be configured securely
+                // Note: Uses service account authentication (albums-collection-465406-b3c823f3aa9d.json)
+                // No API key needed - service account has direct write permissions
                 
                 SHEETS: {
                     ALBUMS: 'Albums',
@@ -389,14 +390,14 @@
                     RATE_LIMIT: {
                         MAX_REQUESTS: 90, // Conservative limit (API allows 100)
                         TIME_WINDOW: 100000, // 100 seconds
-                        BATCH_SIZE: 100, // Max rows per batch operation
-                        DELAY_BETWEEN_BATCHES: 1000 // 1 second delay
+                        BATCH_SIZE: 25, // Conservative batch size to avoid rate limits
+                        DELAY_BETWEEN_BATCHES: 2000 // 2 second delay for stability
                     }
                 }
             },
 
             // Backend Selection (switch between 'supabase' and 'sheets')
-            DATA_BACKEND: 'supabase', // Using Supabase for data storage (will migrate to sheets later)
+            DATA_BACKEND: 'sheets', // Using Google Sheets with service account authentication
 
             // User Management Configuration (Dedicated Supabase Project)
             USER_MANAGEMENT: {

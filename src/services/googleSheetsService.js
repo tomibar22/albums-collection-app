@@ -1,131 +1,259 @@
 /**
  * Google Sheets Service for Albums Collection App
- * Handles all interactions with Google Sheets API for data storage
- * Uses API Key authentication with proper error handling
+ * Uses Service Account authentication for secure write access
  */
 
 class GoogleSheetsService {
     constructor() {
         this.spreadsheetId = window.CONFIG.GOOGLE_SHEETS.SPREADSHEET_ID;
-        this.apiKey = window.CONFIG.GOOGLE_SHEETS.API_KEY;
         this.sheetsAPI = 'https://sheets.googleapis.com/v4/spreadsheets';
         this.initialized = false;
         this.rateLimiter = new GoogleSheetsRateLimiter();
+        this.accessToken = null;
+        this.tokenExpiry = null;
+        this.serviceAccountCredentials = null;
     }
     
     async initialize() {
         if (this.initialized) return;
         
         try {
-            console.log('🔗 Initializing Google Sheets service...');
+            console.log('🔗 Initializing Google Sheets service with service account...');
             
-            // Validate configuration
-            if (!this.spreadsheetId || !this.apiKey) {
-                throw new Error('Missing Google Sheets configuration. Please check SPREADSHEET_ID and API_KEY.');
-            }
+            // Load service account credentials
+            await this.loadServiceAccountCredentials();
             
-            // Test connection and permissions
+            // Get access token using service account
+            await this.getServiceAccountAccessToken();
+            
+            // Test connection
             await this.testConnection();
             
             this.initialized = true;
             console.log('✅ Google Sheets service initialized successfully');
         } catch (error) {
             console.error('❌ Google Sheets initialization failed:', error);
-            console.log('💡 Common fixes:');
-            console.log('   1. Make sure your spreadsheet is shared publicly or with "Anyone with the link can edit"');
-            console.log('   2. Verify your Google Sheets API key is valid');
-            console.log('   3. Check that the Google Sheets API is enabled in Google Cloud Console');
-            throw error;
-        }
-    }
-    
-    async testConnection() {
-        try {
-            console.log('🧪 Testing Google Sheets connection...');
-            
-            const response = await fetch(
-                `${this.sheetsAPI}/${this.spreadsheetId}?key=${this.apiKey}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                }
-            );
-            
-            if (!response.ok) {
-                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-                
-                if (response.status === 401) {
-                    errorMessage += '\n💡 This usually means:\n';
-                    errorMessage += '   • Invalid API key\n';
-                    errorMessage += '   • API key lacks proper permissions\n';
-                    errorMessage += '   • Google Sheets API not enabled';
-                } else if (response.status === 403) {
-                    errorMessage += '\n💡 This usually means:\n';
-                    errorMessage += '   • Spreadsheet is private (not shared publicly)\n';
-                    errorMessage += '   • API key lacks access to this spreadsheet\n';
-                    errorMessage += '   • Rate limit exceeded';
-                } else if (response.status === 404) {
-                    errorMessage += '\n💡 Spreadsheet not found. Check your SPREADSHEET_ID.';
-                }
-                
-                throw new Error(errorMessage);
-            }
-            
-            const data = await response.json();
-            console.log(`📊 Successfully connected to: "${data.properties.title}"`);
-            console.log(`📋 Sheets available: ${data.sheets.map(s => s.properties.title).join(', ')}`);
-            
-            return data;
-        } catch (error) {
-            console.error('❌ Google Sheets connection test failed:', error);
             throw error;
         }
     }
     
     /**
-     * Make a request to Google Sheets API with proper error handling
+     * Load service account credentials from the JSON file
      */
-    async makeRequest(url, options = {}) {
+    async loadServiceAccountCredentials() {
         try {
-            const response = await fetch(url, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                },
-                ...options
-            });
+            console.log('🔐 Loading service account credentials...');
+            
+            // Load the credentials file
+            const response = await fetch('./albums-collection-465406-b3c823f3aa9d.json');
             
             if (!response.ok) {
-                const errorText = await response.text();
-                let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
-                
-                if (response.status === 401) {
-                    errorMessage += '\n🔑 Authentication failed. Check your API key.';
-                } else if (response.status === 403) {
-                    if (errorText.includes('PERMISSION_DENIED')) {
-                        errorMessage += '\n🔒 Permission denied. Make sure your spreadsheet is shared publicly or with "Anyone with the link can edit".';
-                    } else if (errorText.includes('RATE_LIMIT_EXCEEDED')) {
-                        errorMessage += '\n⏳ Rate limit exceeded. Waiting before retry...';
-                        throw new Error('RATE_LIMIT_EXCEEDED');
-                    }
-                } else if (response.status === 400) {
-                    errorMessage += `\n📝 Bad request. Details: ${errorText}`;
-                }
-                
-                console.error(`❌ ${errorMessage}`);
-                throw new Error(errorMessage);
+                throw new Error(`Failed to load service account credentials: ${response.status}`);
             }
             
-            return response;
+            this.serviceAccountCredentials = await response.json();
+            console.log(`✅ Loaded credentials for: ${this.serviceAccountCredentials.client_email}`);
+            
         } catch (error) {
-            if (error.message === 'RATE_LIMIT_EXCEEDED') {
-                // Handle rate limiting
-                console.log('⏳ Rate limit hit, waiting 60 seconds...');
-                await new Promise(resolve => setTimeout(resolve, 60000));
-                return this.makeRequest(url, options); // Retry
+            console.error('❌ Failed to load service account credentials:', error);
+            console.log('💡 Make sure albums-collection-465406-b3c823f3aa9d.json exists in the root directory');
+            throw error;
+        }
+    }
+    
+    /**
+     * Get access token using service account credentials
+     * Uses Google's OAuth 2.0 for service accounts
+     */
+    async getServiceAccountAccessToken() {
+        try {
+            // Check if current token is still valid (with 5 minute buffer)
+            if (this.accessToken && this.tokenExpiry && Date.now() < (this.tokenExpiry - 300000)) {
+                return this.accessToken;
+            }
+            
+            console.log('🔑 Getting service account access token...');
+            
+            if (!this.serviceAccountCredentials) {
+                throw new Error('Service account credentials not loaded');
+            }
+            
+            // Create JWT assertion for service account
+            const assertion = await this.createJWTAssertion();
+            
+            // Request access token from Google
+            const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                    'assertion': assertion
+                })
+            });
+            
+            if (!tokenResponse.ok) {
+                const errorText = await tokenResponse.text();
+                throw new Error(`Token request failed: ${tokenResponse.status} - ${errorText}`);
+            }
+            
+            const tokenData = await tokenResponse.json();
+            
+            this.accessToken = tokenData.access_token;
+            this.tokenExpiry = Date.now() + (tokenData.expires_in * 1000);
+            
+            console.log('✅ Service account access token obtained');
+            return this.accessToken;
+            
+        } catch (error) {
+            console.error('❌ Failed to get service account access token:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Create JWT assertion for service account authentication
+     */
+    async createJWTAssertion() {
+        const header = {
+            "alg": "RS256",
+            "typ": "JWT"
+        };
+        
+        const now = Math.floor(Date.now() / 1000);
+        const payload = {
+            "iss": this.serviceAccountCredentials.client_email,
+            "scope": "https://www.googleapis.com/auth/spreadsheets",
+            "aud": "https://oauth2.googleapis.com/token",
+            "iat": now,
+            "exp": now + 3600 // 1 hour expiry
+        };
+        
+        // Encode header and payload
+        const encodedHeader = this.base64UrlEncode(JSON.stringify(header));
+        const encodedPayload = this.base64UrlEncode(JSON.stringify(payload));
+        
+        // Create signature data
+        const signatureData = `${encodedHeader}.${encodedPayload}`;
+        
+        // Sign with private key (simplified for browser environment)
+        const signature = await this.signWithPrivateKey(signatureData);
+        const encodedSignature = this.base64UrlEncode(signature);
+        
+        return `${signatureData}.${encodedSignature}`;
+    }
+    
+    /**
+     * Base64 URL encode (without padding)
+     */
+    base64UrlEncode(str) {
+        const base64 = btoa(str);
+        return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+    
+    /**
+     * Sign data with private key using Web Crypto API
+     */
+    async signWithPrivateKey(data) {
+        try {
+            // Import private key
+            const privateKeyPem = this.serviceAccountCredentials.private_key;
+            
+            // Remove PEM headers and newlines
+            const privateKeyData = privateKeyPem
+                .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+                .replace(/-----END PRIVATE KEY-----/g, '')
+                .replace(/\n/g, '');
+            
+            // Convert to ArrayBuffer
+            const privateKeyBuffer = Uint8Array.from(atob(privateKeyData), c => c.charCodeAt(0));
+            
+            // Import key for signing
+            const key = await crypto.subtle.importKey(
+                'pkcs8',
+                privateKeyBuffer,
+                {
+                    name: 'RSASSA-PKCS1-v1_5',
+                    hash: 'SHA-256'
+                },
+                false,
+                ['sign']
+            );
+            
+            // Sign the data
+            const signature = await crypto.subtle.sign(
+                'RSASSA-PKCS1-v1_5',
+                key,
+                new TextEncoder().encode(data)
+            );
+            
+            return new Uint8Array(signature);
+            
+        } catch (error) {
+            console.error('❌ Private key signing failed:', error);
+            throw new Error('Failed to sign JWT assertion with private key');
+        }
+    }
+    
+    /**
+     * Make authenticated request to Google Sheets API
+     */
+    async makeAuthenticatedRequest(url, options = {}) {
+        // Ensure we have a valid access token
+        await this.getServiceAccountAccessToken();
+        
+        const authOptions = {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        };
+        
+        const response = await fetch(url, authOptions);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+            
+            if (response.status === 401) {
+                errorMessage += '\n🔑 Access token expired or invalid. Will retry with fresh token.';
+                // Clear token to force refresh
+                this.accessToken = null;
+                this.tokenExpiry = null;
+                throw new Error('TOKEN_EXPIRED');
+            } else if (response.status === 403) {
+                errorMessage += `\n🔒 Permission denied. Details: ${errorText}`;
+            }
+            
+            throw new Error(errorMessage);
+        }
+        
+        return response;
+    }
+    
+    /**
+     * Test connection to Google Sheets
+     */
+    async testConnection() {
+        try {
+            console.log('🧪 Testing Google Sheets connection...');
+            
+            const response = await this.makeAuthenticatedRequest(
+                `${this.sheetsAPI}/${this.spreadsheetId}`
+            );
+            
+            const data = await response.json();
+            console.log(`📊 Connected to spreadsheet: "${data.properties.title}"`);
+            console.log(`📋 Sheets available: ${data.sheets.map(s => s.properties.title).join(', ')}`);
+            
+            return data;
+        } catch (error) {
+            if (error.message === 'TOKEN_EXPIRED') {
+                // Retry with fresh token
+                return this.testConnection();
             }
             throw error;
         }
@@ -215,7 +343,7 @@ class GoogleSheetsService {
     async batchAddAlbums(albumsArray) {
         console.log(`📦 Batch adding ${albumsArray.length} albums to Google Sheets...`);
         
-        const batchSize = 25; // Very conservative batch size to avoid rate limits
+        const batchSize = 25; // Conservative batch size
         const results = [];
         
         for (let i = 0; i < albumsArray.length; i += batchSize) {
@@ -231,11 +359,15 @@ class GoogleSheetsService {
                 const progress = Math.round(((i + batch.length) / albumsArray.length) * 100);
                 console.log(`📊 Imported ${Math.min(i + batchSize, albumsArray.length)}/${albumsArray.length} albums (${progress}%)`);
                 
-                // Longer delay for batch operations to avoid rate limits
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                // Delay between batches
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
             } catch (error) {
-                console.error(`❌ Batch ${Math.floor(i/batchSize) + 1} failed:`, error);
+                if (error.message === 'TOKEN_EXPIRED') {
+                    // Retry this batch with fresh token
+                    i -= batchSize; // Retry current batch
+                    continue;
+                }
                 throw error;
             }
         }
@@ -245,40 +377,61 @@ class GoogleSheetsService {
     
     // Utility methods
     async getSheetData(sheetName) {
-        const range = `${sheetName}!A:Z`; // Get all data
-        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}?key=${this.apiKey}`;
+        const range = `${sheetName}!A:Z`;
+        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}`;
         
-        const response = await this.makeRequest(url);
-        const result = await response.json();
-        return result.values || [];
+        try {
+            const response = await this.makeAuthenticatedRequest(url);
+            const result = await response.json();
+            return result.values || [];
+        } catch (error) {
+            if (error.message === 'TOKEN_EXPIRED') {
+                return this.getSheetData(sheetName); // Retry with fresh token
+            }
+            throw error;
+        }
     }
     
     async appendToSheet(sheetName, rowData) {
         const range = `${sheetName}!A:Z`;
-        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}:append?valueInputOption=RAW&key=${this.apiKey}`;
+        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}:append?valueInputOption=RAW`;
         
-        const response = await this.makeRequest(url, {
-            method: 'POST',
-            body: JSON.stringify({
-                values: [rowData]
-            })
-        });
-        
-        return response.json();
+        try {
+            const response = await this.makeAuthenticatedRequest(url, {
+                method: 'POST',
+                body: JSON.stringify({
+                    values: [rowData]
+                })
+            });
+            
+            return response.json();
+        } catch (error) {
+            if (error.message === 'TOKEN_EXPIRED') {
+                return this.appendToSheet(sheetName, rowData); // Retry with fresh token
+            }
+            throw error;
+        }
     }
     
     async batchAppendToSheet(sheetName, rowsData) {
         const range = `${sheetName}!A:Z`;
-        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}:append?valueInputOption=RAW&key=${this.apiKey}`;
+        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}:append?valueInputOption=RAW`;
         
-        const response = await this.makeRequest(url, {
-            method: 'POST',
-            body: JSON.stringify({
-                values: rowsData
-            })
-        });
-        
-        return response.json();
+        try {
+            const response = await this.makeAuthenticatedRequest(url, {
+                method: 'POST',
+                body: JSON.stringify({
+                    values: rowsData
+                })
+            });
+            
+            return response.json();
+        } catch (error) {
+            if (error.message === 'TOKEN_EXPIRED') {
+                return this.batchAppendToSheet(sheetName, rowsData); // Retry with fresh token
+            }
+            throw error;
+        }
     }
     
     async findAlbumRowIndex(albumId) {
@@ -386,7 +539,7 @@ class GoogleSheetsRateLimiter {
     constructor() {
         this.requests = 0;
         this.resetTime = Date.now() + 100000; // 100 seconds window
-        this.maxRequests = 80; // Very conservative limit
+        this.maxRequests = 80; // Conservative limit
     }
     
     async checkRateLimit() {

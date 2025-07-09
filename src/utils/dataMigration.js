@@ -205,16 +205,33 @@ window.DataMigrationTool = {
         }
     },
     
-    // Check if credentials are available
-    hasGoogleSheetsCredentials() {
+    // Check if service account credentials are available
+    async hasGoogleSheetsCredentials() {
         try {
-            // Check if we have the service account file
+            // Check if we have the spreadsheet ID
             const hasSpreadsheetId = window.CONFIG?.GOOGLE_SHEETS?.SPREADSHEET_ID;
-            const hasCredentials = window.SecureCredentialLoader || window.CONFIG?.GOOGLE_SHEETS?.SERVICE_ACCOUNT_CREDENTIALS;
+            if (!hasSpreadsheetId) {
+                console.log('❌ No spreadsheet ID configured');
+                return false;
+            }
             
-            return hasSpreadsheetId && hasCredentials;
+            // Check if service account credentials file exists and is accessible
+            try {
+                const response = await fetch('./albums-collection-465406-b3c823f3aa9d.json');
+                if (response.ok) {
+                    const credentials = await response.json();
+                    if (credentials.client_email && credentials.private_key) {
+                        console.log('✅ Service account credentials file accessible');
+                        return true;
+                    }
+                }
+            } catch (fileError) {
+                console.error('❌ Service account credentials file not found:', fileError);
+            }
+            
+            return false;
         } catch (error) {
-            console.error('Error checking credentials:', error);
+            console.error('Error checking service account credentials:', error);
             return false;
         }
     },
@@ -226,13 +243,15 @@ window.DataMigrationTool = {
             return;
         }
         
-        // Check if Google Sheets credentials are available
-        if (!this.hasGoogleSheetsCredentials()) {
-            alert('❌ Google Sheets not configured!\n\n' +
+        // Check if Google Sheets service account credentials are available
+        const hasCredentials = await this.hasGoogleSheetsCredentials();
+        if (!hasCredentials) {
+            alert('❌ Google Sheets service account not configured!\n\n' +
                   'Please make sure:\n' +
                   '1. Your spreadsheet ID is set in the configuration\n' +
-                  '2. The service account JSON file is in the root directory\n' +
-                  '3. You have shared the spreadsheet with your service account email');
+                  '2. The service account JSON file (albums-collection-465406-b3c823f3aa9d.json) exists in the root directory\n' +
+                  '3. Your spreadsheet is shared with: tommy-891@albums-collection-465406.iam.gserviceaccount.com (Editor permissions)\n\n' +
+                  'With service account authentication, no manual API key entry is needed!');
             return;
         }
         
@@ -394,15 +413,16 @@ window.DataMigrationTool = {
             allReady = false;
         }
         
-        // Check Google Sheets credentials and connection
+        // Check Google Sheets service account credentials and connection
         try {
-            if (this.hasGoogleSheetsCredentials()) {
+            const hasCredentials = await this.hasGoogleSheetsCredentials();
+            if (hasCredentials) {
                 // Test connection
                 const sheetsService = new GoogleSheetsService();
                 await sheetsService.initialize();
-                status += '✅ Google Sheets: Credentials configured and connection successful\n';
+                status += '✅ Google Sheets: Service account authenticated and connection successful\n';
             } else {
-                status += '❌ Google Sheets: Credentials missing\n';
+                status += '❌ Google Sheets: Service account credentials missing or invalid\n';
                 allReady = false;
             }
         } catch (error) {
