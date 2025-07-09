@@ -40,7 +40,7 @@ except ImportError as e:
 
 # Supabase Configuration
 SUPABASE_URL = "https://mchuwawmnyeoemgrlepp.supabase.co"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk2NjcwNzAsImV4cCI6MjAzNTI0MzA3MH0.PHlOj7_Wq5d3-Vx9XVsXqPBgTKqJ9_JoKr7ShqPn_gI"  # Your current anon key
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjA3MjIzNjcsImV4cCI6MjAzNjI5ODM2N30.t6_gOA3t7EGhPDiSS6H6WJH3qK0kpJ8n8B_wgWNR-rM"  # Your current valid anon key
 
 # Google Sheets Configuration
 GOOGLE_SHEETS_SPREADSHEET_ID = "1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg"
