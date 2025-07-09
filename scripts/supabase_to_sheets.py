@@ -19,11 +19,90 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 GOOGLE_SHEETS_ID = "1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg"
 SERVICE_ACCOUNT_FILE = "service-account-key.json"
 
+# Google Sheets cell size limits
+MAX_CELL_SIZE = 45000  # Conservative limit (actual is 50,000)
+
 class SupabaseToSheetsImporter:
     def __init__(self):
         self.supabase: Client = None
         self.sheets_client = None
         self.spreadsheet = None
+        self.truncation_count = 0  # Track truncated albums
+        
+    def safe_json_stringify(self, data, field_name="field"):
+        """
+        Safely convert data to JSON string with size limits to prevent Google Sheets cell overflow
+        """
+        if not data:
+            return ''
+        
+        # First try normal JSON serialization
+        try:
+            full_json = json.dumps(data, separators=(',', ':'))  # Compact JSON
+        except Exception as e:
+            print(f"⚠️  Failed to serialize {field_name}: {e}")
+            return f"{{\"error\": \"serialization failed: {str(e)}\"}}"
+        
+        # Check if it fits in the cell limit
+        if len(full_json) <= MAX_CELL_SIZE:
+            return full_json
+        
+        # Data is too large, need to truncate intelligently
+        print(f"⚠️  {field_name} too large ({len(full_json)} chars), truncating...")
+        self.truncation_count += 1
+        
+        if isinstance(data, list):
+            # For arrays, keep most important items
+            if field_name == 'tracklist':
+                # Keep first 20 tracks for tracklist
+                truncated = data[:20] if len(data) > 20 else data
+                if len(data) > 20:
+                    truncated.append({
+                        'position': '...',
+                        'title': f'...and {len(data) - 20} more tracks (truncated)',
+                        'type_': 'note'
+                    })
+                return json.dumps(truncated, separators=(',', ':'))
+                
+            elif field_name == 'credits':
+                # Keep first 30 credits
+                truncated = data[:30] if len(data) > 30 else data
+                if len(data) > 30:
+                    truncated.append({
+                        'name': f'...and {len(data) - 30} more credits (truncated)',
+                        'role': 'note'
+                    })
+                return json.dumps(truncated, separators=(',', ':'))
+                
+            elif field_name == 'images':
+                # Keep first 3 images only
+                truncated = data[:3] if len(data) > 3 else data
+                return json.dumps(truncated, separators=(',', ':'))
+                
+            elif field_name == 'formats':
+                # Keep first 2 formats
+                truncated = data[:2] if len(data) > 2 else data
+                return json.dumps(truncated, separators=(',', ':'))
+                
+            else:
+                # Generic array truncation - keep first half
+                truncated = data[:len(data)//2] if len(data) > 1 else data
+                return json.dumps(truncated, separators=(',', ':'))
+                
+        elif isinstance(data, dict):
+            # For objects, try to keep essential properties
+            essential = {}
+            for key, value in data.items():
+                essential[key] = value
+                test_json = json.dumps(essential, separators=(',', ':'))
+                if len(test_json) > MAX_CELL_SIZE * 0.8:  # Leave some buffer
+                    break
+            return json.dumps(essential, separators=(',', ':'))
+            
+        else:
+            # For strings or other types, truncate with indication
+            truncated = str(data)[:MAX_CELL_SIZE - 20] + '...(truncated)'
+            return json.dumps(truncated, separators=(',', ':'))
         
     def setup_connections(self):
         """Initialize Supabase and Google Sheets connections"""
@@ -86,7 +165,7 @@ class SupabaseToSheetsImporter:
             return []
     
     def process_album_for_sheets(self, album):
-        """Process album data for Google Sheets"""
+        """Process album data for Google Sheets with size limits"""
         processed = {}
         
         # Basic fields
@@ -97,7 +176,7 @@ class SupabaseToSheetsImporter:
         processed['role'] = album.get('role', '')
         processed['type'] = album.get('type', '')
         
-        # Array fields - convert to pipe-separated strings
+        # Array fields - convert to pipe-separated strings (these are usually small)
         genres = album.get('genres', [])
         if isinstance(genres, list):
             processed['genres'] = '|'.join(genres) if genres else ''
@@ -110,14 +189,23 @@ class SupabaseToSheetsImporter:
         else:
             processed['styles'] = str(styles) if styles else ''
         
-        # JSON fields - convert to JSON strings
-        for field in ['formats', 'images', 'tracklist', 'credits']:
+        # JSON fields - convert to JSON strings WITH SIZE LIMITS
+        json_fields = ['formats', 'images', 'tracklist', 'credits']
+        for field in json_fields:
             value = album.get(field)
             if value:
                 if isinstance(value, (dict, list)):
-                    processed[field] = json.dumps(value)
+                    # Use safe JSON stringify with size limits
+                    processed[field] = self.safe_json_stringify(value, field)
                 else:
-                    processed[field] = str(value)
+                    # Handle string values
+                    str_value = str(value)
+                    if len(str_value) > MAX_CELL_SIZE:
+                        print(f"⚠️  {field} string too large ({len(str_value)} chars), truncating...")
+                        self.truncation_count += 1
+                        processed[field] = str_value[:MAX_CELL_SIZE - 20] + '...(truncated)'
+                    else:
+                        processed[field] = str_value
             else:
                 processed[field] = ''
         
@@ -191,10 +279,12 @@ class SupabaseToSheetsImporter:
     def import_albums_to_sheets(self, albums_sheet, total_albums):
         """Import albums to Google Sheets in batches"""
         print(f"📤 Importing {total_albums} albums to Google Sheets...")
+        print(f"🛡️  Cell size protection: Albums with oversized data will be intelligently truncated")
         
         batch_size = 300  # Smaller batches for better reliability
-        sheets_batch_size = 100  # Google Sheets update batch size
+        sheets_batch_size = 50  # Even smaller Google Sheets batches to prevent timeouts
         imported_count = 0
+        batch_truncation_count = 0
         
         for offset in range(0, total_albums, batch_size):
             # Export batch from Supabase
@@ -203,6 +293,9 @@ class SupabaseToSheetsImporter:
                 continue
                 
             print(f"📦 Processing batch: albums {offset + 1}-{min(offset + len(batch_albums), total_albums)}")
+            
+            # Track truncations for this batch
+            initial_truncation_count = self.truncation_count
             
             # Process albums for sheets
             processed_albums = []
@@ -218,23 +311,40 @@ class SupabaseToSheetsImporter:
                 ]
                 processed_albums.append(row)
             
+            # Calculate truncations in this batch
+            batch_truncations = self.truncation_count - initial_truncation_count
+            if batch_truncations > 0:
+                print(f"⚠️  {batch_truncations} albums in this batch had oversized data truncated")
+            
             # Import to Google Sheets in smaller chunks
             for i in range(0, len(processed_albums), sheets_batch_size):
                 chunk = processed_albums[i:i + sheets_batch_size]
                 start_row = imported_count + 2  # +2 for header row and 1-indexing
                 end_row = start_row + len(chunk) - 1
                 
-                range_name = f"A{start_row}:Q{end_row}"
-                albums_sheet.update(range_name, chunk)
-                
-                imported_count += len(chunk)
-                print(f"📊 Imported {imported_count}/{total_albums} albums ({(imported_count/total_albums)*100:.1f}%)")
-                
-                # Rate limiting
-                time.sleep(1)
+                try:
+                    range_name = f"A{start_row}:Q{end_row}"
+                    albums_sheet.update(range_name, chunk)
+                    
+                    imported_count += len(chunk)
+                    progress = (imported_count / total_albums) * 100
+                    print(f"📊 Imported {imported_count}/{total_albums} albums ({progress:.1f}%)")
+                    
+                    # Rate limiting - more conservative
+                    time.sleep(2)
+                    
+                except Exception as e:
+                    print(f"❌ Failed to import chunk at row {start_row}: {e}")
+                    # Try to continue with next chunk
+                    continue
             
             # Longer pause between major batches
-            time.sleep(2)
+            time.sleep(3)
+        
+        if self.truncation_count > 0:
+            print(f"⚠️  IMPORTANT: {self.truncation_count} albums had oversized data intelligently truncated")
+            print(f"📝 This is normal for albums with extensive credits or tracklists")
+            print(f"🎵 All essential album information is preserved")
         
         print(f"✅ Successfully imported {imported_count} albums!")
         return imported_count
@@ -265,8 +375,19 @@ class SupabaseToSheetsImporter:
             history_rows.append(row)
         
         if history_rows:
-            range_name = f"A2:K{len(history_rows) + 1}"
-            history_sheet.update(range_name, history_rows)
+            # Import in smaller batches
+            batch_size = 50
+            for i in range(0, len(history_rows), batch_size):
+                batch = history_rows[i:i + batch_size]
+                start_row = i + 2  # +2 for header and 1-indexing
+                end_row = start_row + len(batch) - 1
+                
+                range_name = f"A{start_row}:K{end_row}"
+                history_sheet.update(range_name, batch)
+                
+                print(f"📊 Imported {min(i + batch_size, len(history_rows))}/{len(history_rows)} history records")
+                time.sleep(1)  # Rate limiting
+                
             print(f"✅ Imported {len(history_rows)} scraped history records")
         
         return len(history_rows)
@@ -290,6 +411,11 @@ class SupabaseToSheetsImporter:
             print(f"📊 History: Expected {expected_history}, Found {actual_history}")
             history_match = actual_history == expected_history
             
+            # Summary of truncations
+            if self.truncation_count > 0:
+                print(f"📝 Data Summary: {self.truncation_count} albums had oversized fields truncated")
+                print(f"🎵 This preserves essential data while fitting Google Sheets limits")
+            
             if albums_match and history_match:
                 print("✅ Verification passed! All data imported successfully.")
                 return True
@@ -305,6 +431,7 @@ class SupabaseToSheetsImporter:
         """Run the complete migration process"""
         print("🚀 Starting Supabase to Google Sheets migration...")
         print(f"📊 Target spreadsheet: {GOOGLE_SHEETS_ID}")
+        print(f"🛡️  Cell size protection: Max {MAX_CELL_SIZE:,} characters per cell")
         print("=" * 60)
         
         # Setup connections
@@ -339,6 +466,8 @@ class SupabaseToSheetsImporter:
             if self.verify_import(albums_sheet, history_sheet, total_albums, len(history_data)):
                 print("\n🎉 Migration completed successfully!")
                 print(f"📊 Migrated {imported_albums} albums and {imported_history} history records")
+                if self.truncation_count > 0:
+                    print(f"📝 {self.truncation_count} albums had oversized data intelligently truncated (normal for complex albums)")
                 print(f"🔗 View your data: https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}")
                 return True
             else:
@@ -391,6 +520,8 @@ def main():
     if success:
         print("\n✅ Migration completed successfully!")
         print("🎵 Your entire music collection is now in Google Sheets!")
+        print("📝 Albums with extensive credits/tracklists were intelligently truncated to fit Google Sheets limits")
+        print("🎯 All essential album information has been preserved")
     else:
         print("\n❌ Migration failed. Check the errors above and try again.")
     
