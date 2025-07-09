@@ -565,7 +565,7 @@ class AlbumCollectionApp {
 
 
 
-    const { data: batch, error } = await this.dataService.client
+    const { data: batch, error } = await this.dataService.service.client
 
     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
 
@@ -667,7 +667,7 @@ class AlbumCollectionApp {
 
 
 
-    const { count: totalCount, error: countError } = await this.dataService.client
+    const { count: totalCount, error: countError } = await this.dataService.service.client
 
     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
 
@@ -733,7 +733,7 @@ class AlbumCollectionApp {
 
 
 
-    const { data: batch, error } = await this.dataService.client
+    const { data: batch, error } = await this.dataService.service.client
 
     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
 
