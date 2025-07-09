@@ -110,7 +110,7 @@ def check_supabase_access():
         from supabase import create_client
         
         url = "https://mchuwawmnyeoemgrlepp.supabase.co"
-        key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjAwNzE4NTcsImV4cCI6MjAzNTY0Nzg1N30.V8asL5upGbEgTpGLzBHxR6xR2-3bWFUYE6WbdIVKcKg"
+        key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNjQ1MTYsImV4cCI6MjA2Njg0MDUxNn0.1APvxfCAof_0V_EFZnAaucrayTdhE3dMHLb67LySnrc"
         
         supabase = create_client(url, key)
         

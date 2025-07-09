@@ -15,7 +15,7 @@ from google.oauth2.service_account import Credentials
 
 # Configuration
 SUPABASE_URL = "https://mchuwawmnyeoemgrlepp.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjAwNzE4NTcsImV4cCI6MjAzNTY0Nzg1N30.V8asL5upGbEgTpGLzBHxR6xR2-3bWFUYE6WbdIVKcKg"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNjQ1MTYsImV4cCI6MjA2Njg0MDUxNn0.1APvxfCAof_0V_EFZnAaucrayTdhE3dMHLb67LySnrc"
 GOOGLE_SHEETS_ID = "1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg"
 SERVICE_ACCOUNT_FILE = "service-account-key.json"
 
