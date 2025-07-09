@@ -65,3 +65,4 @@ src/config.js
 # Server process files
 *.pid
 albums-collection-465406-b3c823f3aa9d.json
+scripts/service-account-key.json
