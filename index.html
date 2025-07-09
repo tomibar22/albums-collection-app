@@ -374,8 +374,8 @@
 
             // Google Sheets Configuration (Alternative Backend)
             GOOGLE_SHEETS: {
-                SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg',
-                API_KEY: 'AIzaSyCi3Eu9MW1-kCRZ5FlszyBtB5l37myGGRk',
+                SPREADSHEET_ID: '', // Will be configured securely
+                API_KEY: '', // Will be configured securely
                 
                 SHEETS: {
                     ALBUMS: 'Albums',
@@ -444,6 +444,7 @@
     <script src="src/middleware/authMiddleware.js"></script>
     
     <!-- Core App Components -->
+    <script src="src/utils/secureConfig.js"></script>
     <script src="src/data/models.js"></script>
     <script src="src/api/discogs.js"></script>
     <script src="src/data/parser.js"></script>
