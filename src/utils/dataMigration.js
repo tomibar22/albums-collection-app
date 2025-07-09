@@ -1,6 +1,6 @@
 /**
- * Supabase to Google Sheets Migration Utility
- * Handles exporting all albums from Supabase and importing to Google Sheets
+ * Enhanced Supabase to Google Sheets Migration Utility
+ * Updated to work with DataService architecture
  */
 
 window.DataMigrationTool = {
@@ -14,20 +14,24 @@ window.DataMigrationTool = {
         errors: []
     },
     
-    // Export all albums from Supabase
+    // Export all albums from Supabase (using direct Supabase service)
     async exportFromSupabase() {
         console.log('📥 Starting Supabase export...');
         this.migration.currentStep = 'Exporting from Supabase';
         
         try {
-            // Ensure app is initialized
-            if (!window.albumApp || !window.albumApp.supabaseService || !window.albumApp.supabaseService.initialized) {
-                throw new Error('App not initialized. Please wait for app to load completely.');
+            // Create a direct Supabase service for export (regardless of current backend)
+            const supabaseService = new SupabaseService();
+            await supabaseService.initialize();
+            
+            if (!supabaseService.initialized) {
+                throw new Error('Failed to initialize Supabase service for export');
             }
             
-            const supabaseClient = window.albumApp.supabaseService.client;
+            const supabaseClient = supabaseService.client;
             
             // Get total count first
+            console.log('📊 Counting albums in Supabase...');
             const countResult = await supabaseClient
                 .from('albums')
                 .select('*', { count: 'exact', head: true });
@@ -45,7 +49,9 @@ window.DataMigrationTool = {
             let offset = 0;
             
             while (offset < this.migration.totalAlbums) {
-                console.log(`📀 Exporting batch ${Math.floor(offset/batchSize) + 1}/${Math.ceil(this.migration.totalAlbums/batchSize)}...`);
+                const batchNumber = Math.floor(offset/batchSize) + 1;
+                const totalBatches = Math.ceil(this.migration.totalAlbums/batchSize);
+                console.log(`📀 Exporting batch ${batchNumber}/${totalBatches}...`);
                 
                 const { data: batch, error } = await supabaseClient
                     .from('albums')
@@ -73,18 +79,54 @@ window.DataMigrationTool = {
         }
     },
     
+    // Set up Google Sheets with proper headers
+    async setupGoogleSheetsHeaders() {
+        console.log('📋 Setting up Google Sheets headers...');
+        
+        try {
+            const sheetsService = new GoogleSheetsService();
+            await sheetsService.initialize();
+            
+            // Check if Albums sheet exists and has headers
+            const existingData = await sheetsService.getSheetData('Albums');
+            
+            if (existingData.length === 0) {
+                console.log('📝 Adding Albums sheet headers...');
+                const albumsHeaders = [
+                    'id', 'title', 'year', 'artist', 'role', 'type',
+                    'genres', 'styles', 'formats', 'images', 'tracklist',
+                    'track_count', 'credits', 'cover_image', 'formatted_year',
+                    'created_at', 'updated_at'
+                ];
+                
+                await sheetsService.appendToSheet('Albums', albumsHeaders);
+                console.log('✅ Headers added to Albums sheet');
+            } else {
+                console.log('✅ Albums sheet headers already exist');
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to setup Google Sheets headers:', error);
+            throw error;
+        }
+    },
+    
     // Import albums to Google Sheets
     async importToGoogleSheets(albums) {
         console.log(`📤 Starting Google Sheets import of ${albums.length} albums...`);
         this.migration.currentStep = 'Importing to Google Sheets';
         
         try {
+            // Set up headers first
+            await this.setupGoogleSheetsHeaders();
+            
             // Create Google Sheets service
             const sheetsService = new GoogleSheetsService();
             await sheetsService.initialize();
             
             // Import in batches (Google Sheets API limit: 100 rows per request)
-            const batchSize = 100;
+            const batchSize = 50; // Conservative batch size for reliability
             let importedCount = 0;
             
             for (let i = 0; i < albums.length; i += batchSize) {
@@ -104,8 +146,10 @@ window.DataMigrationTool = {
                 this.migration.importedAlbums = importedCount;
                 this.updateMigrationStatus();
                 
-                // Rate limiting delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // Rate limiting delay (Google Sheets API: 100 requests per 100 seconds)
+                await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+                
+                console.log(`✅ Batch ${batchNumber} complete (${importedCount}/${albums.length} total)`);
             }
             
             console.log(`✅ Successfully imported ${importedCount} albums to Google Sheets`);
@@ -126,18 +170,19 @@ window.DataMigrationTool = {
         try {
             // Check Google Sheets count
             const sheetsService = new GoogleSheetsService();
+            await sheetsService.initialize();
             const sheetsAlbums = await sheetsService.getAllAlbums();
             const sheetsCount = sheetsAlbums.length;
             
             console.log(`📊 Verification Results:`);
-            console.log(`   Supabase: ${this.migration.totalAlbums} albums`);
+            console.log(`   Expected: ${this.migration.totalAlbums} albums`);
             console.log(`   Google Sheets: ${sheetsCount} albums`);
             
             if (sheetsCount === this.migration.totalAlbums) {
                 console.log('✅ Migration verification PASSED!');
                 return {
                     success: true,
-                    supabaseCount: this.migration.totalAlbums,
+                    expectedCount: this.migration.totalAlbums,
                     sheetsCount: sheetsCount,
                     message: 'All albums successfully migrated!'
                 };
@@ -145,7 +190,7 @@ window.DataMigrationTool = {
                 console.log('❌ Migration verification FAILED!');
                 return {
                     success: false,
-                    supabaseCount: this.migration.totalAlbums,
+                    expectedCount: this.migration.totalAlbums,
                     sheetsCount: sheetsCount,
                     message: `Count mismatch: ${sheetsCount}/${this.migration.totalAlbums} albums migrated`
                 };
@@ -160,6 +205,20 @@ window.DataMigrationTool = {
         }
     },
     
+    // Check if credentials are available
+    hasGoogleSheetsCredentials() {
+        try {
+            // Check if we have the service account file
+            const hasSpreadsheetId = window.CONFIG?.GOOGLE_SHEETS?.SPREADSHEET_ID;
+            const hasCredentials = window.SecureCredentialLoader || window.CONFIG?.GOOGLE_SHEETS?.SERVICE_ACCOUNT_CREDENTIALS;
+            
+            return hasSpreadsheetId && hasCredentials;
+        } catch (error) {
+            console.error('Error checking credentials:', error);
+            return false;
+        }
+    },
+    
     // Main migration function
     async runFullMigration() {
         if (this.migration.inProgress) {
@@ -167,29 +226,51 @@ window.DataMigrationTool = {
             return;
         }
         
-        // Check if app is ready
-        if (!window.albumApp) {
-            alert('❌ App not ready!\n\nPlease wait for the app to fully load before starting migration.');
+        // Check if Google Sheets credentials are available
+        if (!this.hasGoogleSheetsCredentials()) {
+            alert('❌ Google Sheets not configured!\n\n' +
+                  'Please make sure:\n' +
+                  '1. Your spreadsheet ID is set in the configuration\n' +
+                  '2. The service account JSON file is in the root directory\n' +
+                  '3. You have shared the spreadsheet with your service account email');
             return;
         }
         
-        if (!window.albumApp.supabaseService || !window.albumApp.supabaseService.initialized) {
-            alert('❌ Supabase not ready!\n\nPlease wait for the app to connect to the database before starting migration.');
+        // Test Google Sheets connection first
+        try {
+            console.log('🔌 Testing Google Sheets connection...');
+            const sheetsService = new GoogleSheetsService();
+            await sheetsService.initialize();
+            console.log('✅ Google Sheets connection successful');
+        } catch (error) {
+            alert(`❌ Google Sheets Connection Failed!\n\nError: ${error.message}\n\n` +
+                  'Please check:\n' +
+                  '1. Spreadsheet permissions\n' +
+                  '2. Service account credentials\n' +
+                  '3. Internet connection');
             return;
         }
         
-        // Check Google Sheets credentials
-        if (!window.SecureConfig.hasGoogleSheetsCredentials()) {
-            alert('❌ Google Sheets not configured!\n\nPlease set your Google Sheets credentials first using the "🔑 Set Google Sheets Credentials" button.');
-            return;
+        // Get estimated album count
+        let estimatedCount = 0;
+        try {
+            const supabaseService = new SupabaseService();
+            await supabaseService.initialize();
+            const countResult = await supabaseService.client
+                .from('albums')
+                .select('*', { count: 'exact', head: true });
+            estimatedCount = countResult.count || 0;
+        } catch (error) {
+            console.log('Could not get exact count, proceeding anyway...');
         }
         
         // Final confirmation
         const confirm = window.confirm(
             `🚀 Ready to migrate your music collection?\n\n` +
-            `This will copy all ${this.migration.totalAlbums || 'your'} albums from Supabase to Google Sheets.\n\n` +
-            `⏱️ Expected time: 20-25 minutes\n` +
-            `⚠️ Keep this browser window open during migration\n\n` +
+            `This will copy ${estimatedCount > 0 ? estimatedCount : 'all your'} albums from Supabase to Google Sheets.\n\n` +
+            `⏱️ Expected time: ${Math.ceil(estimatedCount / 50)} minutes\n` +
+            `⚠️ Keep this browser window open during migration\n` +
+            `📊 Progress will be shown below\n\n` +
             `Continue with migration?`
         );
         
@@ -207,6 +288,13 @@ window.DataMigrationTool = {
             importedAlbums: 0,
             errors: []
         };
+        
+        // Disable migration button
+        const migrationBtn = document.getElementById('start-migration-btn');
+        if (migrationBtn) {
+            migrationBtn.disabled = true;
+            migrationBtn.textContent = '🔄 Migration in Progress...';
+        }
         
         try {
             console.log('🚀 Starting full migration: Supabase → Google Sheets');
@@ -229,9 +317,13 @@ window.DataMigrationTool = {
             this.updateMigrationStatus();
             
             if (verification.success) {
-                alert(`✅ Migration Successful!\n\n${verification.message}\n\nSupabase: ${verification.supabaseCount} albums\nGoogle Sheets: ${verification.sheetsCount} albums`);
+                alert(`✅ Migration Successful!\n\n${verification.message}\n\n` +
+                      `Expected: ${verification.expectedCount} albums\n` +
+                      `Google Sheets: ${verification.sheetsCount} albums\n\n` +
+                      `🎉 Your collection is now in Google Sheets!`);
             } else {
-                alert(`❌ Migration Issues Detected!\n\n${verification.message}\n\nPlease check the console for details.`);
+                alert(`⚠️ Migration Completed with Issues!\n\n${verification.message}\n\n` +
+                      `Please check the console for details.`);
             }
             
             return verification;
@@ -244,6 +336,12 @@ window.DataMigrationTool = {
             
             alert(`❌ Migration Failed!\n\nError: ${error.message}\n\nCheck console for details.`);
             return { success: false, message: error.message };
+        } finally {
+            // Re-enable migration button
+            if (migrationBtn) {
+                migrationBtn.disabled = false;
+                migrationBtn.textContent = '🚀 Start Migration (Supabase → Google Sheets)';
+            }
         }
     },
     
@@ -251,58 +349,64 @@ window.DataMigrationTool = {
     updateMigrationStatus() {
         const statusDiv = document.getElementById('migration-status');
         if (statusDiv) {
+            const progressPercentage = this.migration.totalAlbums > 0 ? 
+                Math.round((this.migration.importedAlbums / this.migration.totalAlbums) * 100) : 0;
+            
             statusDiv.innerHTML = `
                 <div class="migration-status">
-                    <h4>📊 Migration Status</h4>
-                    <p><strong>Step:</strong> ${this.migration.currentStep}</p>
-                    <p><strong>Total Albums:</strong> ${this.migration.totalAlbums}</p>
-                    <p><strong>Exported:</strong> ${this.migration.exportedAlbums}</p>
-                    <p><strong>Imported:</strong> ${this.migration.importedAlbums}</p>
-                    ${this.migration.errors.length > 0 ? `<p><strong>Errors:</strong> ${this.migration.errors.length}</p>` : ''}
+                    <h4>📊 Migration Progress</h4>
+                    <p><strong>Current Step:</strong> ${this.migration.currentStep}</p>
+                    <p><strong>Total Albums:</strong> ${this.migration.totalAlbums.toLocaleString()}</p>
+                    <p><strong>Exported:</strong> ${this.migration.exportedAlbums.toLocaleString()}</p>
+                    <p><strong>Imported:</strong> ${this.migration.importedAlbums.toLocaleString()}</p>
+                    ${this.migration.errors.length > 0 ? `<p style="color: #ff6b6b;"><strong>Errors:</strong> ${this.migration.errors.length}</p>` : ''}
                     <div class="migration-progress">
-                        <div class="progress-bar" style="width: ${this.migration.totalAlbums > 0 ? (this.migration.importedAlbums / this.migration.totalAlbums * 100) : 0}%"></div>
+                        <div class="progress-bar" style="width: ${progressPercentage}%"></div>
                     </div>
+                    <p style="text-align: center; margin-top: 10px; font-weight: bold;">${progressPercentage}% Complete</p>
                 </div>
             `;
         }
     },
     
     // Check if migration is ready to run
-    checkMigrationReadiness() {
+    async checkMigrationReadiness() {
         console.log('⚡ Checking migration readiness...');
         
         let status = '📋 Migration Readiness Check:\n\n';
         let allReady = true;
         
-        // Check app initialization
-        if (window.albumApp) {
-            status += '✅ App: Initialized\n';
-        } else {
-            status += '❌ App: Not initialized\n';
+        // Check Supabase connection
+        try {
+            const supabaseService = new SupabaseService();
+            await supabaseService.initialize();
+            if (supabaseService.initialized) {
+                const countResult = await supabaseService.client
+                    .from('albums')
+                    .select('*', { count: 'exact', head: true });
+                status += `✅ Supabase: Connected (${countResult.count || 0} albums)\n`;
+            } else {
+                status += '❌ Supabase: Connection failed\n';
+                allReady = false;
+            }
+        } catch (error) {
+            status += `❌ Supabase: Error - ${error.message}\n`;
             allReady = false;
         }
         
-        // Check Supabase
-        if (window.albumApp?.supabaseService?.initialized) {
-            status += '✅ Supabase: Connected\n';
-        } else {
-            status += '❌ Supabase: Not connected\n';
-            allReady = false;
-        }
-        
-        // Check Google Sheets credentials
-        if (window.SecureConfig?.hasGoogleSheetsCredentials()) {
-            status += '✅ Google Sheets: Credentials configured\n';
-        } else {
-            status += '❌ Google Sheets: Credentials missing\n';
-            allReady = false;
-        }
-        
-        // Check if collection is loaded
-        if (window.albumApp?.collection?.albums?.length > 0) {
-            status += `✅ Collection: ${window.albumApp.collection.albums.length} albums loaded\n`;
-        } else {
-            status += '❌ Collection: No albums loaded\n';
+        // Check Google Sheets credentials and connection
+        try {
+            if (this.hasGoogleSheetsCredentials()) {
+                // Test connection
+                const sheetsService = new GoogleSheetsService();
+                await sheetsService.initialize();
+                status += '✅ Google Sheets: Credentials configured and connection successful\n';
+            } else {
+                status += '❌ Google Sheets: Credentials missing\n';
+                allReady = false;
+            }
+        } catch (error) {
+            status += `❌ Google Sheets: Connection error - ${error.message}\n`;
             allReady = false;
         }
         
@@ -317,34 +421,42 @@ window.DataMigrationTool = {
     }
 };
 
-// Add migration UI to scraper view
-window.addEventListener('load', function() {
-    const scraperView = document.getElementById('scraper-view');
-    if (scraperView) {
-        // Create migration section
-        const migrationSection = document.createElement('div');
-        migrationSection.className = 'scraper-section';
-        migrationSection.innerHTML = `
-            <h3>🔄 Data Migration Tool</h3>
-            <p>Migrate your complete music collection from Supabase to Google Sheets</p>
-            <div class="migration-controls">
-                <button id="start-migration-btn" class="primary-btn" onclick="window.DataMigrationTool.runFullMigration()">
-                    🚀 Start Migration (Supabase → Google Sheets)
-                </button>
-                <button id="verify-migration-btn" class="secondary-btn" onclick="window.DataMigrationTool.verifyMigration().then(r => alert(r.message))">
-                    🔍 Verify Migration
-                </button>
-                <button id="check-status-btn" class="secondary-btn" onclick="window.DataMigrationTool.checkMigrationReadiness()">
-                    ⚡ Check Migration Readiness
-                </button>
-            </div>
-            <div id="migration-status"></div>
-        `;
-        
-        // Add migration section to scraper view
-        const scraperContent = scraperView.querySelector('.scraper-content');
-        if (scraperContent) {
-            scraperContent.insertBefore(migrationSection, scraperContent.firstChild);
+// Enhanced migration UI with better styling
+window.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for the app to fully load
+    setTimeout(() => {
+        const scraperView = document.getElementById('scraper-view');
+        if (scraperView) {
+            // Check if migration section already exists
+            if (document.querySelector('.migration-section')) {
+                return; // Already added
+            }
+            
+            // Create migration section
+            const migrationSection = document.createElement('div');
+            migrationSection.className = 'scraper-section migration-section';
+            migrationSection.innerHTML = `
+                <h3>🔄 Data Migration Tool</h3>
+                <p>Transfer your complete music collection from Supabase to Google Sheets</p>
+                <div class="migration-controls">
+                    <button id="start-migration-btn" class="primary-btn" onclick="window.DataMigrationTool.runFullMigration()">
+                        🚀 Start Migration (Supabase → Google Sheets)
+                    </button>
+                    <button id="verify-migration-btn" class="secondary-btn" onclick="window.DataMigrationTool.verifyMigration().then(r => alert(r.message))">
+                        🔍 Verify Migration
+                    </button>
+                    <button id="check-status-btn" class="secondary-btn" onclick="window.DataMigrationTool.checkMigrationReadiness()">
+                        ⚡ Check Migration Readiness
+                    </button>
+                </div>
+                <div id="migration-status"></div>
+            `;
+            
+            // Add migration section to the top of scraper view
+            const viewContent = scraperView.querySelector('.view-content') || scraperView;
+            viewContent.insertBefore(migrationSection, viewContent.firstChild);
+            
+            console.log('✅ Migration tool UI added to scraper page');
         }
-    }
+    }, 1000); // Wait 1 second for app to load
 });
