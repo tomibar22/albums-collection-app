@@ -38,25 +38,23 @@ class GoogleSheetsService {
     }
     
     /**
-     * Load service account credentials from the JSON file
+     * Load service account credentials from the inline configuration
      */
     async loadServiceAccountCredentials() {
         try {
             console.log('🔐 Loading service account credentials...');
             
-            // Load the credentials file
-            const response = await fetch('./albums-collection-465406-b3c823f3aa9d.json');
-            
-            if (!response.ok) {
-                throw new Error(`Failed to load service account credentials: ${response.status}`);
+            // Get credentials from inline configuration instead of fetching file
+            if (!window.CONFIG?.GOOGLE_SHEETS?.SERVICE_ACCOUNT) {
+                throw new Error('Service account credentials not found in configuration');
             }
             
-            this.serviceAccountCredentials = await response.json();
+            this.serviceAccountCredentials = window.CONFIG.GOOGLE_SHEETS.SERVICE_ACCOUNT;
             console.log(`✅ Loaded credentials for: ${this.serviceAccountCredentials.client_email}`);
             
         } catch (error) {
             console.error('❌ Failed to load service account credentials:', error);
-            console.log('💡 Make sure albums-collection-465406-b3c823f3aa9d.json exists in the root directory');
+            console.log('💡 Make sure SERVICE_ACCOUNT is properly configured in GOOGLE_SHEETS configuration');
             throw error;
         }
     }

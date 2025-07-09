@@ -215,18 +215,17 @@ window.DataMigrationTool = {
                 return false;
             }
             
-            // Check if service account credentials file exists and is accessible
+            // Check if service account credentials are available in configuration
             try {
-                const response = await fetch('./albums-collection-465406-b3c823f3aa9d.json');
-                if (response.ok) {
-                    const credentials = await response.json();
+                if (window.CONFIG?.GOOGLE_SHEETS?.SERVICE_ACCOUNT) {
+                    const credentials = window.CONFIG.GOOGLE_SHEETS.SERVICE_ACCOUNT;
                     if (credentials.client_email && credentials.private_key) {
-                        console.log('✅ Service account credentials file accessible');
+                        console.log('✅ Service account credentials available in configuration');
                         return true;
                     }
                 }
-            } catch (fileError) {
-                console.error('❌ Service account credentials file not found:', fileError);
+            } catch (error) {
+                console.error('❌ Service account credentials not found in configuration:', error);
             }
             
             return false;
@@ -249,7 +248,7 @@ window.DataMigrationTool = {
             alert('❌ Google Sheets service account not configured!\n\n' +
                   'Please make sure:\n' +
                   '1. Your spreadsheet ID is set in the configuration\n' +
-                  '2. The service account JSON file (albums-collection-465406-b3c823f3aa9d.json) exists in the root directory\n' +
+                  '2. Service account credentials are properly configured in GOOGLE_SHEETS.SERVICE_ACCOUNT\n' +
                   '3. Your spreadsheet is shared with: tommy-891@albums-collection-465406.iam.gserviceaccount.com (Editor permissions)\n\n' +
                   'With service account authentication, no manual API key entry is needed!');
             return;

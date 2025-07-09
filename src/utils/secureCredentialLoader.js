@@ -18,30 +18,16 @@ class SecureCredentialLoader {
         }
 
         try {
-            // In development, try to load from local file
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('🔐 Loading service account credentials for development...');
-                
-                // Try to fetch the credentials file
-                const response = await fetch('./albums-collection-465406-b3c823f3aa9d.json');
-                
-                if (response.ok) {
-                    this.credentials = await response.json();
-                    this.credentialsLoaded = true;
-                    
-                    // Update CONFIG with loaded credentials
-                    if (window.CONFIG && window.CONFIG.GOOGLE_SHEETS) {
-                        window.CONFIG.GOOGLE_SHEETS.SERVICE_ACCOUNT_CREDENTIALS = this.credentials;
-                        console.log('✅ Service account credentials loaded successfully');
-                    }
-                    
-                    return this.credentials;
-                } else {
-                    throw new Error(`Failed to load credentials file: ${response.status}`);
-                }
+            // Use inline credentials from configuration
+            console.log('🔐 Loading service account credentials from configuration...');
+            
+            if (window.CONFIG?.GOOGLE_SHEETS?.SERVICE_ACCOUNT) {
+                this.credentials = window.CONFIG.GOOGLE_SHEETS.SERVICE_ACCOUNT;
+                this.credentialsLoaded = true;
+                console.log('✅ Service account credentials loaded successfully');
+                return this.credentials;
             } else {
-                // In production, credentials should be loaded through secure environment variables
-                throw new Error('Production credential loading not implemented yet');
+                throw new Error('Service account credentials not found in configuration');
             }
         } catch (error) {
             console.error('❌ Failed to load service account credentials:', error);
