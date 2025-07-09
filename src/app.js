@@ -136,7 +136,7 @@ class AlbumCollectionApp {
 
     // Initialize Supabase and UI setup in parallel
 
-    const supabasePromise = this.initializeSupabase();
+    const dataServicePromise = this.initializeDataService();
 
     const uiPromise = this.initializeUIComponents();
 
@@ -144,7 +144,7 @@ class AlbumCollectionApp {
 
     // Wait for both to complete
 
-    await Promise.all([supabasePromise, uiPromise]);
+    await Promise.all([dataServicePromise, uiPromise]);
 
 
 
