@@ -42,6 +42,16 @@ class SupabaseService {
     }
 
     /**
+     * DataService compatibility method - ensures service is initialized
+     */
+    async initialize() {
+        if (!this.initialized) {
+            await this.init();
+        }
+        return this.initialized;
+    }
+
+    /**
      * Reinitialize Supabase service after credentials are applied
      */
     async reinitialize() {
