@@ -306,14 +306,29 @@
     
     <!-- App Configuration and Core -->
     <!-- Load secure configuration FIRST -->
-    <script src="src/config.js"></script>
+    <script src="src/config.js" onerror="console.error('❌ Failed to load src/config.js - check file exists and server is running')"></script>
     
-    <!-- Configuration verification -->
+    <!-- Configuration verification with fallback -->
     <script>
         // Configuration loaded from src/config.js (secure, not committed to GitHub)
-        // This ensures API keys and sensitive data are kept private
         if (!window.CONFIG) {
             console.error('❌ CONFIG not loaded from src/config.js');
+            console.log('🔄 Attempting to create minimal config for Google Sheets mode...');
+            
+            // Create minimal config for Google Sheets testing
+            window.CONFIG = {
+                GOOGLE_SHEETS: {
+                    API_KEY: 'AIzaSyBxQdVUs_YzdA4bcg8cD1jzCCtDT4ScmIw',
+                    SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg',
+                    SHEETS: {
+                        ALBUMS: 'Albums',
+                        SCRAPED_HISTORY: 'Scraped_History'
+                    }
+                },
+                DATA_BACKEND: 'sheets',
+                DEBUG: { ENABLED: true, LOG_API_CALLS: true }
+            };
+            console.log('⚠️ Using fallback config - some features may be limited');
         } else {
             console.log('✅ Using secure configuration from src/config.js');
         }
@@ -425,14 +440,17 @@
                         console.log('❌ Authentication failed and Supabase backend requires auth');
                         resolve(false);
                     }
-                }
-                        
-                    } catch (error) {
-                        console.error('❌ Authentication check failed:', error);
-                        // Instead of alert, let's fall back to offline mode
-                        console.log('🔄 Falling back to offline mode due to authentication error');
-                        resolve(false); // Resolve as false on error
+                } catch (authError) {
+                    console.error('❌ Authentication error:', authError);
+                    
+                    if (usingGoogleSheets) {
+                        console.log('📊 Auth failed but continuing with Google Sheets read-only mode');
+                        resolve(true);
+                    } else {
+                        console.log('❌ Authentication failed and Supabase backend requires auth');
+                        resolve(false);
                     }
+                }
                 });
             });
         }); // Fixed: Added missing closing brace for authPromise
