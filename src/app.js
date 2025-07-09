@@ -224,11 +224,12 @@ class AlbumCollectionApp {
 
 
 
-    // Enhanced Supabase initialization with better error handling
+    // Enhanced Data Service initialization with better error handling
 
-    async initializeSupabase() {
+    async initializeDataService() {
 
-    this.supabaseService = new SupabaseService();
+    this.dataService = new DataService();
+        await this.dataService.initialize();
 
 
 
@@ -240,7 +241,7 @@ class AlbumCollectionApp {
 
 
 
-    while (!this.supabaseService.initialized && (Date.now() - startTime) < maxWaitTime) {
+    while (!this.dataService.initialized && (Date.now() - startTime) < maxWaitTime) {
 
     await new Promise(resolve => setTimeout(resolve, 50)); // Check every 50ms
 
@@ -248,7 +249,7 @@ class AlbumCollectionApp {
 
 
 
-    if (!this.supabaseService.initialized) {
+    if (!this.dataService.initialized) {
 
     throw new Error('Supabase initialization timeout');
 
@@ -308,7 +309,7 @@ class AlbumCollectionApp {
     // Fallback if loading fails
     if (!albums || albums.length === 0) {
         try {
-            albums = await this.supabaseService.getAlbums();
+            albums = await this.dataService.getAlbums();
         } catch (directError) {
             console.error('❌ Failed to load albums:', directError);
         }
@@ -320,10 +321,10 @@ class AlbumCollectionApp {
 
     const [fetchedScrapedHistory] = await Promise.all([
     // PHASE 1b: Skip loading relationship data (saves 36MB transfer)
-    // this.supabaseService.getArtists(),     // ← DISABLED (saves 3.8MB)
-    // this.supabaseService.getTracks(),      // ← DISABLED (saves 5.8MB)
-    // this.supabaseService.getRoles(),       // ← DISABLED (saves 2.3MB)
-    this.supabaseService.getScrapedArtistsHistory()
+    // this.dataService.getArtists(),     // ← DISABLED (saves 3.8MB)
+    // this.dataService.getTracks(),      // ← DISABLED (saves 5.8MB)
+    // this.dataService.getRoles(),       // ← DISABLED (saves 2.3MB)
+    this.dataService.getScrapedArtistsHistory()
 
     ]);
 
@@ -439,9 +440,9 @@ class AlbumCollectionApp {
 
     const [artists, fetchedScrapedHistory] = await Promise.all([
 
-    this.supabaseService.getArtists().catch(() => []), // Graceful fallback
+    this.dataService.getArtists().catch(() => []), // Graceful fallback
 
-    this.supabaseService.getScrapedArtistsHistory().catch(() => [])
+    this.dataService.getScrapedArtistsHistory().catch(() => [])
 
     ]);
 
@@ -564,7 +565,7 @@ class AlbumCollectionApp {
 
 
 
-    const { data: batch, error } = await this.supabaseService.client
+    const { data: batch, error } = await this.dataService.client
 
     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
 
@@ -666,7 +667,7 @@ class AlbumCollectionApp {
 
 
 
-    const { count: totalCount, error: countError } = await this.supabaseService.client
+    const { count: totalCount, error: countError } = await this.dataService.client
 
     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
 
@@ -732,7 +733,7 @@ class AlbumCollectionApp {
 
 
 
-    const { data: batch, error } = await this.supabaseService.client
+    const { data: batch, error } = await this.dataService.client
 
     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
 
@@ -1649,7 +1650,7 @@ class AlbumCollectionApp {
             // Delete from Supabase
             for (const albumId of selectedIds) {
                 try {
-                    await this.supabaseService.deleteAlbum(albumId);
+                    await this.dataService.deleteAlbum(albumId);
                     deletedAlbums.push(albumId);
                 } catch (error) {
                     console.error(`❌ Failed to delete album ${albumId}:`, error);
@@ -2523,11 +2524,11 @@ class AlbumCollectionApp {
 
             // Load all data from Supabase, INCLUDING scrapedHistory in the destructuring
             const [albums, artists, tracks, roles, fetchedScrapedHistory] = await Promise.all([ // <<< CORRECTED LINE
-                this.supabaseService.getAlbums(),
-                this.supabaseService.getArtists(),
-                this.supabaseService.getTracks(),
-                this.supabaseService.getRoles(),
-                this.supabaseService.getScrapedArtistsHistory()
+                this.dataService.getAlbums(),
+                this.dataService.getArtists(),
+                this.dataService.getTracks(),
+                this.dataService.getRoles(),
+                this.dataService.getScrapedArtistsHistory()
             ]);
 
             this.updateLoadingProgress('Collection data loaded', 'Processing albums and artists...', 70);
@@ -4677,7 +4678,7 @@ class AlbumCollectionApp {
             const existingAlbum = this.collection.albums[existingIndex];
             console.log(`🔄 Replacing "${existingAlbum.title}" (${existingAlbum.year}) with earlier version (${album.year})`);
 
-            if (this.supabaseService && this.supabaseService.initialized) {
+            if (this.supabaseService && this.dataService.initialized) {
                 // Remove old version from Supabase and add new one
                 console.log(`📀 Updating album in Supabase: ${album.title} (${album.year})`);
 
@@ -4756,7 +4757,7 @@ class AlbumCollectionApp {
 
             // Skip Supabase during scraping to avoid 406 errors with special characters
             // Note: Data will be synced to Supabase after scraping is complete
-            if (this.supabaseService && this.supabaseService.initialized) {
+            if (this.supabaseService && this.dataService.initialized) {
                 // Background sync to Supabase (non-blocking)
                 this.syncAlbumToSupabase(album).catch(error => {
                     console.warn(`⚠️ Background Supabase sync failed for ${album.title}:`, error.message);
@@ -4777,13 +4778,13 @@ class AlbumCollectionApp {
 
     // Background method for non-blocking Supabase sync
     async syncAlbumToSupabase(album) {
-        if (!this.supabaseService || !this.supabaseService.initialized) {
+        if (!this.supabaseService || !this.dataService.initialized) {
             return;
         }
 
         try {
             console.log(`🔄 Background sync to Supabase: ${album.title}`);
-            await this.supabaseService.addAlbum(album);
+            await this.dataService.addAlbum(album);
             console.log(`✅ Synced to Supabase: ${album.title}`);
         } catch (error) {
             // Log but don't throw - this is background sync
@@ -9098,7 +9099,7 @@ class AlbumCollectionApp {
             });
 
             // Update album in Supabase
-            await this.supabaseService.updateAlbum(albumId, updates);
+            await this.dataService.updateAlbum(albumId, updates);
 
             // Update local collection efficiently (no need to reload everything)
             const albumIndex = this.collection.albums.findIndex(a => a.id == albumId);
@@ -9484,9 +9485,9 @@ class AlbumCollectionApp {
             console.log(`🗑️ Attempting to delete album ID: ${albumId}`);
 
             // Check if we have Supabase service available
-            if (this.supabaseService && this.supabaseService.deleteAlbum) {
+            if (this.supabaseService && this.dataService.deleteAlbum) {
                 // Delete from Supabase
-                await this.supabaseService.deleteAlbum(albumId);
+                await this.dataService.deleteAlbum(albumId);
                 console.log('✅ Album deleted from Supabase');
             } else {
                 console.warn('⚠️ Supabase service not available, simulating deletion');
@@ -9582,7 +9583,7 @@ class AlbumCollectionApp {
                 updates.technicalRoles = technical;
                 updates.mostCommonRole = updates.roles[0] || null;
             }
-            await this.supabaseService.updateArtist(artistId, updates);
+            await this.dataService.updateArtist(artistId, updates);
             await this.loadDataFromSupabase();
             this.closeModal();
             console.log('✅ Artist updated successfully');
@@ -9610,7 +9611,7 @@ class AlbumCollectionApp {
 
     async deleteArtist(artistId) {
         try {
-            await this.supabaseService.deleteArtist(artistId);
+            await this.dataService.deleteArtist(artistId);
             await this.loadDataFromSupabase();
             this.closeModal();
             console.log('✅ Artist deleted successfully');
@@ -9652,7 +9653,7 @@ class AlbumCollectionApp {
                 duration: document.getElementById('edit-track-duration').value.trim() || null
             };
             if (!updates.title) { alert('Track title is required.'); return; }
-            await this.supabaseService.updateTrack(trackId, updates);
+            await this.dataService.updateTrack(trackId, updates);
             await this.loadDataFromSupabase();
             this.closeModal();
             console.log('✅ Track updated successfully');
@@ -9678,7 +9679,7 @@ class AlbumCollectionApp {
 
     async deleteTrack(trackId) {
         try {
-            await this.supabaseService.deleteTrack(trackId);
+            await this.dataService.deleteTrack(trackId);
             await this.loadDataFromSupabase();
             this.closeModal();
             console.log('✅ Track deleted successfully');
@@ -9723,7 +9724,7 @@ class AlbumCollectionApp {
                 category: document.getElementById('edit-role-category').value
             };
             if (!updates.name) { alert('Role name is required.'); return; }
-            await this.supabaseService.updateRole(roleId, updates);
+            await this.dataService.updateRole(roleId, updates);
             await this.loadDataFromSupabase();
             this.closeModal();
             console.log('✅ Role updated successfully');
@@ -9749,7 +9750,7 @@ class AlbumCollectionApp {
 
     async deleteRole(roleId) {
         try {
-            await this.supabaseService.deleteRole(roleId);
+            await this.dataService.deleteRole(roleId);
             await this.loadDataFromSupabase();
             this.closeModal();
             console.log('✅ Role deleted successfully');
@@ -9765,7 +9766,7 @@ class AlbumCollectionApp {
         if (!this.supabaseService) return;
 
         try {
-            this.scrapedHistory = await this.supabaseService.getScrapedArtistsHistory();
+            this.scrapedHistory = await this.dataService.getScrapedArtistsHistory();
             this.renderScrapedHistory();
         } catch (error) {
             console.error('❌ Failed to load scraped history:', error);
@@ -9814,7 +9815,7 @@ class AlbumCollectionApp {
         if (!this.supabaseService) return;
 
         try {
-            const entry = await this.supabaseService.addScrapedArtist(
+            const entry = await this.dataService.addScrapedArtist(
                 artistName, discogsId, searchQuery, albumsFound, albumsAdded, success, notes
             );
 
@@ -9831,7 +9832,7 @@ class AlbumCollectionApp {
         if (!this.supabaseService) return false;
 
         try {
-            const result = await this.supabaseService.isArtistAlreadyScraped(artistName, discogsId);
+            const result = await this.dataService.isArtistAlreadyScraped(artistName, discogsId);
             return result !== null;
         } catch (error) {
             console.error('❌ Failed to check scraped history:', error);
@@ -9847,7 +9848,7 @@ class AlbumCollectionApp {
         }
 
         try {
-            await this.supabaseService.clearScrapedHistory();
+            await this.dataService.clearScrapedHistory();
             this.scrapedHistory = [];
             this.renderScrapedHistory();
 

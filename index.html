@@ -375,7 +375,7 @@
 
             // Google Sheets Configuration (Alternative Backend)
             GOOGLE_SHEETS: {
-                SPREADSHEET_ID: '', // Will be configured securely
+                SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg', // Your music collection spreadsheet
                 API_KEY: '', // Will be configured securely
                 
                 SHEETS: {
@@ -396,7 +396,7 @@
             },
 
             // Backend Selection (switch between 'supabase' and 'sheets')
-            DATA_BACKEND: 'supabase', // Default to Supabase for now
+            DATA_BACKEND: 'sheets', // Using Google Sheets for data storage
 
             // User Management Configuration (Dedicated Supabase Project)
             USER_MANAGEMENT: {
@@ -446,12 +446,14 @@
     
     <!-- Core App Components -->
     <script src="src/utils/secureConfig.js"></script>
+    <script src="src/utils/secureCredentialLoader.js"></script>
     <script src="src/data/models.js"></script>
     <script src="src/api/discogs.js"></script>
     <script src="src/data/parser.js"></script>
     <script src="src/utils/roleCategorizer.js"></script>
     <script src="src/utils/lazyLoadingManager.js"></script>
     <script src="src/utils/tabVisibilityHelper.js"></script>
+    <script src="src/utils/googleSheetsSetup.js"></script>
     <script src="src/utils/googleSheetsTest.js"></script>
     <script src="src/utils/googleSheetsPermissionFixer.js"></script>
     <script src="src/utils/dataMigration.js"></script>
@@ -460,6 +462,7 @@
     <!-- Services -->
     <script src="src/services/supabaseService.js"></script>
     <script src="src/services/googleSheetsService.js"></script>
+    <script src="src/services/dataService.js"></script>
     <script src="src/services/imageService.js"></script>
     
     <!-- Components -->
