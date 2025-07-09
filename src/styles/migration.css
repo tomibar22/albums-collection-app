@@ -1,0 +1,65 @@
+/* Migration Tool Styles */
+.migration-status {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.migration-status h4 {
+    margin: 0 0 15px 0;
+    color: var(--accent-color);
+}
+
+.migration-status p {
+    margin: 8px 0;
+    color: var(--text-color);
+}
+
+.migration-progress {
+    background: var(--border-color);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.progress-bar {
+    background: var(--accent-color);
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.migration-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 15px 0;
+}
+
+.migration-controls button {
+    min-width: 200px;
+}
+
+/* Enhance scraper section styling */
+.scraper-section {
+    background: var(--view-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.scraper-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--text-color);
+    font-size: 1.2em;
+}
+
+.scraper-section p {
+    color: var(--text-secondary);
+    margin: 0 0 15px 0;
+    font-size: 0.95em;
+}
