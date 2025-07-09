@@ -372,6 +372,31 @@
                 }
             },
 
+            // Google Sheets Configuration (Alternative Backend)
+            GOOGLE_SHEETS: {
+                SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg',
+                API_KEY: 'AIzaSyCi3Eu9MW1-kCRZ5FlszyBtB5l37myGGRk',
+                
+                SHEETS: {
+                    ALBUMS: 'Albums',
+                    SCRAPED_HISTORY: 'Scraped_History'
+                },
+                
+                // API Configuration
+                API: {
+                    BASE_URL: 'https://sheets.googleapis.com/v4/spreadsheets',
+                    RATE_LIMIT: {
+                        MAX_REQUESTS: 90, // Conservative limit (API allows 100)
+                        TIME_WINDOW: 100000, // 100 seconds
+                        BATCH_SIZE: 100, // Max rows per batch operation
+                        DELAY_BETWEEN_BATCHES: 1000 // 1 second delay
+                    }
+                }
+            },
+
+            // Backend Selection (switch between 'supabase' and 'sheets')
+            DATA_BACKEND: 'supabase', // Default to Supabase for now
+
             // User Management Configuration (Dedicated Supabase Project)
             USER_MANAGEMENT: {
                 URL: 'https://cznrjflfqjjpsqhtmatz.supabase.co',
@@ -425,9 +450,11 @@
     <script src="src/utils/roleCategorizer.js"></script>
     <script src="src/utils/lazyLoadingManager.js"></script>
     <script src="src/utils/tabVisibilityHelper.js"></script>
+    <script src="src/utils/googleSheetsTest.js"></script>
     
     <!-- Services -->
     <script src="src/services/supabaseService.js"></script>
+    <script src="src/services/googleSheetsService.js"></script>
     <script src="src/services/imageService.js"></script>
     
     <!-- Components -->
