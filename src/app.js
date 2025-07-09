@@ -525,7 +525,7 @@ class AlbumCollectionApp {
 
     async loadAlbumsWithProgressMobile() {
 
-    if (!this.supabaseService?.initialized) {
+    if (!this.dataService?.initialized) {
 
     throw new Error('Supabase service not initialized');
 
@@ -653,7 +653,7 @@ class AlbumCollectionApp {
 
     async loadAlbumsWithProgress() {
 
-    if (!this.supabaseService?.initialized) {
+    if (!this.dataService?.initialized) {
 
     throw new Error('Supabase service not initialized');
 
