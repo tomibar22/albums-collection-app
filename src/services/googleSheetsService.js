@@ -1,6 +1,7 @@
 /**
  * Google Sheets Service for Albums Collection App
  * Handles all interactions with Google Sheets API for data storage
+ * Uses API Key authentication with proper error handling
  */
 
 class GoogleSheetsService {
@@ -17,30 +18,115 @@ class GoogleSheetsService {
         
         try {
             console.log('🔗 Initializing Google Sheets service...');
+            
+            // Validate configuration
+            if (!this.spreadsheetId || !this.apiKey) {
+                throw new Error('Missing Google Sheets configuration. Please check SPREADSHEET_ID and API_KEY.');
+            }
+            
+            // Test connection and permissions
             await this.testConnection();
+            
             this.initialized = true;
             console.log('✅ Google Sheets service initialized successfully');
         } catch (error) {
             console.error('❌ Google Sheets initialization failed:', error);
+            console.log('💡 Common fixes:');
+            console.log('   1. Make sure your spreadsheet is shared publicly or with "Anyone with the link can edit"');
+            console.log('   2. Verify your Google Sheets API key is valid');
+            console.log('   3. Check that the Google Sheets API is enabled in Google Cloud Console');
             throw error;
         }
     }
     
     async testConnection() {
         try {
+            console.log('🧪 Testing Google Sheets connection...');
+            
             const response = await fetch(
-                `${this.sheetsAPI}/${this.spreadsheetId}?key=${this.apiKey}`
+                `${this.sheetsAPI}/${this.spreadsheetId}?key=${this.apiKey}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                }
             );
             
             if (!response.ok) {
-                throw new Error(`Google Sheets API error: ${response.status} - ${response.statusText}`);
+                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                
+                if (response.status === 401) {
+                    errorMessage += '\n💡 This usually means:\n';
+                    errorMessage += '   • Invalid API key\n';
+                    errorMessage += '   • API key lacks proper permissions\n';
+                    errorMessage += '   • Google Sheets API not enabled';
+                } else if (response.status === 403) {
+                    errorMessage += '\n💡 This usually means:\n';
+                    errorMessage += '   • Spreadsheet is private (not shared publicly)\n';
+                    errorMessage += '   • API key lacks access to this spreadsheet\n';
+                    errorMessage += '   • Rate limit exceeded';
+                } else if (response.status === 404) {
+                    errorMessage += '\n💡 Spreadsheet not found. Check your SPREADSHEET_ID.';
+                }
+                
+                throw new Error(errorMessage);
             }
             
             const data = await response.json();
-            console.log(`📊 Connected to spreadsheet: "${data.properties.title}"`);
+            console.log(`📊 Successfully connected to: "${data.properties.title}"`);
+            console.log(`📋 Sheets available: ${data.sheets.map(s => s.properties.title).join(', ')}`);
+            
             return data;
         } catch (error) {
             console.error('❌ Google Sheets connection test failed:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Make a request to Google Sheets API with proper error handling
+     */
+    async makeRequest(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+                
+                if (response.status === 401) {
+                    errorMessage += '\n🔑 Authentication failed. Check your API key.';
+                } else if (response.status === 403) {
+                    if (errorText.includes('PERMISSION_DENIED')) {
+                        errorMessage += '\n🔒 Permission denied. Make sure your spreadsheet is shared publicly or with "Anyone with the link can edit".';
+                    } else if (errorText.includes('RATE_LIMIT_EXCEEDED')) {
+                        errorMessage += '\n⏳ Rate limit exceeded. Waiting before retry...';
+                        throw new Error('RATE_LIMIT_EXCEEDED');
+                    }
+                } else if (response.status === 400) {
+                    errorMessage += `\n📝 Bad request. Details: ${errorText}`;
+                }
+                
+                console.error(`❌ ${errorMessage}`);
+                throw new Error(errorMessage);
+            }
+            
+            return response;
+        } catch (error) {
+            if (error.message === 'RATE_LIMIT_EXCEEDED') {
+                // Handle rate limiting
+                console.log('⏳ Rate limit hit, waiting 60 seconds...');
+                await new Promise(resolve => setTimeout(resolve, 60000));
+                return this.makeRequest(url, options); // Retry
+            }
             throw error;
         }
     }
@@ -129,7 +215,7 @@ class GoogleSheetsService {
     async batchAddAlbums(albumsArray) {
         console.log(`📦 Batch adding ${albumsArray.length} albums to Google Sheets...`);
         
-        const batchSize = 100; // Google Sheets API batch limit
+        const batchSize = 25; // Very conservative batch size to avoid rate limits
         const results = [];
         
         for (let i = 0; i < albumsArray.length; i += batchSize) {
@@ -137,13 +223,21 @@ class GoogleSheetsService {
             const rows = batch.map(album => this.albumToSheetRow(album));
             
             await this.rateLimiter.checkRateLimit();
-            await this.batchAppendToSheet('Albums', rows);
             
-            results.push(...batch);
-            console.log(`📊 Imported ${Math.min(i + batchSize, albumsArray.length)}/${albumsArray.length} albums`);
-            
-            // Additional delay for batch operations
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            try {
+                await this.batchAppendToSheet('Albums', rows);
+                results.push(...batch);
+                
+                const progress = Math.round(((i + batch.length) / albumsArray.length) * 100);
+                console.log(`📊 Imported ${Math.min(i + batchSize, albumsArray.length)}/${albumsArray.length} albums (${progress}%)`);
+                
+                // Longer delay for batch operations to avoid rate limits
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+            } catch (error) {
+                console.error(`❌ Batch ${Math.floor(i/batchSize) + 1} failed:`, error);
+                throw error;
+            }
         }
         
         return results;
@@ -152,54 +246,37 @@ class GoogleSheetsService {
     // Utility methods
     async getSheetData(sheetName) {
         const range = `${sheetName}!A:Z`; // Get all data
-        const response = await fetch(
-            `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}?key=${this.apiKey}`
-        );
+        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}?key=${this.apiKey}`;
         
-        if (!response.ok) {
-            throw new Error(`Failed to fetch ${sheetName} data: ${response.status}`);
-        }
-        
+        const response = await this.makeRequest(url);
         const result = await response.json();
         return result.values || [];
     }
     
     async appendToSheet(sheetName, rowData) {
         const range = `${sheetName}!A:Z`;
-        const response = await fetch(
-            `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}:append?valueInputOption=RAW&key=${this.apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    values: [rowData]
-                })
-            }
-        );
+        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}:append?valueInputOption=RAW&key=${this.apiKey}`;
         
-        if (!response.ok) {
-            throw new Error(`Failed to append to ${sheetName}: ${response.status}`);
-        }
+        const response = await this.makeRequest(url, {
+            method: 'POST',
+            body: JSON.stringify({
+                values: [rowData]
+            })
+        });
         
         return response.json();
     }
     
     async batchAppendToSheet(sheetName, rowsData) {
         const range = `${sheetName}!A:Z`;
-        const response = await fetch(
-            `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}:append?valueInputOption=RAW&key=${this.apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    values: rowsData
-                })
-            }
-        );
+        const url = `${this.sheetsAPI}/${this.spreadsheetId}/values/${range}:append?valueInputOption=RAW&key=${this.apiKey}`;
         
-        if (!response.ok) {
-            throw new Error(`Failed to batch append to ${sheetName}: ${response.status}`);
-        }
+        const response = await this.makeRequest(url, {
+            method: 'POST',
+            body: JSON.stringify({
+                values: rowsData
+            })
+        });
         
         return response.json();
     }
@@ -219,7 +296,7 @@ class GoogleSheetsService {
     // Data transformation methods
     albumToSheetRow(albumData) {
         return [
-            albumData.id,
+            albumData.id || '',
             albumData.title || '',
             albumData.year || '',
             albumData.artist || '',
@@ -309,7 +386,7 @@ class GoogleSheetsRateLimiter {
     constructor() {
         this.requests = 0;
         this.resetTime = Date.now() + 100000; // 100 seconds window
-        this.maxRequests = 90; // Conservative limit (API allows 100)
+        this.maxRequests = 80; // Very conservative limit
     }
     
     async checkRateLimit() {
