@@ -20,14 +20,14 @@ class GoogleSheetsServiceV2 {
         try {
             console.log('🔄 Initializing Google Sheets API...');
             
-            // Load Google API client
-            await this.loadGoogleAPI();
+            // Use simple API key approach (much simpler than service account)
+            await this.initializeWithAPIKey();
             
-            // Initialize with service account (for personal use)
-            await this.initializeWithServiceAccount();
+            // Test connection
+            await this.testConnection();
             
             this.initialized = true;
-            console.log('✅ Google Sheets service initialized');
+            console.log('✅ Google Sheets service initialized with API key');
         } catch (error) {
             console.error('❌ Google Sheets initialization failed:', error);
             throw error;
@@ -128,19 +128,29 @@ class GoogleSheetsServiceV2 {
         throw new Error('JWT creation requires server-side implementation for security');
     }
     
-    // Alternative: Simple API key approach (read-only)
+    // Simple API key approach (read-only access)
     async initializeWithAPIKey() {
         const apiKey = window.CONFIG.GOOGLE_SHEETS.API_KEY;
         if (!apiKey) {
-            throw new Error('Google Sheets API key not configured');
+            throw new Error('Google Sheets API key not configured in CONFIG.GOOGLE_SHEETS.API_KEY');
         }
         
-        await window.gapi.client.init({
-            apiKey: apiKey,
-            discoveryDocs: this.discoveryDocs
-        });
-        
+        this.apiKey = apiKey;
         console.log('✅ Initialized with API key (read-only mode)');
+    }
+    
+    // Simple fetch-based approach for API calls
+    async makeAPIRequest(url) {
+        const fullUrl = `${url}${url.includes('?') ? '&' : '?'}key=${this.apiKey}`;
+        
+        const response = await fetch(fullUrl);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Google Sheets API error (${response.status}): ${errorText}`);
+        }
+        
+        return await response.json();
     }
     
     // Data operations
@@ -148,12 +158,10 @@ class GoogleSheetsServiceV2 {
         try {
             console.log('📊 Loading albums from Google Sheets...');
             
-            const response = await window.gapi.client.sheets.spreadsheets.values.get({
-                spreadsheetId: this.spreadsheetId,
-                range: 'Albums!A:Q' // All columns
-            });
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Albums!A:Q`;
+            const response = await this.makeAPIRequest(url);
             
-            const values = response.result.values;
+            const values = response.values;
             if (!values || values.length < 2) {
                 console.log('📊 No album data found in Google Sheets');
                 return [];
@@ -204,12 +212,10 @@ class GoogleSheetsServiceV2 {
         try {
             console.log('🔍 Testing Google Sheets connection...');
             
-            const response = await window.gapi.client.sheets.spreadsheets.get({
-                spreadsheetId: this.spreadsheetId
-            });
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}`;
+            const response = await this.makeAPIRequest(url);
             
-            const spreadsheet = response.result;
-            console.log(`✅ Connected to spreadsheet: "${spreadsheet.properties.title}"`);
+            console.log(`✅ Connected to spreadsheet: "${response.properties.title}"`);
             
             return true;
         } catch (error) {
@@ -233,12 +239,10 @@ class GoogleSheetsServiceV2 {
     
     async getScrapedArtistsHistory() {
         try {
-            const response = await window.gapi.client.sheets.spreadsheets.values.get({
-                spreadsheetId: this.spreadsheetId,
-                range: 'Scraped_History!A:F'
-            });
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Scraped_History!A:F`;
+            const response = await this.makeAPIRequest(url);
             
-            const values = response.result.values;
+            const values = response.values;
             if (!values || values.length < 2) return [];
             
             return this.parseHistoryData(values);
