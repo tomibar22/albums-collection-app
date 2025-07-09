@@ -267,7 +267,7 @@ class GoogleSheetsServiceV2 {
 }
 
 // Rate limiter for Google Sheets API
-class GoogleSheetsRateLimiter {
+class GoogleSheetsRateLimiterV2 {
     constructor() {
         this.requests = 0;
         this.resetTime = Date.now() + 100000; // 100 seconds window

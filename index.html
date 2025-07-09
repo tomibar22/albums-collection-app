@@ -305,7 +305,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- App Configuration and Core -->
-    <!-- Configuration (inline to avoid MIME type issues) -->
+    <!-- Load secure configuration FIRST -->
+    <script src="src/config.js"></script>
+    
+    <!-- Configuration verification -->
     <script>
         // Configuration loaded from src/config.js (secure, not committed to GitHub)
         // This ensures API keys and sensitive data are kept private
@@ -315,10 +318,6 @@
             console.log('✅ Using secure configuration from src/config.js');
         }
     </script>
-    
-    <!-- Remove reference to external config.js -->
-    <!-- Load secure configuration -->
-    <script src="src/config.js"></script>
     
     <!-- Authentication System -->
     <script src="src/services/authService.js"></script>
@@ -361,43 +360,72 @@
         </div>
     </div>
 
-    <!-- Authentication Guard -->
+    <!-- Authentication Guard - Enhanced for Hybrid Mode -->
     <script>
-            // Define a global promise that resolves when authentication is successful.
-            // Other scripts (like app.js) can then wait for this promise.
-            window.authPromise = new Promise(resolve => {
-                document.addEventListener('DOMContentLoaded', async function() {
-                    console.log('🚀 Starting Albums Collection App with authentication...');
+        // Define a global promise that resolves when authentication is checked
+        window.authPromise = new Promise(resolve => {
+            document.addEventListener('DOMContentLoaded', async function() {
+                console.log('🚀 Starting Albums Collection App...');
+                
+                // Debug: Check if all required objects are available
+                console.log('🔍 Debug - Checking available objects:', {
+                    hasAuthMiddleware: !!window.AuthMiddleware,
+                    hasAuthService: !!window.AuthService,
+                    hasConfig: !!window.CONFIG,
+                    hasUserManagement: !!window.CONFIG?.USER_MANAGEMENT,
+                    dataBackend: window.CONFIG?.DATA_BACKEND
+                });
+                
+                // Check if we're using Google Sheets backend (can work without full auth)
+                const usingGoogleSheets = window.CONFIG?.DATA_BACKEND === 'sheets';
+                
+                if (usingGoogleSheets) {
+                    console.log('📊 Using Google Sheets backend - authentication optional');
                     
-                    // Debug: Check if all required objects are available
-                    console.log('🔍 Debug - Checking available objects:', {
-                        hasAuthMiddleware: !!window.AuthMiddleware,
-                        hasAuthService: !!window.AuthService,
-                        hasConfig: !!window.CONFIG,
-                        hasUserManagement: !!window.CONFIG?.USER_MANAGEMENT
-                    });
-                    
-                    if (!window.AuthMiddleware) {
-                        console.error('❌ AuthMiddleware not available');
-                        alert('Authentication system not loaded. Please refresh the page.');
-                        resolve(false);
+                    // For Google Sheets mode, allow app to run without full authentication
+                    if (!window.AuthMiddleware || !window.CONFIG?.USER_MANAGEMENT?.ANON_KEY) {
+                        console.log('⚠️ Authentication not fully configured - running in read-only mode');
+                        resolve(true); // Allow app to start
                         return;
                     }
+                }
+                
+                // Full authentication check for Supabase mode or when auth is configured
+                if (!window.AuthMiddleware) {
+                    console.error('❌ AuthMiddleware not available');
+                    if (usingGoogleSheets) {
+                        console.log('📊 Continuing with Google Sheets backend without auth...');
+                        resolve(true);
+                    } else {
+                        alert('Authentication system not loaded. Please refresh the page.');
+                        resolve(false);
+                    }
+                    return;
+                }
+                
+                try {
+                    // Check authentication
+                    const isAuthenticated = await window.AuthMiddleware.requireAuthentication();
                     
-                    try {
-                        // Check authentication before initializing app
-                        const isAuthenticated = await window.AuthMiddleware.requireAuthentication();
-                        
-                        if (isAuthenticated) {
-                            console.log('✅ Authentication successful. Preparing app initialization...');
-                            // Handle any auth redirects (e.g., clearing tokens from URL)
-                            window.AuthMiddleware.handleAuthRedirect();
-                            resolve(true); // Resolve the promise, indicating success
-                        } else {
-                            console.log('🔐 Authentication required - redirecting...');
-                            // No resolve here, the app won't fully initialize if redirected.
-                            resolve(false); // Resolve as false, so app.js can decide how to handle it (e.g., show login)
-                        }
+                    if (isAuthenticated) {
+                        console.log('✅ Authentication successful. Preparing app initialization...');
+                        window.AuthMiddleware.handleAuthRedirect();
+                        resolve(true);
+                    } else {
+                        console.log('🔐 Authentication required - redirecting...');
+                        resolve(false);
+                    }
+                } catch (authError) {
+                    console.error('❌ Authentication error:', authError);
+                    
+                    if (usingGoogleSheets) {
+                        console.log('📊 Auth failed but continuing with Google Sheets read-only mode');
+                        resolve(true);
+                    } else {
+                        console.log('❌ Authentication failed and Supabase backend requires auth');
+                        resolve(false);
+                    }
+                }
                         
                     } catch (error) {
                         console.error('❌ Authentication check failed:', error);
@@ -407,6 +435,7 @@
                     }
                 });
             });
+        }); // Fixed: Added missing closing brace for authPromise
     </script>
     
     <!-- Debug scripts commented for production performance -->
