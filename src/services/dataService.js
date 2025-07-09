@@ -18,7 +18,7 @@ class DataService {
             // Initialize the appropriate backend service
             if (this.backend === 'sheets') {
                 console.log('📊 Initializing Google Sheets backend...');
-                this.service = new GoogleSheetsService();
+                this.service = new GoogleSheetsServiceV2();
             } else if (this.backend === 'supabase') {
                 console.log('🗄️ Initializing Supabase backend...');
                 this.service = new SupabaseService();

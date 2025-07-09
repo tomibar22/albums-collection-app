@@ -33,10 +33,17 @@ class GoogleSheetsService {
     
     async getAccessToken() {
         try {
-            const credentials = window.CONFIG.GOOGLE_SHEETS.SERVICE_ACCOUNT;
+            // Load service account credentials from file (secure approach)
+            const keyPath = window.CONFIG.GOOGLE_SHEETS.SERVICE_ACCOUNT_KEY_PATH;
+            if (!keyPath) {
+                throw new Error('Service account key path not found in configuration');
+            }
+            
+            // Load credentials from local file
+            const credentials = await this.loadServiceAccountKey(keyPath);
             
             if (!credentials || !credentials.client_email || !credentials.private_key) {
-                throw new Error('Service account credentials not found in configuration');
+                throw new Error('Invalid service account credentials in file');
             }
             
             // Create JWT token for Google Sheets API
@@ -78,6 +85,22 @@ class GoogleSheetsService {
         } catch (error) {
             console.error('❌ Failed to get access token:', error);
             throw error;
+        }
+    }
+    
+    async loadServiceAccountKey(keyPath) {
+        try {
+            // Load service account key from local file using fetch
+            const response = await fetch(keyPath);
+            if (!response.ok) {
+                throw new Error(`Failed to load service account key: ${response.status}`);
+            }
+            const credentials = await response.json();
+            console.log('✅ Service account credentials loaded from file');
+            return credentials;
+        } catch (error) {
+            console.error('❌ Failed to load service account key:', error);
+            throw new Error(`Could not load service account key from ${keyPath}. Make sure the file exists and contains valid JSON.`);
         }
     }
     

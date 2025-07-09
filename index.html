@@ -377,20 +377,11 @@
             GOOGLE_SHEETS: {
                 SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg', // Your music collection spreadsheet
                 
-                // Service Account Credentials (inline to avoid file loading issues)
-                SERVICE_ACCOUNT: {
-                    type: "service_account",
-                    project_id: "albums-collection-465406",
-                    private_key_id: "b3c823f3aa9d0997c8ea05be812ab0272f2c8d50",
-                    private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDcqYXPxNLdKzhV\njCQrtXY0jTmxd81ALvBqAXNCIyPOeKPICaS19NAf5Q0gCpH7oF8WI9n8SnO2FjiI\nIHuHsUtAxY6fyVATmKpWVcNvBp3nsKbFo0YqVwx/sLZKYugvXx/kC+cO+Tryy/nF\nyoT69cefqd1varSJDOnuirA0yS/uDWGJCR9N3NoLsaHfG049YiafCB7X0AA97tjO\n3BZ9UCe94jLoQHDaZlrzTBJy9q0cC/K2Ox98QdGjlFj1S4ztSHf0CXK0LyafChjD\n1gPf3sYnHD1sh/UYUdMXuRkvH8QDV2/ydqamred9x2RunuYIWU/fcfPDm/eOtKXx\n3lPNUgh5AgMBAAECggEAMCJqph/xP32mFEM1wLMczengo+3WQCH9H6KhWdQAg5Gd\naI1x+J8mp053xn2HyrP5CgNYEcjL5PSD8G3lhHwQRljR+9kWNrAeuCaNMzLmTxwh\nxQsQyzuh5ljN6vwYWf0OH9jY1lNXoI8ONS8wQu5KVXHgc+V67Ep83SQzu9AHPI4W\n+Nss27S1Q5V+aYEglJDw7TnAhnBxG+gVd7cNIYOntvVKSW+xSPUBZlxNtyfe0KwZ\n+cxFK7R+AzFXu+BksZnF6uVBZH/OFLPLd66PlToD+Z2I+gjxklMSygvqpClJV9r9\ndsO5/h/t2Pd7qXxde7Z5RLLoUpdUM9BAUy8GaznpgQKBgQDy95wLpiQjbvRqulVQ\nvMzB6/DpIldzrFViSoD97c68EnH3xVPLxO5/xsZNcpxd60XTi3unsnoCiXbE3t3F\nJ22XRpPSXotoKl6EGRQkYRAEiuEjksl0j3ftNU6Pa0+TEQcsxaOVHQi+7gdMtZOg\nYvNVXvvM62Xv07fNTkMQaWZ8NQKBgQDof5+v9+rV+vPnXhWajZe6+RhlaPRUw5Mi\nknUU+BGogc3mEI1Uj9cUapgIjoG9xmzTR0mWBA5nY8LYLzXBuGqSqYjjokK2fvN+\nHQo7HKXoFNN619jwpWta+hOj+sDoS3wlofy+IQiB8BEX2Ua9+v6+kEnLon74M9EU\nLCRU08w7tQKBgFmIMPKB+JMuEdc6brHfwLw9C3t9cihn+tbLiZkJBsN7MJATIPvX\nx+NCBlUHxOM/DW4U2i5DsH461Y9aaPJ7wwCZu2Mr/8cUxdt7ulZlhheGbcxEDQRs\n0c6RdC+ZZatV/QTcl5kdJ9njsMDtsEbL78snwzYSEHA93l9DVac4j9F5AoGBAM6U\nb1fUSaWdWFAwqbNsse+g2stoaQhTyg1C4qMiE9aMl10fQeRr9ige2j1oGeF8SD+m\nLL0Nl5rH6l1Z/ULGUHNGDepsxygOPt3Egc2qE8PVlV6mIQ0Zff0VDJR7/iGoyINL\nnh11jnCd1SJCnXe6Z9T8sYUtOfHhYJmy6wkwM1ytAoGAaEjqtdCyNEroXr1kcnmL\nyibJT7SdNmwBgSx4KTyK4wcJKuTDvICZE0OKcRTXv2IYBVigiyAdBfjWc4W+bp+F\n34FNaKDpDXA8EkBN/KmyBc+cXMHDrjckpczmYTBkUCxMtkndSTcfKaKrHNP9zXOY\n8lgbxB9w/CLhArmoOzLk5d4=\n-----END PRIVATE KEY-----\n",
-                    client_email: "tommy-891@albums-collection-465406.iam.gserviceaccount.com",
-                    client_id: "118206254830063160265",
-                    auth_uri: "https://accounts.google.com/o/oauth2/auth",
-                    token_uri: "https://oauth2.googleapis.com/token",
-                    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-                    client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/tommy-891%40albums-collection-465406.iam.gserviceaccount.com",
-                    universe_domain: "googleapis.com"
-                },
+                // Service Account Credentials loaded from local file (secure)
+                SERVICE_ACCOUNT_KEY_PATH: 'scripts/service-account-key.json',
+                
+                // API Key for read-only access (simpler authentication)
+                API_KEY: '', // Add your Google Sheets API key here for read-only access
                 
                 SHEETS: {
                     ALBUMS: 'Albums',
@@ -410,7 +401,7 @@
             },
 
             // Backend Selection (switch between 'supabase' and 'sheets')
-            DATA_BACKEND: 'supabase', // Using Supabase as primary backend, Google Sheets available for migration
+            DATA_BACKEND: 'sheets', // Using Google Sheets for data storage, Supabase for authentication
 
             // User Management Configuration (Dedicated Supabase Project)
             USER_MANAGEMENT: {
@@ -471,10 +462,12 @@
     <script src="src/utils/googleSheetsPermissionFixer.js"></script>
     <script src="src/utils/dataMigration.js"></script>
     <script src="src/utils/quickSheetsTest.js"></script>
+    <script src="src/utils/googleSheetsAccessTest.js"></script>
     
     <!-- Services -->
     <script src="src/services/supabaseService.js"></script>
     <script src="src/services/googleSheetsService.js"></script>
+    <script src="src/services/googleSheetsServiceV2.js"></script>
     <script src="src/services/dataService.js"></script>
     <script src="src/services/imageService.js"></script>
     
