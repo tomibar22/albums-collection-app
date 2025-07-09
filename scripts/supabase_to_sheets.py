@@ -142,53 +142,46 @@ class SupabaseToSheetsImporter:
             return []
     
     def setup_google_sheets(self):
-        """Setup Google Sheets with proper headers"""
-        print("📊 Setting up Google Sheets...")
+        """Use existing Google Sheets with headers already set up"""
+        print("📊 Connecting to existing Google Sheets...")
         
         try:
-            # Clear existing sheets if they exist
-            worksheets = self.spreadsheet.worksheets()
-            for ws in worksheets:
-                if ws.title in ['Albums', 'Scraped_History']:
-                    self.spreadsheet.del_worksheet(ws)
-                    print(f"🗑️  Deleted existing {ws.title} sheet")
+            # Find existing Albums sheet
+            try:
+                albums_sheet = self.spreadsheet.worksheet("Albums")
+                print("✅ Found existing Albums sheet")
+                
+                # Clear data rows (keep headers in row 1)
+                # Get all values to see how many rows have data
+                all_values = albums_sheet.get_all_values()
+                if len(all_values) > 1:  # If there are data rows beyond headers
+                    # Clear from row 2 onwards
+                    data_range = f"A2:Q{len(all_values)}"
+                    albums_sheet.batch_clear([data_range])
+                    print("🧹 Cleared existing album data (kept headers)")
+                
+            except Exception as e:
+                print(f"❌ Albums sheet not found or error: {e}")
+                return None, None
             
-            # Create Albums sheet
-            albums_sheet = self.spreadsheet.add_worksheet(title="Albums", rows=7000, cols=20)
-            print("📋 Created Albums sheet")
+            # Find existing Scraped_History sheet
+            try:
+                history_sheet = self.spreadsheet.worksheet("Scraped_History")
+                print("✅ Found existing Scraped_History sheet")
+                
+                # Clear data rows (keep headers in row 1)
+                all_values = history_sheet.get_all_values()
+                if len(all_values) > 1:  # If there are data rows beyond headers
+                    # Clear from row 2 onwards
+                    data_range = f"A2:K{len(all_values)}"
+                    history_sheet.batch_clear([data_range])
+                    print("🧹 Cleared existing history data (kept headers)")
+                
+            except Exception as e:
+                print(f"❌ Scraped_History sheet not found or error: {e}")
+                return None, None
             
-            # Set albums headers
-            albums_headers = [
-                'id', 'title', 'year', 'artist', 'role', 'type', 'genres', 'styles',
-                'formats', 'images', 'tracklist', 'track_count', 'credits',
-                'cover_image', 'formatted_year', 'created_at', 'updated_at'
-            ]
-            albums_sheet.update('A1:Q1', [albums_headers])
-            
-            # Format headers
-            albums_sheet.format('A1:Q1', {
-                'backgroundColor': {'red': 0.2, 'green': 0.2, 'blue': 0.2},
-                'textFormat': {'foregroundColor': {'red': 1, 'green': 1, 'blue': 1}, 'bold': True}
-            })
-            
-            # Create Scraped History sheet
-            history_sheet = self.spreadsheet.add_worksheet(title="Scraped_History", rows=100, cols=15)
-            print("📋 Created Scraped_History sheet")
-            
-            # Set history headers
-            history_headers = [
-                'id', 'artist_name', 'discogs_id', 'search_query', 'scraped_at',
-                'albums_found', 'albums_added', 'success', 'notes', 'created_at', 'updated_at'
-            ]
-            history_sheet.update('A1:K1', [history_headers])
-            
-            # Format headers
-            history_sheet.format('A1:K1', {
-                'backgroundColor': {'red': 0.2, 'green': 0.2, 'blue': 0.2},
-                'textFormat': {'foregroundColor': {'red': 1, 'green': 1, 'blue': 1}, 'bold': True}
-            })
-            
-            print("✅ Google Sheets setup complete")
+            print("✅ Google Sheets ready for import")
             return albums_sheet, history_sheet
             
         except Exception as e:
