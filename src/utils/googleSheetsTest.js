@@ -7,6 +7,15 @@ window.testGoogleSheetsConnection = async function() {
     console.log('🧪 Testing Google Sheets connection...');
     
     try {
+        // First, ensure we have credentials loaded
+        console.log('🔑 Loading Google Sheets credentials...');
+        const hasCredentials = window.SecureConfig.loadGoogleSheetsCredentials();
+        
+        if (!hasCredentials) {
+            alert('❌ Cannot test Google Sheets without credentials.\n\nPlease provide your:\n1. Spreadsheet ID\n2. NEW API Key (regenerate the old one)');
+            return false;
+        }
+        
         // Create Google Sheets service instance
         const sheetsService = new GoogleSheetsService();
         
@@ -42,14 +51,27 @@ window.addEventListener('load', function() {
     // Add test button to scraper view for easy testing
     const scraperView = document.getElementById('scraper-view');
     if (scraperView) {
+        // Test connection button
         const testButton = document.createElement('button');
         testButton.innerHTML = '🧪 Test Google Sheets Connection';
         testButton.className = 'secondary-btn';
         testButton.onclick = () => window.testGoogleSheetsConnection();
         testButton.style.margin = '10px';
         
+        // Credential management button
+        const credentialsButton = document.createElement('button');
+        credentialsButton.innerHTML = '🔑 Set Google Sheets Credentials';
+        credentialsButton.className = 'secondary-btn';
+        credentialsButton.onclick = () => {
+            // Force prompt for new credentials
+            window.SecureConfig.clearGoogleSheetsCredentials();
+            window.SecureConfig.loadGoogleSheetsCredentials();
+        };
+        credentialsButton.style.margin = '10px';
+        
         const viewHeader = scraperView.querySelector('.view-header .view-controls');
         if (viewHeader) {
+            viewHeader.appendChild(credentialsButton);
             viewHeader.appendChild(testButton);
         }
     }
