@@ -5118,45 +5118,37 @@ class AlbumCollectionApp {
 
     async addAlbumToCollection(album) {
         try {
-            // During scraping operations, prioritize speed and avoid Supabase errors
-            // Add to local collection immediately for real-time UI updates
+            console.log(`🎵 ADDING ALBUM: ${album.title} (${album.year})`);
+            
+            // Add to local collection immediately for UI updates
             this.collection.albums.push(album);
-            console.log(`📀 Album added to local collection: ${album.title} (${album.year})`);
+            console.log(`✅ Added to local collection: ${album.title}`);
 
-            // Skip Supabase during scraping to avoid 406 errors with special characters
-            // Note: Data will be synced to Supabase after scraping is complete
-            if (this.supabaseService && this.dataService.initialized) {
-                // Background sync to Supabase (non-blocking)
-                this.syncAlbumToSupabase(album).catch(error => {
-                    console.warn(`⚠️ Background Supabase sync failed for ${album.title}:`, error.message);
-                    // Don't throw error - let scraping continue
+            // CRITICAL FIX: Actually save to Supabase database
+            if (this.dataService && this.dataService.initialized) {
+                console.log(`💾 Saving to Supabase: ${album.title}`);
+                await this.dataService.addAlbum(album);
+                console.log(`✅ Saved to Supabase: ${album.title}`);
+            } else {
+                console.error(`❌ DataService not initialized! Album ${album.title} NOT saved to database!`);
+                console.log(`🔧 DataService state:`, {
+                    exists: !!this.dataService,
+                    initialized: this.dataService?.initialized,
+                    backend: this.dataService?.backend
                 });
             }
 
         } catch (error) {
-            console.error(`❌ Failed to add album to collection:`, error);
-
+            console.error(`❌ CRITICAL: Failed to add album ${album.title} to database:`, error);
+            
             // Ensure album is at least in local collection
             if (!this.collection.albums.find(a => a.id === album.id)) {
                 this.collection.albums.push(album);
-                console.log(`⚠️ Album added to local collection as fallback: ${album.title} (${album.year})`);
+                console.log(`⚠️ Album added to local collection as fallback: ${album.title}`);
             }
-        }
-    }
-
-    // Background method for non-blocking Supabase sync
-    async syncAlbumToSupabase(album) {
-        if (!this.supabaseService || !this.dataService.initialized) {
-            return;
-        }
-
-        try {
-            console.log(`🔄 Background sync to Supabase: ${album.title}`);
-            await this.dataService.addAlbum(album);
-            console.log(`✅ Synced to Supabase: ${album.title}`);
-        } catch (error) {
-            // Log but don't throw - this is background sync
-            console.warn(`⚠️ Supabase sync failed for ${album.title}:`, error.message);
+            
+            // Re-throw error so scraping knows about the failure
+            throw error;
         }
     }
 
