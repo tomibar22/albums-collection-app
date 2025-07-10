@@ -1,8 +1,25 @@
 # Netlify Configuration for Albums Collection App
-# Last Updated: July 6, 2025 - Config Inline Fix
+# Phase 2: Authentication-Required Setup
 
-# SPA (Single Page Application) routing
-# Now safe to use since config is inline (no external JS MIME type issues)
+# Authentication-first routing
+# 1. Allow direct access to auth.html (login page)
+# 2. Redirect everything else to index.html (which requires authentication)
+
+# Allow auth.html to load directly
+[[redirects]]
+  from = "/auth.html"
+  to = "/auth.html"
+  status = 200
+  force = false
+
+# Allow auth.html with query parameters
+[[redirects]]
+  from = "/auth"
+  to = "/auth.html"
+  status = 200
+  force = false
+
+# SPA routing for main app (requires authentication via index.html guard)
 [[redirects]]
   from = "/*"
   to = "/index.html"

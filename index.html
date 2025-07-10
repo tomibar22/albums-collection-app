@@ -456,81 +456,69 @@
         </div>
     </div>
 
-    <!-- Authentication Guard - Enhanced for Hybrid Mode -->
+    <!-- Authentication Guard - Phase 2: Clean Authentication Required -->
     <script>
         // Define a global promise that resolves when authentication is checked
         window.authPromise = new Promise(resolve => {
             document.addEventListener('DOMContentLoaded', async function() {
                 console.log('🚀 Starting Albums Collection App...');
+                console.log('🔐 Phase 2: Authentication required for app access');
                 
-                // Debug: Check if all required objects are available
-                console.log('🔍 Debug - Checking available objects:', {
+                // Debug: Check if authentication system is available
+                console.log('🔍 Checking authentication system:', {
                     hasAuthMiddleware: !!window.AuthMiddleware,
                     hasAuthService: !!window.AuthService,
                     hasConfig: !!window.CONFIG,
                     hasUserManagement: !!window.CONFIG?.USER_MANAGEMENT,
+                    userMgmtUrl: window.CONFIG?.USER_MANAGEMENT?.URL,
                     dataBackend: window.CONFIG?.DATA_BACKEND
                 });
                 
-                // Check if we're using Google Sheets backend (can work without full auth)
-                const usingGoogleSheets = window.CONFIG?.DATA_BACKEND === 'sheets';
-                
-                if (usingGoogleSheets) {
-                    console.log('📊 Using Google Sheets backend - authentication optional');
-                    
-                    // For Google Sheets mode, allow app to run without full authentication
-                    if (!window.AuthMiddleware || !window.CONFIG?.USER_MANAGEMENT?.ANON_KEY) {
-                        console.log('⚠️ Authentication not fully configured - running in read-only mode');
-                        resolve(true); // Allow app to start
-                        return;
-                    }
+                // Check if authentication system is properly configured
+                if (!window.CONFIG?.USER_MANAGEMENT?.URL || !window.CONFIG?.USER_MANAGEMENT?.ANON_KEY) {
+                    console.error('❌ User management configuration missing');
+                    console.log('🔄 Redirecting to auth.html for setup...');
+                    window.location.href = '/auth.html';
+                    return;
                 }
                 
-                // Full authentication check for Supabase mode or when auth is configured
+                // Check if AuthMiddleware is available
                 if (!window.AuthMiddleware) {
                     console.error('❌ AuthMiddleware not available');
-                    if (usingGoogleSheets) {
-                        console.log('📊 Continuing with Google Sheets backend without auth...');
-                        resolve(true);
-                    } else {
-                        alert('Authentication system not loaded. Please refresh the page.');
-                        resolve(false);
-                    }
+                    console.log('🔄 Redirecting to auth.html...');
+                    window.location.href = '/auth.html';
                     return;
                 }
                 
                 try {
-                    // Check authentication
+                    // Initialize authentication middleware
+                    const authInitialized = await window.AuthMiddleware.initialize();
+                    
+                    if (!authInitialized) {
+                        console.error('❌ Failed to initialize authentication');
+                        console.log('🔄 Redirecting to auth.html...');
+                        window.location.href = '/auth.html';
+                        return;
+                    }
+                    
+                    // Check if user is authenticated
                     const isAuthenticated = await window.AuthMiddleware.requireAuthentication();
                     
                     if (isAuthenticated) {
-                        console.log('✅ Authentication successful. Preparing app initialization...');
-                        window.AuthMiddleware.handleAuthRedirect();
+                        console.log('✅ User authenticated successfully');
+                        console.log('🚀 Proceeding to app initialization...');
                         resolve(true);
                     } else {
-                        console.log('🔐 Authentication required - redirecting...');
-                        resolve(false);
+                        console.log('🔐 User not authenticated - redirecting to login');
+                        window.location.href = '/auth.html';
+                        return;
                     }
+                    
                 } catch (authError) {
                     console.error('❌ Authentication error:', authError);
-                    
-                    if (usingGoogleSheets) {
-                        console.log('📊 Auth failed but continuing with Google Sheets read-only mode');
-                        resolve(true);
-                    } else {
-                        console.log('❌ Authentication failed and Supabase backend requires auth');
-                        resolve(false);
-                    }
-                } catch (authError) {
-                    console.error('❌ Authentication error:', authError);
-                    
-                    if (usingGoogleSheets) {
-                        console.log('📊 Auth failed but continuing with Google Sheets read-only mode');
-                        resolve(true);
-                    } else {
-                        console.log('❌ Authentication failed and Supabase backend requires auth');
-                        resolve(false);
-                    }
+                    console.log('🔄 Redirecting to auth.html due to error...');
+                    window.location.href = '/auth.html';
+                    return;
                 }
                 });
             });

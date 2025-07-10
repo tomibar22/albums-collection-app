@@ -584,6 +584,40 @@
     <!-- Remove reference to external config.js -->
     <!-- <script src="src/config.js"></script> -->
     
+    <!-- Inline Configuration (matches index.html) -->
+    <script>
+        // Complete inline configuration for authentication
+        window.CONFIG = {
+            // User Management Configuration (primary for auth.html)
+            USER_MANAGEMENT: {
+                URL: 'https://cznrjflfqjjpsqhtmatz.supabase.co',
+                ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6bnJqZmxmcWpqcHNxaHRtYXR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3OTUxMTgsImV4cCI6MjA2NzM3MTExOH0.EAGv_Cww4M3qd3rzHV6ytiovBBgoYuB0dQ-4G2B9oT0',
+                TABLES: {
+                    USERS: 'users',
+                    USER_CREDENTIALS: 'user_credentials',
+                    USER_SESSIONS: 'user_sessions'
+                },
+                AUTH: {
+                    SESSION_TIMEOUT: 7200000,
+                    REMEMBER_ME_DURATION: 604800,
+                    PASSWORD_MIN_LENGTH: 8,
+                    REQUIRE_EMAIL_VERIFICATION: false
+                }
+            },
+            
+            // Debug Settings
+            DEBUG: {
+                ENABLED: true,
+                LOG_API_CALLS: true,
+                LOG_PERFORMANCE: false,
+                LOG_SUPABASE: true,
+                AUTO_TEST_API: false
+            }
+        };
+
+        console.log('✅ Auth page configuration loaded successfully');
+    </script>
+    
     <!-- Authentication Logic -->
     <script src="src/services/authService.js"></script>
     
