@@ -305,33 +305,114 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- App Configuration and Core -->
-    <!-- Load secure configuration FIRST -->
-    <script src="src/config.js" onerror="console.error('❌ Failed to load src/config.js - check file exists and server is running')"></script>
-    
-    <!-- Configuration verification with fallback -->
+    <!-- Inline Configuration (avoids Netlify MIME type issues) -->
     <script>
-        // Configuration loaded from src/config.js (secure, not committed to GitHub)
-        if (!window.CONFIG) {
-            console.error('❌ CONFIG not loaded from src/config.js');
-            console.log('🔄 Attempting to create minimal config for Google Sheets mode...');
-            
-            // Create minimal config for Google Sheets testing
-            window.CONFIG = {
-                GOOGLE_SHEETS: {
-                    API_KEY: 'AIzaSyBxQdVUs_YzdA4bcg8cD1jzCCtDT4ScmIw',
-                    SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg',
-                    SHEETS: {
-                        ALBUMS: 'Albums',
-                        SCRAPED_HISTORY: 'Scraped_History'
-                    }
+        // Complete inline configuration to avoid external file loading issues
+        window.CONFIG = {
+            // Discogs API Configuration
+            DISCOGS: {
+                API_KEY: 'WqpYrXczbaWXtmKNncCeRysLaXNQFJQWXPetKSPR',
+                BASE_URL: 'https://api.discogs.com',
+                HEADERS: {
+                    'User-Agent': 'AlbumsCollectionApp/1.0'
                 },
-                DATA_BACKEND: 'sheets',
-                DEBUG: { ENABLED: true, LOG_API_CALLS: true }
-            };
-            console.log('⚠️ Using fallback config - some features may be limited');
-        } else {
-            console.log('✅ Using secure configuration from src/config.js');
-        }
+                RATE_LIMIT: {
+                    MAX_RETRIES: 5,
+                    DELAY: 2000,
+                    MAX_429_RETRIES: 15,
+                    MAX_DELAY: 300000,
+                    SCRAPER_DELAY: 3000,
+                    PAGE_DELAY: 5000
+                }
+            },
+
+            GOOGLE_SHEETS: {
+                API_KEY: 'AIzaSyBxQdVUs_YzdA4bcg8cD1jzCCtDT4ScmIw',
+                SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg',
+                SHEETS: {
+                    ALBUMS: 'Albums',
+                    SCRAPED_HISTORY: 'Scraped_History'
+                },
+                API: {
+                    BASE_URL: 'https://sheets.googleapis.com/v4/spreadsheets',
+                    RATE_LIMIT: {
+                        MAX_REQUESTS: 90,
+                        TIME_WINDOW: 100000,
+                        BATCH_SIZE: 25,
+                        DELAY_BETWEEN_BATCHES: 2000
+                    }
+                }
+            },
+
+            // Backend Selection
+            DATA_BACKEND: 'supabase', // Keep Supabase for now until Phase 3
+
+            // Filter Configuration
+            FILTERS: {
+                EXCLUDE_WORDS: [
+                    'compilation', 'single', 'Shellac', 'EP', 
+                    '10"', '7"', 'Transcription', 'reissue', 'remastered'
+                ],
+                ALBUM_KEYWORDS: ['album', 'lp'],
+                EXCLUDE_SLASH_IN_TITLE: false,
+                EXCLUDE_VARIOUS_ARTISTS: true
+            },
+
+            // UI Configuration
+            UI: {
+                ITEMS_PER_PAGE: 20,
+                MAX_SEARCH_RESULTS: 50,
+                ANIMATION_DURATION: 300,
+                LOADING_DELAY: 500
+            },
+
+            // Supabase Configuration (for data)
+            SUPABASE: {
+                URL: 'https://mchuwawmnyeoemgrlepp.supabase.co',
+                ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHV3YXdtbnllb2VtZ3JsZXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNjQ1MTYsImV4cCI6MjA2Njg0MDUxNn0.1APvxfCAof_0V_EFZnAaucrayTdhE3dMHLb67LySnrc',
+                TABLES: {
+                    ALBUMS: 'albums',
+                    COLLECTIONS: 'collections',
+                    COLLECTION_ALBUMS: 'collection_albums',
+                    SCRAPED_ARTISTS_HISTORY: 'scraped_artists_history'
+                },
+                DATABASE: {
+                    BATCH_SIZE: 100,
+                    MAX_RETRY_ATTEMPTS: 3,
+                    TIMEOUT: 30000,
+                    ENABLE_REALTIME: true,
+                    ENABLE_RLS: false
+                }
+            },
+
+            // User Management Configuration
+            USER_MANAGEMENT: {
+                URL: 'https://cznrjflfqjjpsqhtmatz.supabase.co',
+                ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6bnJqZmxmcWpqcHNxaHRtYXR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3OTUxMTgsImV4cCI6MjA2NzM3MTExOH0.EAGv_Cww4M3qd3rzHV6ytiovBBgoYuB0dQ-4G2B9oT0',
+                TABLES: {
+                    USERS: 'users',
+                    USER_CREDENTIALS: 'user_credentials',
+                    USER_SESSIONS: 'user_sessions'
+                },
+                AUTH: {
+                    SESSION_TIMEOUT: 7200000,
+                    REMEMBER_ME_DURATION: 604800,
+                    PASSWORD_MIN_LENGTH: 8,
+                    REQUIRE_EMAIL_VERIFICATION: false
+                }
+            },
+
+            // Debug Settings (production mode)
+            DEBUG: {
+                ENABLED: false,
+                LOG_API_CALLS: false,
+                LOG_PERFORMANCE: false,
+                LOG_SUPABASE: false,
+                AUTO_TEST_API: false
+            }
+        };
+
+        console.log('✅ Inline configuration loaded successfully');
     </script>
     
     <!-- Authentication System -->
