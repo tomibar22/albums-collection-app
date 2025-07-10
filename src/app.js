@@ -5309,16 +5309,30 @@ class AlbumCollectionApp {
                     const cachedAlbumIds = new Set(this.collection.albums.map(album => album.id));
                     console.log(`🔍 DEBUG: Cache has ${cachedAlbumIds.size} unique album IDs`);
                     console.log(`🔍 DEBUG: Sample cache IDs:`, Array.from(cachedAlbumIds).slice(0, 5));
+                    console.log(`🔍 DEBUG: Cache ID types:`, Array.from(cachedAlbumIds).slice(0, 5).map(id => typeof id));
                     
                     // Get all albums and sort by creation date (newest first)
                     const allDatabaseAlbums = await this.dataService.getAllAlbums();
                     console.log(`🔍 DEBUG: Database returned ${allDatabaseAlbums.length} albums`);
                     console.log(`🔍 DEBUG: Sample database IDs:`, allDatabaseAlbums.slice(0, 5).map(a => a.id));
+                    console.log(`🔍 DEBUG: Database ID types:`, allDatabaseAlbums.slice(0, 5).map(a => typeof a.id));
                     
-                    // Check for ID overlap
+                    // Check for ID overlap with type comparison
                     const databaseIds = new Set(allDatabaseAlbums.map(album => album.id));
                     const overlap = Array.from(cachedAlbumIds).filter(id => databaseIds.has(id));
                     console.log(`🔍 DEBUG: ${overlap.length} albums overlap between cache and database`);
+                    
+                    // Test ID conversion - maybe cache has strings, database has numbers?
+                    const cacheStrings = new Set(Array.from(cachedAlbumIds).map(id => String(id)));
+                    const databaseStrings = new Set(allDatabaseAlbums.map(a => String(a.id)));
+                    const stringOverlap = Array.from(cacheStrings).filter(id => databaseStrings.has(id));
+                    console.log(`🔍 DEBUG: ${stringOverlap.length} albums overlap when converted to strings`);
+                    
+                    // Test numeric conversion
+                    const cacheNumbers = new Set(Array.from(cachedAlbumIds).map(id => Number(id)).filter(n => !isNaN(n)));
+                    const databaseNumbers = new Set(allDatabaseAlbums.map(a => Number(a.id)).filter(n => !isNaN(n)));
+                    const numberOverlap = Array.from(cacheNumbers).filter(id => databaseNumbers.has(id));
+                    console.log(`🔍 DEBUG: ${numberOverlap.length} albums overlap when converted to numbers`);
                     
                     const sortedAlbums = allDatabaseAlbums.sort((a, b) => {
                         const dateA = new Date(a.created_at || a.timestamp || 0);
