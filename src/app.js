@@ -86,6 +86,12 @@ class AlbumCollectionApp {
 
 
 
+    // IndexedDB database instance for caching
+
+    this.db = null;
+
+
+
     // Search state tracking to fix search+sort interaction
 
     this.currentSearchQueries = {
@@ -102,12 +108,13 @@ class AlbumCollectionApp {
 
 
 
-    // Cache configuration for startup optimization
+    // IndexedDB Cache configuration for startup optimization
     this.cacheConfig = {
-        CACHE_KEY: 'albums_collection_cache_v1',
-        CACHE_VERSION: '1.2',
-        MAX_AGE_HOURS: 24, // Cache expires after 24 hours
-        MAX_SIZE_MB: 50 // Maximum cache size in MB
+        DB_NAME: 'AlbumsCollectionDB',
+        DB_VERSION: 1,
+        STORE_NAME: 'albumsCache',
+        CACHE_VERSION: '2.0', // Upgraded for IndexedDB
+        MAX_AGE_HOURS: 24 // Cache expires after 24 hours
     };
 
 
@@ -319,13 +326,13 @@ class AlbumCollectionApp {
 
             
 
-            if (this.isCacheValid()) {
+            // Step 1: Try IndexedDB cache first (async)
+            if (await this.isCacheValid()) {
 
-                // Load from cache (instant, ~50KB or larger for big collections)
-
+                // Load from IndexedDB cache (instant loading, preserves ALL data)
                 this.updateLoadingProgress('🚀 Loading from cache...', 'Using cached collection data...', 20);
 
-                const cached = this.loadFromCache();
+                const cached = await this.loadFromCache();
 
                 if (cached) {
 
@@ -335,23 +342,12 @@ class AlbumCollectionApp {
 
                     
 
-                    if (cached.isCompact) {
-
-                        console.log(`🚀 Compact cache hit! Loaded ${albums.length} albums instantly (optimized for large collection)`);
-
-                        this.updateLoadingProgress('⚡ Compact cache loaded', 'Large collection optimized for performance', 25);
-
-                    } else {
-
-                        console.log(`🚀 Cache hit! Loaded ${albums.length} albums instantly`);
-
-                        this.updateLoadingProgress('⚡ Full cache loaded', 'Complete collection data cached', 25);
-
-                    }
+                    console.log(`🚀 IndexedDB cache hit! Loaded ${albums.length} albums instantly with COMPLETE data preservation`);
+                    this.updateLoadingProgress('⚡ IndexedDB cache loaded', 'Complete collection data cached - no data loss', 25);
 
                 } else {
 
-                    console.log('💾 Cache failed to load, falling back to database');
+                    console.log('💾 IndexedDB cache failed to load, falling back to database');
 
                 }
 
@@ -409,13 +405,13 @@ class AlbumCollectionApp {
 
                 
 
-                // Save to cache for next time (after successful database load)
+                // Save to IndexedDB cache for next time (after successful database load)
 
                 this.updateLoadingProgress('💾 Caching data...', 'Saving for faster future startup...', 50);
 
-                this.saveToCache(albums, scrapedHistory);
+                await this.saveToCache(albums, scrapedHistory);
 
-                console.log(`💾 Saved ${albums.length} albums to cache for next startup`);
+                console.log(`💾 Saved ${albums.length} albums to IndexedDB cache for next startup`);
 
             } else {
 
@@ -1613,77 +1609,145 @@ class AlbumCollectionApp {
     }
 
     // =====================================
-    // CACHE MANAGEMENT METHODS - Step 3: Startup Caching System
+    // INDEXEDDB CACHE MANAGEMENT METHODS - Full Data Preservation
     // =====================================
 
+    // Initialize IndexedDB for caching
+    async initializeIndexedDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.cacheConfig.DB_NAME, this.cacheConfig.DB_VERSION);
+            
+            request.onerror = () => {
+                console.error('❌ IndexedDB initialization failed:', request.error);
+                reject(request.error);
+            };
+            
+            request.onsuccess = () => {
+                this.db = request.result;
+                console.log('✅ IndexedDB initialized successfully');
+                resolve(this.db);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                
+                // Create object store for cache data
+                if (!db.objectStoreNames.contains(this.cacheConfig.STORE_NAME)) {
+                    const store = db.createObjectStore(this.cacheConfig.STORE_NAME, { keyPath: 'id' });
+                    store.createIndex('timestamp', 'timestamp', { unique: false });
+                    console.log('📦 IndexedDB object store created');
+                }
+            };
+        });
+    }
+
     // Check if cached albums exist and are valid
-    isCacheValid() {
+    async isCacheValid() {
         try {
-            const cacheData = localStorage.getItem(this.cacheConfig.CACHE_KEY);
-            if (!cacheData) {
-                console.log('💾 No cache found');
-                return false;
+            if (!this.db) {
+                await this.initializeIndexedDB();
             }
 
-            const parsed = JSON.parse(cacheData);
+            const transaction = this.db.transaction([this.cacheConfig.STORE_NAME], 'readonly');
+            const store = transaction.objectStore(this.cacheConfig.STORE_NAME);
+            const request = store.get('cache_data');
             
-            // Check version compatibility
-            if (parsed.version !== this.cacheConfig.CACHE_VERSION) {
-                console.log('💾 Cache version mismatch, invalidating');
-                this.clearCache();
-                return false;
-            }
+            return new Promise((resolve) => {
+                request.onsuccess = () => {
+                    const cacheData = request.result;
+                    
+                    if (!cacheData) {
+                        console.log('💾 No IndexedDB cache found');
+                        resolve(false);
+                        return;
+                    }
 
-            // Check age
-            const now = Date.now();
-            const ageHours = (now - parsed.timestamp) / (1000 * 60 * 60);
-            
-            if (ageHours > this.cacheConfig.MAX_AGE_HOURS) {
-                console.log(`💾 Cache expired (${ageHours.toFixed(1)}h old), invalidating`);
-                this.clearCache();
-                return false;
-            }
+                    // Check version compatibility
+                    if (cacheData.version !== this.cacheConfig.CACHE_VERSION) {
+                        console.log('💾 Cache version mismatch, invalidating');
+                        this.clearCache();
+                        resolve(false);
+                        return;
+                    }
 
-            console.log(`✅ Cache valid (${ageHours.toFixed(1)}h old, ${parsed.albums?.length || 0} albums)`);
-            return true;
+                    // Check age
+                    const now = Date.now();
+                    const ageHours = (now - cacheData.timestamp) / (1000 * 60 * 60);
+                    
+                    if (ageHours > this.cacheConfig.MAX_AGE_HOURS) {
+                        console.log(`💾 Cache expired (${ageHours.toFixed(1)}h old), invalidating`);
+                        this.clearCache();
+                        resolve(false);
+                        return;
+                    }
+
+                    const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
+                    console.log(`✅ IndexedDB cache valid (${ageHours.toFixed(1)}h old, ${cacheData.albums?.length || 0} albums, ${sizeMB}MB)`);
+                    resolve(true);
+                };
+                
+                request.onerror = () => {
+                    console.error('❌ Error checking IndexedDB cache:', request.error);
+                    resolve(false);
+                };
+            });
         } catch (error) {
-            console.error('❌ Error checking cache:', error);
-            this.clearCache();
+            console.error('❌ Error checking IndexedDB cache:', error);
             return false;
         }
     }
 
-    // Load albums from cache (handles both full and compact caches)
-    loadFromCache() {
+    // Load albums from IndexedDB cache (preserves ALL data - no truncation)
+    async loadFromCache() {
         try {
-            const cacheData = localStorage.getItem(this.cacheConfig.CACHE_KEY);
-            if (!cacheData) return null;
-
-            const parsed = JSON.parse(cacheData);
-            const ageMinutes = Math.round((Date.now() - parsed.timestamp) / (1000 * 60));
-            
-            if (parsed.isCompact) {
-                console.log(`🚀 Loaded ${parsed.albums?.length || 0} albums from compact cache (${ageMinutes}m ago) - essential data only`);
-            } else {
-                console.log(`🚀 Loaded ${parsed.albums?.length || 0} albums from full cache (${ageMinutes}m ago) - complete data`);
+            if (!this.db) {
+                await this.initializeIndexedDB();
             }
+
+            const transaction = this.db.transaction([this.cacheConfig.STORE_NAME], 'readonly');
+            const store = transaction.objectStore(this.cacheConfig.STORE_NAME);
+            const request = store.get('cache_data');
             
-            return {
-                albums: parsed.albums || [],
-                scrapedHistory: parsed.scrapedHistory || [],
-                isCompact: parsed.isCompact || false
-            };
+            return new Promise((resolve) => {
+                request.onsuccess = () => {
+                    const cacheData = request.result;
+                    
+                    if (!cacheData) {
+                        resolve(null);
+                        return;
+                    }
+
+                    const ageMinutes = Math.round((Date.now() - cacheData.timestamp) / (1000 * 60));
+                    const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
+                    
+                    console.log(`🚀 Loaded ${cacheData.albums?.length || 0} albums from IndexedDB cache (${ageMinutes}m ago, ${sizeMB}MB) - COMPLETE data preserved`);
+                    
+                    resolve({
+                        albums: cacheData.albums || [],
+                        scrapedHistory: cacheData.scrapedHistory || []
+                    });
+                };
+                
+                request.onerror = () => {
+                    console.error('❌ Error loading from IndexedDB cache:', request.error);
+                    resolve(null);
+                };
+            });
         } catch (error) {
-            console.error('❌ Error loading from cache:', error);
-            this.clearCache();
+            console.error('❌ Error loading from IndexedDB cache:', error);
             return null;
         }
     }
 
-    // Save albums to cache with smart size management
-    saveToCache(albums, scrapedHistory = []) {
+    // Save albums to IndexedDB cache (preserves ALL data - no size limits)
+    async saveToCache(albums, scrapedHistory = []) {
         try {
+            if (!this.db) {
+                await this.initializeIndexedDB();
+            }
+
             const cacheData = {
+                id: 'cache_data', // Fixed key for IndexedDB
                 version: this.cacheConfig.CACHE_VERSION,
                 timestamp: Date.now(),
                 albums: albums || [],
@@ -1691,120 +1755,114 @@ class AlbumCollectionApp {
                 albumCount: albums?.length || 0
             };
 
-            const serialized = JSON.stringify(cacheData);
-            const sizeMB = Math.round(serialized.length / (1024 * 1024) * 100) / 100;
+            const transaction = this.db.transaction([this.cacheConfig.STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(this.cacheConfig.STORE_NAME);
+            const request = store.put(cacheData);
             
-            // Try to save full cache first
-            try {
-                localStorage.setItem(this.cacheConfig.CACHE_KEY, serialized);
-                console.log(`💾 Cached ${cacheData.albumCount} albums (${sizeMB}MB) for future startup`);
-                return;
-            } catch (quotaError) {
-                if (quotaError.name === 'QuotaExceededError') {
-                    console.log(`⚠️ Full cache too large (${sizeMB}MB), creating compact cache...`);
-                    this.saveCompactCache(albums, scrapedHistory);
-                } else {
-                    throw quotaError;
-                }
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => {
+                    const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
+                    console.log(`💾 IndexedDB cached ${cacheData.albumCount} albums (${sizeMB}MB) - COMPLETE data preserved for future startup`);
+                    resolve();
+                };
+                
+                request.onerror = () => {
+                    console.error('❌ Error saving to IndexedDB cache:', request.error);
+                    reject(request.error);
+                };
+            });
+            
+        } catch (error) {
+            console.error('❌ Error saving to IndexedDB cache:', error);
+            throw error;
+        }
+    }
+
+    // Clear IndexedDB cache
+    async clearCache() {
+        try {
+            if (!this.db) {
+                await this.initializeIndexedDB();
             }
+
+            const transaction = this.db.transaction([this.cacheConfig.STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(this.cacheConfig.STORE_NAME);
+            const request = store.delete('cache_data');
             
+            return new Promise((resolve) => {
+                request.onsuccess = () => {
+                    console.log('🗑️ IndexedDB cache cleared');
+                    resolve();
+                };
+                
+                request.onerror = () => {
+                    console.error('❌ Error clearing IndexedDB cache:', request.error);
+                    resolve(); // Don't fail the operation
+                };
+            });
         } catch (error) {
-            console.error('❌ Error saving to cache:', error);
-            // Clear any corrupted cache data
-            this.clearCache();
+            console.error('❌ Error clearing IndexedDB cache:', error);
+        }
+    }
         }
     }
 
-    // Create a compact cache with essential data only
-    saveCompactCache(albums, scrapedHistory = []) {
+    // Add new albums to existing IndexedDB cache (for post-scraping updates)
+    async addToCache(newAlbums) {
         try {
-            // Create compact albums with only essential fields
-            const compactAlbums = (albums || []).map(album => ({
-                id: album.id,
-                title: album.title,
-                year: album.year,
-                artist: album.artist,
-                role: album.role,
-                genres: album.genres || [],
-                styles: album.styles || [],
-                cover_image: album.cover_image,
-                // Keep credits and tracklist but limit size
-                credits: Array.isArray(album.credits) ? album.credits.slice(0, 20) : [],
-                tracklist: Array.isArray(album.tracklist) ? album.tracklist.slice(0, 15) : [],
-                track_count: album.track_count || 0
-            }));
-
-            const compactData = {
-                version: this.cacheConfig.CACHE_VERSION,
-                timestamp: Date.now(),
-                albums: compactAlbums,
-                scrapedHistory: scrapedHistory || [],
-                albumCount: compactAlbums.length,
-                isCompact: true // Flag to indicate this is a compact cache
-            };
-
-            const compactSerialized = JSON.stringify(compactData);
-            const compactSizeMB = Math.round(compactSerialized.length / (1024 * 1024) * 100) / 100;
-
-            localStorage.setItem(this.cacheConfig.CACHE_KEY, compactSerialized);
-            console.log(`💾 Compact cache saved: ${compactData.albumCount} albums (${compactSizeMB}MB) - startup optimization active`);
-            
-        } catch (error) {
-            console.error('❌ Even compact cache failed:', error);
-            console.log('💡 Cache disabled for this collection size - using database loading only');
-            this.clearCache();
-        }
-    }
-
-    // Clear cache
-    clearCache() {
-        try {
-            localStorage.removeItem(this.cacheConfig.CACHE_KEY);
-            console.log('🗑️ Cache cleared');
-        } catch (error) {
-            console.error('❌ Error clearing cache:', error);
-        }
-    }
-
-    // Add new albums to existing cache (for post-scraping updates)
-    addToCache(newAlbums) {
-        try {
-            const cached = this.loadFromCache();
+            const cached = await this.loadFromCache();
             if (!cached) {
-                console.log('💾 No existing cache to update');
+                console.log('💾 No existing IndexedDB cache to update');
                 return;
             }
 
             // Add new albums to existing cache
             const updatedAlbums = [...cached.albums, ...newAlbums];
-            this.saveToCache(updatedAlbums, cached.scrapedHistory);
+            await this.saveToCache(updatedAlbums, cached.scrapedHistory);
             
-            console.log(`✅ Added ${newAlbums.length} albums to cache (total: ${updatedAlbums.length})`);
+            console.log(`✅ Added ${newAlbums.length} albums to IndexedDB cache (total: ${updatedAlbums.length})`);
         } catch (error) {
-            console.error('❌ Error adding to cache:', error);
+            console.error('❌ Error adding to IndexedDB cache:', error);
         }
     }
 
-    // Get cache statistics
-    getCacheStats() {
+    // Get IndexedDB cache statistics
+    async getCacheStats() {
         try {
-            const cacheData = localStorage.getItem(this.cacheConfig.CACHE_KEY);
-            if (!cacheData) {
-                return { exists: false };
+            if (!this.db) {
+                await this.initializeIndexedDB();
             }
 
-            const parsed = JSON.parse(cacheData);
-            const sizeKB = Math.round(cacheData.length / 1024);
-            const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+            const transaction = this.db.transaction([this.cacheConfig.STORE_NAME], 'readonly');
+            const store = transaction.objectStore(this.cacheConfig.STORE_NAME);
+            const request = store.get('cache_data');
             
-            return {
-                exists: true,
-                albumCount: parsed.albums?.length || 0,
-                sizeKB: sizeKB,
-                ageHours: ageHours.toFixed(1),
-                version: parsed.version,
-                isValid: this.isCacheValid()
-            };
+            return new Promise((resolve) => {
+                request.onsuccess = () => {
+                    const cacheData = request.result;
+                    
+                    if (!cacheData) {
+                        resolve({ exists: false });
+                        return;
+                    }
+
+                    const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
+                    const ageHours = (Date.now() - cacheData.timestamp) / (1000 * 60 * 60);
+                    
+                    resolve({
+                        exists: true,
+                        albumCount: cacheData.albums?.length || 0,
+                        sizeMB: sizeMB,
+                        ageHours: ageHours.toFixed(1),
+                        version: cacheData.version,
+                        isValid: ageHours <= this.cacheConfig.MAX_AGE_HOURS
+                    });
+                };
+                
+                request.onerror = () => {
+                    resolve({ exists: false, error: request.error?.message });
+                };
+            });
         } catch (error) {
             return { exists: false, error: error.message };
         }
@@ -5138,8 +5196,8 @@ class AlbumCollectionApp {
             this.collection.albums.push(...newAlbums);
             console.log(`📚 Memory cache updated: Collection now has ${this.collection.albums.length} albums`);
 
-            // 2. Update localStorage cache for future startups
-            this.addToCache(newAlbums);
+            // 2. Update IndexedDB cache for future startups
+            await this.addToCache(newAlbums);
 
             // 3. Regenerate all derived data (artists, tracks, roles) from updated cache
             await this.regenerateCollectionData();
