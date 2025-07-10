@@ -46,7 +46,8 @@ window.testGoogleSheetsConnection = async function() {
     }
 };
 
-// Auto-test when window loads (for development)
+// Auto-test when window loads (for development) - COMMENTED OUT FOR VISUAL CLEANUP
+/*
 window.addEventListener('load', function() {
     // Add test button to scraper view for easy testing
     const scraperView = document.getElementById('scraper-view');
@@ -76,3 +77,4 @@ window.addEventListener('load', function() {
         }
     }
 });
+*/

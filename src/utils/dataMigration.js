@@ -440,7 +440,8 @@ window.DataMigrationTool = {
     }
 };
 
-// Enhanced migration UI with better styling
+// Enhanced migration UI with better styling - COMMENTED OUT FOR VISUAL CLEANUP
+/*
 window.addEventListener('DOMContentLoaded', function() {
     // Wait a bit for the app to fully load
     setTimeout(() => {
@@ -479,3 +480,4 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000); // Wait 1 second for app to load
 });
+*/

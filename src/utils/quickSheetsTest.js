@@ -77,7 +77,8 @@ This might be a network issue or CORS restriction.`);
     }
 };
 
-// Add test button when page loads
+// Add test button when page loads - COMMENTED OUT FOR VISUAL CLEANUP
+/*
 window.addEventListener('load', function() {
     const scraperView = document.getElementById('scraper-view');
     if (scraperView) {
@@ -94,3 +95,4 @@ window.addEventListener('load', function() {
         }
     }
 });
+*/
