@@ -368,6 +368,9 @@ class AlbumCollectionApp {
                                 console.log(`📈 Found ${newerAlbums.length} new albums since cache created!`);
                                 albums = [...albums, ...newerAlbums];
                                 
+                                // 🔧 CRITICAL FIX: Update collection.albums with new albums
+                                this.collection.albums = albums;
+                                
                                 // Update cache with complete album list
                                 console.log(`💾 Updating cache with ${newerAlbums.length} new albums...`);
                                 await this.saveToCache(albums, scrapedHistory);
@@ -398,6 +401,9 @@ class AlbumCollectionApp {
                                     if (newestAlbums && newestAlbums.length > 0) {
                                         console.log(`📈 Fallback: Found ${newestAlbums.length} new albums!`);
                                         albums = [...albums, ...newestAlbums];
+                                        
+                                        // 🔧 CRITICAL FIX: Update collection.albums with new albums  
+                                        this.collection.albums = albums;
                                         
                                         // Update cache with complete album list and fresh timestamp
                                         console.log(`💾 Updating cache with ${newestAlbums.length} new albums...`);
