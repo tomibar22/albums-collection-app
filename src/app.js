@@ -5305,25 +5305,47 @@ class AlbumCollectionApp {
                 if (albumsToAdd > 0) {
                     console.log(`📈 Database has ${albumsToAdd} more albums than cache - fetching newest albums`);
                     
+                    // DEBUGGING: Check cache IDs
+                    const cachedAlbumIds = new Set(this.collection.albums.map(album => album.id));
+                    console.log(`🔍 DEBUG: Cache has ${cachedAlbumIds.size} unique album IDs`);
+                    console.log(`🔍 DEBUG: Sample cache IDs:`, Array.from(cachedAlbumIds).slice(0, 5));
+                    
                     // Get all albums and sort by creation date (newest first)
                     const allDatabaseAlbums = await this.dataService.getAllAlbums();
+                    console.log(`🔍 DEBUG: Database returned ${allDatabaseAlbums.length} albums`);
+                    console.log(`🔍 DEBUG: Sample database IDs:`, allDatabaseAlbums.slice(0, 5).map(a => a.id));
+                    
+                    // Check for ID overlap
+                    const databaseIds = new Set(allDatabaseAlbums.map(album => album.id));
+                    const overlap = Array.from(cachedAlbumIds).filter(id => databaseIds.has(id));
+                    console.log(`🔍 DEBUG: ${overlap.length} albums overlap between cache and database`);
+                    
                     const sortedAlbums = allDatabaseAlbums.sort((a, b) => {
                         const dateA = new Date(a.created_at || a.timestamp || 0);
                         const dateB = new Date(b.created_at || b.timestamp || 0);
                         return dateB - dateA; // Newest first
                     });
                     
-                    // Get the newest albums that aren't in cache
-                    const cachedAlbumIds = new Set(this.collection.albums.map(album => album.id));
+                    // Get albums that aren't in cache (by ID)
                     const newerAlbums = sortedAlbums.filter(album => !cachedAlbumIds.has(album.id));
                     
-                    console.log(`📈 Found ${newerAlbums.length} albums not in cache`);
+                    console.log(`📈 Found ${newerAlbums.length} albums not in cache (by ID comparison)`);
+                    console.log(`🔍 DEBUG: Expected ${albumsToAdd}, found ${newerAlbums.length} - difference: ${newerAlbums.length - albumsToAdd}`);
+                    
                     if (newerAlbums.length > 0) {
                         console.log(`📅 Newest album: ${newerAlbums[0]?.title} (${newerAlbums[0]?.created_at})`);
-                        console.log(`📅 Sample new albums:`, newerAlbums.slice(0, 3).map(a => `${a.title} (${a.created_at})`));
+                        console.log(`📅 Sample new albums:`, newerAlbums.slice(0, 3).map(a => `${a.title} (ID: ${a.id})`));
+                        
+                        // Safety check: only return the expected number of albums
+                        const safeNewerAlbums = newerAlbums.slice(0, albumsToAdd);
+                        if (safeNewerAlbums.length !== newerAlbums.length) {
+                            console.log(`⚠️ SAFETY: Limiting to ${safeNewerAlbums.length} albums (expected ${albumsToAdd})`);
+                        }
+                        
+                        return safeNewerAlbums;
                     }
                     
-                    return newerAlbums;
+                    return [];
                 } else {
                     console.log('✅ Cache count matches database - no new albums to add');
                     return [];
