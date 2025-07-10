@@ -9765,8 +9765,9 @@ class AlbumCollectionApp {
             // Just refresh the current view instead of reloading all data
             this.refreshCurrentView();
 
-            // Force close modal AFTER view refresh and restore scroll position
-            this.forceCloseModal();
+            // 🆕 SMART MODAL NAVIGATION: Return to previous modal if in modal stack, otherwise close
+            this.closeModal(); // Uses smart navigation instead of forceCloseModal()
+
 
             console.log('✅ Album updated successfully:', {
                 title: updates.title,
