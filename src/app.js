@@ -5299,18 +5299,28 @@ class AlbumCollectionApp {
                 // Get all albums and filter by timestamp (simple approach for now)
                 const allDatabaseAlbums = await this.dataService.getAllAlbums();
                 
-                // Convert cacheTimestamp to Date object for comparison
+                // Cache timestamp is in local time
                 const cacheDate = new Date(cacheTimestamp);
-                console.log(`📅 Cache date: ${cacheDate.toLocaleString()}`);
+                console.log(`📅 Cache date (local): ${cacheDate.toLocaleString()}`);
                 
                 let debugCount = 0;
                 const newerAlbums = allDatabaseAlbums.filter(album => {
-                    const albumCreated = new Date(album.created_at || album.timestamp || 0);
-                    const isNewer = albumCreated > cacheDate;
+                    // Supabase timestamps are UTC but without timezone info
+                    // So we need to interpret them as UTC, not local time
+                    const albumTimestamp = album.created_at || album.timestamp;
+                    const albumCreatedUTC = new Date(albumTimestamp + '+00:00'); // Force UTC interpretation
+                    const albumCreatedLocal = new Date(albumCreatedUTC.getTime()); // Convert to local for comparison
+                    
+                    const isNewer = albumCreatedLocal > cacheDate;
                     
                     // Debug first few comparisons
                     if (debugCount < 3) {
-                        console.log(`🔍 Album "${album.title}": created ${albumCreated.toLocaleString()}, newer than cache? ${isNewer}`);
+                        console.log(`🔍 Album "${album.title}":`);
+                        console.log(`   📅 Raw timestamp: ${albumTimestamp}`);
+                        console.log(`   📅 As UTC: ${albumCreatedUTC.toISOString()}`);
+                        console.log(`   📅 As Local: ${albumCreatedLocal.toLocaleString()}`);
+                        console.log(`   📅 Cache: ${cacheDate.toLocaleString()}`);
+                        console.log(`   📅 Newer than cache? ${isNewer}`);
                         debugCount++;
                     }
                     
@@ -5323,7 +5333,7 @@ class AlbumCollectionApp {
                     console.log(`📅 Sample newer albums:`, newerAlbums.slice(0, 3).map(a => `${a.title} (${a.created_at})`));
                 } else {
                     console.log('✅ No newer albums found - cache is current');
-                    console.log(`🔍 DEBUG: Checked ${allDatabaseAlbums.length} albums against cache date ${cacheDate.toLocaleString()}`);
+                    console.log(`🔍 DEBUG: Checked ${allDatabaseAlbums.length} albums against cache ${cacheDate.toLocaleString()}`);
                 }
                 
                 return newerAlbums;
