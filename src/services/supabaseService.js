@@ -449,12 +449,26 @@ class SupabaseService {
         if (!this.initialized) throw new Error('Supabase service not initialized');
 
         try {
-            console.log(`📅 Fetching albums created after: ${new Date(timestamp).toISOString()}`);
+            // Convert timestamp to UTC ISO string for consistent comparison
+            // Handle both epoch milliseconds and ISO strings
+            let utcTimestamp;
+            if (typeof timestamp === 'number') {
+                // Epoch milliseconds - convert to UTC ISO string
+                utcTimestamp = new Date(timestamp).toISOString();
+            } else if (typeof timestamp === 'string') {
+                // Already a string - ensure it's properly formatted
+                utcTimestamp = new Date(timestamp).toISOString();
+            } else {
+                throw new Error('Invalid timestamp format - must be number (epoch) or ISO string');
+            }
+            
+            console.log(`📅 Fetching albums created after: ${utcTimestamp} (from input: ${timestamp})`);
+            console.log(`📅 Current UTC time: ${new Date().toISOString()}`);
             
             const { data: albums, error } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                 .select('*')
-                .gt('created_at', new Date(timestamp).toISOString())
+                .gt('created_at', utcTimestamp)
                 .order('created_at', { ascending: false }); // Newest first
 
             if (error) throw error;

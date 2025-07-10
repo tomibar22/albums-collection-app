@@ -66,10 +66,21 @@ class DataService {
         
         // Otherwise, fallback to getAllAlbums and filter (less efficient)
         console.log('⚠️ Using fallback timestamp filtering - consider implementing getAlbumsAfterTimestamp() in service');
+        
+        // Convert timestamp to UTC for consistent comparison
+        let compareTimestamp;
+        if (typeof timestamp === 'number') {
+            compareTimestamp = new Date(timestamp);
+        } else {
+            compareTimestamp = new Date(timestamp);
+        }
+        
+        console.log(`📅 Fallback: Filtering albums after ${compareTimestamp.toISOString()}`);
+        
         const allAlbums = await this.service.getAllAlbums();
         return allAlbums.filter(album => {
             const albumDate = new Date(album.created_at || album.timestamp || 0);
-            return albumDate > new Date(timestamp);
+            return albumDate > compareTimestamp;
         }).sort((a, b) => {
             const dateA = new Date(a.created_at || a.timestamp || 0);
             const dateB = new Date(b.created_at || b.timestamp || 0);

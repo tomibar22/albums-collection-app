@@ -342,6 +342,10 @@ class AlbumCollectionApp {
                     
                     console.log(`🚀 CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
+                    console.log(`📅 Cache created: ${new Date(cached.timestamp).toISOString()} (timestamp: ${cached.timestamp})`);
+                    if (cached.timestampUTC) {
+                        console.log(`📅 Cache UTC: ${cached.timestampUTC}`);
+                    }
                     this.updateLoadingProgress('⚡ Cache loaded successfully', `${albums.length} albums from cache`, 25);
 
                     // 🔍 NEW: Check for newer albums since cache was created
@@ -1776,7 +1780,8 @@ class AlbumCollectionApp {
             const cacheData = {
                 id: 'cache_data', // Fixed key for IndexedDB
                 version: this.cacheConfig.CACHE_VERSION,
-                timestamp: Date.now(),
+                timestamp: Date.now(), // Epoch milliseconds (UTC-based)
+                timestampUTC: new Date().toISOString(), // Explicit UTC ISO string for debugging
                 albums: albums || [],
                 scrapedHistory: scrapedHistory || [],
                 albumCount: albums?.length || 0
@@ -5295,6 +5300,8 @@ class AlbumCollectionApp {
     async checkForNewerAlbums(cacheTimestamp) {
         try {
             console.log(`🔍 Checking for albums newer than cache (count-based approach)`);
+            console.log(`📅 Cache timestamp: ${cacheTimestamp} (${new Date(cacheTimestamp).toISOString()})`);
+            console.log(`📅 Current time: ${new Date().toISOString()}`);
             
             // Get total count from database first
             const totalInDatabase = await this.dataService.getAlbumsCount();
