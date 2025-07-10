@@ -456,24 +456,28 @@
         </div>
     </div>
 
-    <!-- Authentication Guard - Phase 2: Immediate Authentication Required -->
+    <!-- Authentication Guard - DEBUG: Immediate visible redirect -->
     <script>
-        // Simple, fail-safe authentication check
-        window.authPromise = new Promise(resolve => {
-            document.addEventListener('DOMContentLoaded', async function() {
-                console.log('🚀 Starting Albums Collection App...');
-                console.log('🔐 Phase 2: Checking authentication status...');
-                
-                // Simple approach: redirect to auth.html immediately for testing
-                // This ensures unauthenticated users can't access the app
-                console.log('🔄 Phase 2 Test: Redirecting all users to auth.html for authentication');
-                window.location.href = '/auth.html';
-                return;
-                
-                // TODO: Later we'll add proper authentication checks here
-                // For now, everyone gets redirected to login
-            });
+        // IMMEDIATE execution - no waiting for DOM
+        console.log('🚨 IMMEDIATE AUTH DEBUG: Script executing...');
+        alert('🚨 DEBUG: Authentication guard is running - should redirect to auth.html');
+        
+        // Try immediate redirect
+        window.location.href = '/auth.html';
+        
+        // Also set up DOM listener as backup
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚨 DEBUG: DOM loaded, attempting redirect...');
+            alert('🚨 DEBUG: DOM loaded - redirecting to auth.html');
+            window.location.href = '/auth.html';
         });
+        
+        // Set up backup timer
+        setTimeout(function() {
+            console.log('🚨 DEBUG: Timer redirect executing...');
+            alert('🚨 DEBUG: Timer - final redirect attempt');
+            window.location.href = '/auth.html';
+        }, 1000);
     </script>
     
     <!-- Debug scripts commented for production performance -->
