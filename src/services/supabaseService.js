@@ -442,6 +442,32 @@ class SupabaseService {
         }
     }
 
+    /**
+     * Get albums created after a specific timestamp - much more efficient than getAllAlbums()
+     */
+    async getAlbumsAfterTimestamp(timestamp) {
+        if (!this.initialized) throw new Error('Supabase service not initialized');
+
+        try {
+            console.log(`📅 Fetching albums created after: ${new Date(timestamp).toISOString()}`);
+            
+            const { data: albums, error } = await this.client
+                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                .select('*')
+                .gt('created_at', new Date(timestamp).toISOString())
+                .order('created_at', { ascending: false }); // Newest first
+
+            if (error) throw error;
+
+            console.log(`📈 Found ${albums?.length || 0} albums created after cache timestamp`);
+            return albums || [];
+            
+        } catch (error) {
+            console.error('❌ Failed to get albums after timestamp:', error);
+            throw error;
+        }
+    }
+
     async getAlbums() {
         if (!this.initialized) {
             console.error('❌ iPhone Debug: Supabase service not initialized!');

@@ -5311,20 +5311,10 @@ class AlbumCollectionApp {
                 if (albumsToAdd > 0) {
                     console.log(`📈 Database has ${albumsToAdd} more albums than cache - fetching newest albums`);
                     
-                    // Get all albums and sort by creation date (newest first)
-                    const allDatabaseAlbums = await this.dataService.getAllAlbums();
+                    // ✅ EFFICIENT: Get only albums created after cache timestamp
+                    const newerAlbums = await this.dataService.getAlbumsAfterTimestamp(cacheTimestamp);
                     
-                    const cachedAlbumIds = new Set(this.collection.albums.map(album => album.id));
-                    const sortedAlbums = allDatabaseAlbums.sort((a, b) => {
-                        const dateA = new Date(a.created_at || a.timestamp || 0);
-                        const dateB = new Date(b.created_at || b.timestamp || 0);
-                        return dateB - dateA; // Newest first
-                    });
-                    
-                    // Get albums that aren't in cache (by ID)
-                    const newerAlbums = sortedAlbums.filter(album => !cachedAlbumIds.has(album.id));
-                    
-                    console.log(`📈 Found ${newerAlbums.length} albums not in cache (by ID comparison)`);
+                    console.log(`📈 Found ${newerAlbums.length} albums created after cache timestamp`);
                     
                     if (newerAlbums.length > 0) {
                         console.log(`📅 Newest album: ${newerAlbums[0]?.title} (${newerAlbums[0]?.created_at})`);

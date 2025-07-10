@@ -56,6 +56,27 @@ class DataService {
         return albums ? albums.length : 0;
     }
 
+    async getAlbumsAfterTimestamp(timestamp) {
+        this.ensureInitialized();
+        
+        // If service has efficient timestamp filtering, use it
+        if (this.service.getAlbumsAfterTimestamp) {
+            return await this.service.getAlbumsAfterTimestamp(timestamp);
+        }
+        
+        // Otherwise, fallback to getAllAlbums and filter (less efficient)
+        console.log('⚠️ Using fallback timestamp filtering - consider implementing getAlbumsAfterTimestamp() in service');
+        const allAlbums = await this.service.getAllAlbums();
+        return allAlbums.filter(album => {
+            const albumDate = new Date(album.created_at || album.timestamp || 0);
+            return albumDate > new Date(timestamp);
+        }).sort((a, b) => {
+            const dateA = new Date(a.created_at || a.timestamp || 0);
+            const dateB = new Date(b.created_at || b.timestamp || 0);
+            return dateB - dateA; // Newest first
+        });
+    }
+
     async addAlbum(albumData) {
         this.ensureInitialized();
         return await this.service.addAlbum(albumData);
