@@ -9558,6 +9558,18 @@ class AlbumCollectionApp {
             const artistName = modalData.title.split(' - Albums (')[0];
             console.log(`🎤 Regenerating content for artist: ${artistName}`);
 
+            // 🆕 ROLE FILTER DETECTION: Check if there's an active role filter before regenerating
+            let activeRoleFilter = null;
+            const roleFilterStatus = document.getElementById('role-filter-status');
+            if (roleFilterStatus && roleFilterStatus.style.display !== 'none') {
+                // Extract the role name from the filter status text
+                const roleMatch = roleFilterStatus.innerHTML.match(/Filtered by role: <strong>([^<]+)<\/strong>/);
+                if (roleMatch) {
+                    activeRoleFilter = roleMatch[1];
+                    console.log(`🎭 Detected active role filter: "${activeRoleFilter}" - will reapply after regeneration`);
+                }
+            }
+
             // Find the artist in our current collection with updated data
             const artist = this.collection.artists.find(a => a.name === artistName);
             if (!artist) {
@@ -9570,7 +9582,20 @@ class AlbumCollectionApp {
             console.log(`📀 Found ${artistAlbums.length} albums for ${artistName}`);
 
             // Generate fresh modal content
-            return this.generateArtistAlbumsModalContent(artist, artistAlbums);
+            const freshContent = this.generateArtistAlbumsModalContent(artist, artistAlbums);
+
+            // 🆕 ROLE FILTER RESTORATION: If there was an active filter, schedule its reapplication
+            if (activeRoleFilter && freshContent) {
+                console.log(`🔄 Scheduling role filter restoration for: "${activeRoleFilter}"`);
+                
+                // Set a timeout to reapply the filter after the modal renders
+                setTimeout(() => {
+                    console.log(`🎭 Reapplying role filter: "${activeRoleFilter}"`);
+                    this.filterAlbumsByRole(artistName, activeRoleFilter);
+                }, 150); // Slightly longer delay to ensure modal is fully rendered
+            }
+
+            return freshContent;
         } catch (error) {
             console.error('❌ Error regenerating artist albums modal:', error);
             return null;
