@@ -321,7 +321,7 @@ class AlbumCollectionApp {
 
             if (this.isCacheValid()) {
 
-                // Load from cache (instant, ~50KB)
+                // Load from cache (instant, ~50KB or larger for big collections)
 
                 this.updateLoadingProgress('🚀 Loading from cache...', 'Using cached collection data...', 20);
 
@@ -333,7 +333,21 @@ class AlbumCollectionApp {
 
                     scrapedHistory = cached.scrapedHistory;
 
-                    console.log(`🚀 Cache hit! Loaded ${albums.length} albums instantly`);
+                    
+
+                    if (cached.isCompact) {
+
+                        console.log(`🚀 Compact cache hit! Loaded ${albums.length} albums instantly (optimized for large collection)`);
+
+                        this.updateLoadingProgress('⚡ Compact cache loaded', 'Large collection optimized for performance', 25);
+
+                    } else {
+
+                        console.log(`🚀 Cache hit! Loaded ${albums.length} albums instantly`);
+
+                        this.updateLoadingProgress('⚡ Full cache loaded', 'Complete collection data cached', 25);
+
+                    }
 
                 } else {
 
@@ -1639,18 +1653,25 @@ class AlbumCollectionApp {
         }
     }
 
-    // Load albums from cache
+    // Load albums from cache (handles both full and compact caches)
     loadFromCache() {
         try {
             const cacheData = localStorage.getItem(this.cacheConfig.CACHE_KEY);
             if (!cacheData) return null;
 
             const parsed = JSON.parse(cacheData);
-            console.log(`🚀 Loaded ${parsed.albums?.length || 0} albums from cache (saved ${Math.round((Date.now() - parsed.timestamp) / 1000)}s ago)`);
+            const ageMinutes = Math.round((Date.now() - parsed.timestamp) / (1000 * 60));
+            
+            if (parsed.isCompact) {
+                console.log(`🚀 Loaded ${parsed.albums?.length || 0} albums from compact cache (${ageMinutes}m ago) - essential data only`);
+            } else {
+                console.log(`🚀 Loaded ${parsed.albums?.length || 0} albums from full cache (${ageMinutes}m ago) - complete data`);
+            }
             
             return {
                 albums: parsed.albums || [],
-                scrapedHistory: parsed.scrapedHistory || []
+                scrapedHistory: parsed.scrapedHistory || [],
+                isCompact: parsed.isCompact || false
             };
         } catch (error) {
             console.error('❌ Error loading from cache:', error);
@@ -1659,7 +1680,7 @@ class AlbumCollectionApp {
         }
     }
 
-    // Save albums to cache
+    // Save albums to cache with smart size management
     saveToCache(albums, scrapedHistory = []) {
         try {
             const cacheData = {
@@ -1671,14 +1692,66 @@ class AlbumCollectionApp {
             };
 
             const serialized = JSON.stringify(cacheData);
-            const sizeKB = Math.round(serialized.length / 1024);
+            const sizeMB = Math.round(serialized.length / (1024 * 1024) * 100) / 100;
             
-            localStorage.setItem(this.cacheConfig.CACHE_KEY, serialized);
-            console.log(`💾 Cached ${cacheData.albumCount} albums (${sizeKB}KB) for future startup`);
+            // Try to save full cache first
+            try {
+                localStorage.setItem(this.cacheConfig.CACHE_KEY, serialized);
+                console.log(`💾 Cached ${cacheData.albumCount} albums (${sizeMB}MB) for future startup`);
+                return;
+            } catch (quotaError) {
+                if (quotaError.name === 'QuotaExceededError') {
+                    console.log(`⚠️ Full cache too large (${sizeMB}MB), creating compact cache...`);
+                    this.saveCompactCache(albums, scrapedHistory);
+                } else {
+                    throw quotaError;
+                }
+            }
             
         } catch (error) {
             console.error('❌ Error saving to cache:', error);
-            // If cache save fails (e.g., quota exceeded), clear old cache and try again
+            // Clear any corrupted cache data
+            this.clearCache();
+        }
+    }
+
+    // Create a compact cache with essential data only
+    saveCompactCache(albums, scrapedHistory = []) {
+        try {
+            // Create compact albums with only essential fields
+            const compactAlbums = (albums || []).map(album => ({
+                id: album.id,
+                title: album.title,
+                year: album.year,
+                artist: album.artist,
+                role: album.role,
+                genres: album.genres || [],
+                styles: album.styles || [],
+                cover_image: album.cover_image,
+                // Keep credits and tracklist but limit size
+                credits: Array.isArray(album.credits) ? album.credits.slice(0, 20) : [],
+                tracklist: Array.isArray(album.tracklist) ? album.tracklist.slice(0, 15) : [],
+                track_count: album.track_count || 0
+            }));
+
+            const compactData = {
+                version: this.cacheConfig.CACHE_VERSION,
+                timestamp: Date.now(),
+                albums: compactAlbums,
+                scrapedHistory: scrapedHistory || [],
+                albumCount: compactAlbums.length,
+                isCompact: true // Flag to indicate this is a compact cache
+            };
+
+            const compactSerialized = JSON.stringify(compactData);
+            const compactSizeMB = Math.round(compactSerialized.length / (1024 * 1024) * 100) / 100;
+
+            localStorage.setItem(this.cacheConfig.CACHE_KEY, compactSerialized);
+            console.log(`💾 Compact cache saved: ${compactData.albumCount} albums (${compactSizeMB}MB) - startup optimization active`);
+            
+        } catch (error) {
+            console.error('❌ Even compact cache failed:', error);
+            console.log('💡 Cache disabled for this collection size - using database loading only');
             this.clearCache();
         }
     }
