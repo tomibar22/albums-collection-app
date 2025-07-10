@@ -5299,16 +5299,31 @@ class AlbumCollectionApp {
                 // Get all albums and filter by timestamp (simple approach for now)
                 const allDatabaseAlbums = await this.dataService.getAllAlbums();
                 
+                // Convert cacheTimestamp to Date object for comparison
+                const cacheDate = new Date(cacheTimestamp);
+                console.log(`📅 Cache date: ${cacheDate.toLocaleString()}`);
+                
+                let debugCount = 0;
                 const newerAlbums = allDatabaseAlbums.filter(album => {
                     const albumCreated = new Date(album.created_at || album.timestamp || 0);
-                    return albumCreated > cacheTimestamp;
+                    const isNewer = albumCreated > cacheDate;
+                    
+                    // Debug first few comparisons
+                    if (debugCount < 3) {
+                        console.log(`🔍 Album "${album.title}": created ${albumCreated.toLocaleString()}, newer than cache? ${isNewer}`);
+                        debugCount++;
+                    }
+                    
+                    return isNewer;
                 });
                 
                 if (newerAlbums.length > 0) {
                     console.log(`📈 Found ${newerAlbums.length} albums newer than cache`);
                     console.log(`📅 Newest album: ${newerAlbums[0]?.title} (${newerAlbums[0]?.created_at})`);
+                    console.log(`📅 Sample newer albums:`, newerAlbums.slice(0, 3).map(a => `${a.title} (${a.created_at})`));
                 } else {
                     console.log('✅ No newer albums found - cache is current');
+                    console.log(`🔍 DEBUG: Checked ${allDatabaseAlbums.length} albums against cache date ${cacheDate.toLocaleString()}`);
                 }
                 
                 return newerAlbums;
