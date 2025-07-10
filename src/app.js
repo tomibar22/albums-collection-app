@@ -337,6 +337,9 @@ class AlbumCollectionApp {
                     albums = cached.albums;
                     scrapedHistory = cached.scrapedHistory || [];
                     
+                    // ✅ FIX: Assign to collection immediately so checkForNewerAlbums() has data to work with
+                    this.collection.albums = albums;
+                    
                     console.log(`🚀 CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
                     this.updateLoadingProgress('⚡ Cache loaded successfully', `${albums.length} albums from cache`, 25);
@@ -452,7 +455,10 @@ class AlbumCollectionApp {
 
             // Update collection (faster assignment)
 
-            this.collection.albums = albums || [];
+            // Update collection (avoid overwriting if already assigned from cache + newer albums)
+            if (!this.collection.albums || this.collection.albums.length === 0) {
+                this.collection.albums = albums || [];
+            }
 
             this.scrapedHistory = scrapedHistory;
 
@@ -5305,35 +5311,10 @@ class AlbumCollectionApp {
                 if (albumsToAdd > 0) {
                     console.log(`📈 Database has ${albumsToAdd} more albums than cache - fetching newest albums`);
                     
-                    // DEBUGGING: Check cache IDs
-                    const cachedAlbumIds = new Set(this.collection.albums.map(album => album.id));
-                    console.log(`🔍 DEBUG: Cache has ${cachedAlbumIds.size} unique album IDs`);
-                    console.log(`🔍 DEBUG: Sample cache IDs:`, Array.from(cachedAlbumIds).slice(0, 5));
-                    console.log(`🔍 DEBUG: Cache ID types:`, Array.from(cachedAlbumIds).slice(0, 5).map(id => typeof id));
-                    
                     // Get all albums and sort by creation date (newest first)
                     const allDatabaseAlbums = await this.dataService.getAllAlbums();
-                    console.log(`🔍 DEBUG: Database returned ${allDatabaseAlbums.length} albums`);
-                    console.log(`🔍 DEBUG: Sample database IDs:`, allDatabaseAlbums.slice(0, 5).map(a => a.id));
-                    console.log(`🔍 DEBUG: Database ID types:`, allDatabaseAlbums.slice(0, 5).map(a => typeof a.id));
                     
-                    // Check for ID overlap with type comparison
-                    const databaseIds = new Set(allDatabaseAlbums.map(album => album.id));
-                    const overlap = Array.from(cachedAlbumIds).filter(id => databaseIds.has(id));
-                    console.log(`🔍 DEBUG: ${overlap.length} albums overlap between cache and database`);
-                    
-                    // Test ID conversion - maybe cache has strings, database has numbers?
-                    const cacheStrings = new Set(Array.from(cachedAlbumIds).map(id => String(id)));
-                    const databaseStrings = new Set(allDatabaseAlbums.map(a => String(a.id)));
-                    const stringOverlap = Array.from(cacheStrings).filter(id => databaseStrings.has(id));
-                    console.log(`🔍 DEBUG: ${stringOverlap.length} albums overlap when converted to strings`);
-                    
-                    // Test numeric conversion
-                    const cacheNumbers = new Set(Array.from(cachedAlbumIds).map(id => Number(id)).filter(n => !isNaN(n)));
-                    const databaseNumbers = new Set(allDatabaseAlbums.map(a => Number(a.id)).filter(n => !isNaN(n)));
-                    const numberOverlap = Array.from(cacheNumbers).filter(id => databaseNumbers.has(id));
-                    console.log(`🔍 DEBUG: ${numberOverlap.length} albums overlap when converted to numbers`);
-                    
+                    const cachedAlbumIds = new Set(this.collection.albums.map(album => album.id));
                     const sortedAlbums = allDatabaseAlbums.sort((a, b) => {
                         const dateA = new Date(a.created_at || a.timestamp || 0);
                         const dateB = new Date(b.created_at || b.timestamp || 0);
@@ -5344,11 +5325,9 @@ class AlbumCollectionApp {
                     const newerAlbums = sortedAlbums.filter(album => !cachedAlbumIds.has(album.id));
                     
                     console.log(`📈 Found ${newerAlbums.length} albums not in cache (by ID comparison)`);
-                    console.log(`🔍 DEBUG: Expected ${albumsToAdd}, found ${newerAlbums.length} - difference: ${newerAlbums.length - albumsToAdd}`);
                     
                     if (newerAlbums.length > 0) {
                         console.log(`📅 Newest album: ${newerAlbums[0]?.title} (${newerAlbums[0]?.created_at})`);
-                        console.log(`📅 Sample new albums:`, newerAlbums.slice(0, 3).map(a => `${a.title} (ID: ${a.id})`));
                         
                         // Safety check: only return the expected number of albums
                         const safeNewerAlbums = newerAlbums.slice(0, albumsToAdd);
