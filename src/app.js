@@ -5275,6 +5275,10 @@ class AlbumCollectionApp {
             this.refreshCurrentView();
             console.log('✅ UI refreshed');
 
+            // 5. Refresh scraped history display
+            this.renderScrapedHistory();
+            console.log('✅ Scraped history refreshed');
+
             // 5. Show success notification to user
             if (successMessage) {
                 this.showSuccessNotification(successMessage);
@@ -10343,7 +10347,7 @@ class AlbumCollectionApp {
     // ===== SCRAPED ARTISTS HISTORY METHODS =====
 
     async loadScrapedHistory() {
-        if (!this.supabaseService) return;
+        if (!this.dataService?.initialized) return;
 
         try {
             this.scrapedHistory = await this.dataService.getScrapedArtistsHistory();
@@ -10392,16 +10396,26 @@ class AlbumCollectionApp {
     }
 
     async addToScrapedHistory(artistName, discogsId, searchQuery, albumsFound, albumsAdded, success = true, notes = null) {
-        if (!this.supabaseService) return;
+        if (!this.dataService?.initialized) return;
 
         try {
-            const entry = await this.dataService.addScrapedArtist(
-                artistName, discogsId, searchQuery, albumsFound, albumsAdded, success, notes
-            );
+            const artistData = {
+                artist_name: artistName,
+                discogs_id: discogsId,
+                search_query: searchQuery,
+                albums_found: albumsFound,
+                albums_added: albumsAdded,
+                success: success,
+                notes: notes
+            };
+
+            const entry = await this.dataService.addScrapedArtist(artistData);
 
             // Add to local array and re-render
             this.scrapedHistory.unshift(entry);
             this.renderScrapedHistory();
+
+            console.log(`✅ Added ${artistName} to scraped history: ${albumsAdded}/${albumsFound} albums`);
 
         } catch (error) {
             console.error('❌ Failed to add to scraped history:', error);
