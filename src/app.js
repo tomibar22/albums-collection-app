@@ -1804,8 +1804,6 @@ class AlbumCollectionApp {
             console.error('❌ Error clearing IndexedDB cache:', error);
         }
     }
-        }
-    }
 
     // Add new albums to existing IndexedDB cache (for post-scraping updates)
     async addToCache(newAlbums) {
