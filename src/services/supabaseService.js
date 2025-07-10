@@ -1136,27 +1136,28 @@ class SupabaseService {
 
     // ===== SCRAPED ARTISTS HISTORY METHODS =====
     
-    async addScrapedArtist(artistName, discogsId, searchQuery, albumsFound, albumsAdded, success = true, notes = null) {
+    async addScrapedArtist(artistData) {
         if (!this.initialized) throw new Error('Supabase service not initialized');
 
         try {
             const { data, error } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.SCRAPED_ARTISTS_HISTORY)
                 .insert([{
-                    artist_name: artistName,
-                    discogs_id: discogsId,
-                    search_query: searchQuery,
-                    albums_found: albumsFound,
-                    albums_added: albumsAdded,
-                    success: success,
-                    notes: notes
+                    artist_name: artistData.artist_name,
+                    discogs_id: artistData.discogs_id,
+                    search_query: artistData.search_query,
+                    albums_found: artistData.albums_found,
+                    albums_added: artistData.albums_added,
+                    success: artistData.success,
+                    notes: artistData.notes,
+                    scraped_at: new Date().toISOString()
                 }])
                 .select();
 
             if (error) throw error;
 
             if (this.debug) {
-                console.log(`📋 Added scraped artist to history: ${artistName}`);
+                console.log(`📋 Added scraped artist to history: ${artistData.artist_name}`);
             }
 
             return data[0];
