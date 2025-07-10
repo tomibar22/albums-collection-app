@@ -5120,15 +5120,15 @@ class AlbumCollectionApp {
         try {
             console.log(`🎵 ADDING ALBUM: ${album.title} (${album.year})`);
             
-            // Add to local collection immediately for UI updates
-            this.collection.albums.push(album);
-            console.log(`✅ Added to local collection: ${album.title}`);
-
-            // CRITICAL FIX: Actually save to Supabase database
+            // CRITICAL FIX: Actually save to Supabase database FIRST
             if (this.dataService && this.dataService.initialized) {
                 console.log(`💾 Saving to Supabase: ${album.title}`);
                 await this.dataService.addAlbum(album);
                 console.log(`✅ Saved to Supabase: ${album.title}`);
+                
+                // Only add to local collection AFTER successful database save
+                this.collection.albums.push(album);
+                console.log(`✅ Added to local collection: ${album.title}`);
             } else {
                 console.error(`❌ DataService not initialized! Album ${album.title} NOT saved to database!`);
                 console.log(`🔧 DataService state:`, {
@@ -5136,18 +5136,37 @@ class AlbumCollectionApp {
                     initialized: this.dataService?.initialized,
                     backend: this.dataService?.backend
                 });
+                throw new Error('DataService not initialized - cannot save album');
             }
 
         } catch (error) {
             console.error(`❌ CRITICAL: Failed to add album ${album.title} to database:`, error);
             
-            // Ensure album is at least in local collection
-            if (!this.collection.albums.find(a => a.id === album.id)) {
-                this.collection.albums.push(album);
-                console.log(`⚠️ Album added to local collection as fallback: ${album.title}`);
-            }
+            // DO NOT add to local collection if database save failed
+            // This prevents ghost data that appears added but isn't persisted
             
             // Re-throw error so scraping knows about the failure
+            throw error;
+        }
+    }
+
+    // Emergency method to clear ghost albums from memory
+    async clearGhostAlbums() {
+        console.log('🧹 Clearing ghost albums - reloading from database...');
+        
+        try {
+            // Reload collection from database to remove ghost albums
+            const databaseAlbums = await this.dataService.getAllAlbums();
+            this.collection.albums = databaseAlbums || [];
+            
+            // Regenerate derived data
+            await this.regenerateCollectionData();
+            this.refreshCurrentView();
+            
+            console.log(`✅ Ghost albums cleared. Collection now has ${this.collection.albums.length} real albums.`);
+            return this.collection.albums.length;
+        } catch (error) {
+            console.error('❌ Failed to clear ghost albums:', error);
             throw error;
         }
     }
@@ -11730,6 +11749,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         // NOW initialize the app with proper credentials
         window.albumApp = new AlbumCollectionApp();
         await window.albumApp.init();
+        
+        // Add emergency debug functions after app initialization
+        window.clearGhostAlbums = async () => {
+            try {
+                const realCount = await window.albumApp.clearGhostAlbums();
+                console.log(`🎉 SUCCESS: Ghost albums cleared! Collection now has ${realCount} real albums from database.`);
+                alert(`Ghost albums cleared!\n\nCollection now shows ${realCount} real albums from database.\n\nYou can now re-scrape Kenny Drew safely.`);
+                return realCount;
+            } catch (error) {
+                console.error('❌ Failed to clear ghost albums:', error);
+                alert(`Failed to clear ghost albums: ${error.message}`);
+            }
+        };
+        
+        window.debugCollectionState = () => {
+            const memoryCount = window.albumApp.collection.albums.length;
+            console.log(`📊 COLLECTION DEBUG STATE:`, {
+                albumsInMemory: memoryCount,
+                sampleAlbums: window.albumApp.collection.albums.slice(0, 3).map(a => `${a.title} (${a.year})`),
+                lastAdded: window.albumApp.collection.albums[memoryCount - 1]?.title || 'None'
+            });
+            return memoryCount;
+        };
         
     } catch (error) {
         console.error('❌ App initialization failed:', error);
