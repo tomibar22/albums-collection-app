@@ -411,6 +411,37 @@ class SupabaseService {
     // COLLECTION OPERATIONS
     // ===============================
 
+    /**
+     * DataService compatibility method - alias for getAlbums()
+     */
+    async getAllAlbums() {
+        return await this.getAlbums();
+    }
+
+    /**
+     * Get albums count for efficient counting operations
+     */
+    async getAlbumsCount() {
+        if (!this.initialized) throw new Error('Supabase service not initialized');
+
+        try {
+            const { data, error, count } = await this.client
+                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                .select('id', { count: 'exact', head: true });
+
+            if (error) throw error;
+
+            if (this.debug) {
+                console.log(`📊 Album count from Supabase: ${count}`);
+            }
+
+            return count || 0;
+        } catch (error) {
+            console.error('❌ Failed to get albums count:', error);
+            throw error;
+        }
+    }
+
     async getAlbums() {
         if (!this.initialized) {
             console.error('❌ iPhone Debug: Supabase service not initialized!');
