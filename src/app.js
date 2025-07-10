@@ -342,29 +342,44 @@ class AlbumCollectionApp {
                     
                     console.log(`🚀 CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
-                    console.log(`📅 Cache created: ${new Date(cached.timestamp).toISOString()} (timestamp: ${cached.timestamp})`);
+                    
+                    // Safe timestamp logging with validation
+                    if (cached.timestamp && !isNaN(cached.timestamp)) {
+                        console.log(`📅 Cache created: ${new Date(cached.timestamp).toISOString()} (timestamp: ${cached.timestamp})`);
+                    } else {
+                        console.log(`📅 Cache timestamp: ${cached.timestamp} (invalid or missing)`);
+                    }
+                    
                     if (cached.timestampUTC) {
                         console.log(`📅 Cache UTC: ${cached.timestampUTC}`);
                     }
+                    
                     this.updateLoadingProgress('⚡ Cache loaded successfully', `${albums.length} albums from cache`, 25);
 
                     // 🔍 NEW: Check for newer albums since cache was created
                     try {
                         this.updateLoadingProgress('🔍 Checking for new albums...', 'Looking for recently added albums...', 30);
-                        const newerAlbums = await this.checkForNewerAlbums(cached.timestamp);
                         
-                        if (newerAlbums && newerAlbums.length > 0) {
-                            console.log(`📈 Found ${newerAlbums.length} new albums since cache created!`);
-                            albums = [...albums, ...newerAlbums];
+                        // Only check for newer albums if we have a valid timestamp
+                        if (cached.timestamp && !isNaN(cached.timestamp)) {
+                            const newerAlbums = await this.checkForNewerAlbums(cached.timestamp);
                             
-                            // Update cache with complete album list
-                            console.log(`💾 Updating cache with ${newerAlbums.length} new albums...`);
-                            await this.saveToCache(albums, scrapedHistory);
-                            
-                            this.updateLoadingProgress('✅ New albums added', `Cache updated with ${newerAlbums.length} new albums`, 35);
+                            if (newerAlbums && newerAlbums.length > 0) {
+                                console.log(`📈 Found ${newerAlbums.length} new albums since cache created!`);
+                                albums = [...albums, ...newerAlbums];
+                                
+                                // Update cache with complete album list
+                                console.log(`💾 Updating cache with ${newerAlbums.length} new albums...`);
+                                await this.saveToCache(albums, scrapedHistory);
+                                
+                                this.updateLoadingProgress('✅ New albums added', `Cache updated with ${newerAlbums.length} new albums`, 35);
+                            } else {
+                                console.log('✅ Cache is up to date - no newer albums found');
+                                this.updateLoadingProgress('✅ Cache up to date', 'All albums current', 35);
+                            }
                         } else {
-                            console.log('✅ Cache is up to date - no newer albums found');
-                            this.updateLoadingProgress('✅ Cache up to date', 'All albums current', 35);
+                            console.log('⚠️ Cache timestamp invalid - skipping newer albums check');
+                            this.updateLoadingProgress('⚠️ Cache timestamp invalid', 'Using cached data only', 35);
                         }
                     } catch (checkError) {
                         console.error('❌ Error checking for newer albums:', checkError);
@@ -5300,6 +5315,13 @@ class AlbumCollectionApp {
     async checkForNewerAlbums(cacheTimestamp) {
         try {
             console.log(`🔍 Checking for albums newer than cache (count-based approach)`);
+            
+            // Validate timestamp
+            if (!cacheTimestamp || isNaN(cacheTimestamp)) {
+                console.log(`❌ Invalid cache timestamp: ${cacheTimestamp}`);
+                return [];
+            }
+            
             console.log(`📅 Cache timestamp: ${cacheTimestamp} (${new Date(cacheTimestamp).toISOString()})`);
             console.log(`📅 Current time: ${new Date().toISOString()}`);
             
