@@ -4313,6 +4313,9 @@ class AlbumCollectionApp {
             btn.textContent = '⏳ Scraping...';
         }
 
+        // STEP 1: Track newly added albums for cache update
+        const newlyAddedAlbums = [];
+
         // Enhanced progress tracking
         let progressState = {
             totalPages: 0,
@@ -4473,6 +4476,8 @@ class AlbumCollectionApp {
                             // Replace with earlier version
                             const replaced = await this.replaceAlbumWithEarlierVersion(album, duplicateStatus.existingIndex);
                             if (replaced) {
+                                // STEP 1: Track replaced album for cache update
+                                newlyAddedAlbums.push(album);
                                 totalAdded++;
                                 consecutiveErrors = 0;
                                 console.log(`🔄 Replaced with earlier version: ${album.title} (${album.year})`);
@@ -4483,6 +4488,8 @@ class AlbumCollectionApp {
                         } else {
                             // Add new album
                             await this.addAlbumToCollection(album);
+                            // STEP 1: Track newly added album for cache update
+                            newlyAddedAlbums.push(album);
                             totalAdded++;
                             consecutiveErrors = 0; // Reset error counter on success
                             console.log(`✅ Added: ${album.title} (${album.year})`);
@@ -4583,8 +4590,14 @@ class AlbumCollectionApp {
                 `• Skipped: ${totalSkipped} (duplicates/filtered)\n` +
                 `• Musical Role Filtered: ${progressState.musicalRoleFiltered}\n` +
                 `• Errors: ${totalErrors}\n\n` +
-                `⏱️ Time: ${elapsedTime}s | 🎯 Success Rate: ${successRate}%`
+                `⏱️ Time: ${elapsedTime}s | 🎯 Success Rate: ${successRate}%\n\n` +
+                `🗂️ STEP 1 TRACKING: ${newlyAddedAlbums.length} albums tracked for cache update`
             );
+
+            // STEP 1: Log tracked albums for verification
+            console.log(`🗂️ STEP 1 COMPLETE: Tracked ${newlyAddedAlbums.length} newly added albums:`, 
+                newlyAddedAlbums.map(album => `${album.title} (${album.year})`));
+
 
         } catch (error) {
             console.error(`❌ Error scraping discography for ${artistName}:`, error);
