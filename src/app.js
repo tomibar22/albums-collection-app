@@ -4591,12 +4591,18 @@ class AlbumCollectionApp {
                 `• Musical Role Filtered: ${progressState.musicalRoleFiltered}\n` +
                 `• Errors: ${totalErrors}\n\n` +
                 `⏱️ Time: ${elapsedTime}s | 🎯 Success Rate: ${successRate}%\n\n` +
-                `🗂️ STEP 1 TRACKING: ${newlyAddedAlbums.length} albums tracked for cache update`
+                `✨ NEW: Albums are now visible immediately - no refresh needed!`
             );
 
             // STEP 1: Log tracked albums for verification
             console.log(`🗂️ STEP 1 COMPLETE: Tracked ${newlyAddedAlbums.length} newly added albums:`, 
                 newlyAddedAlbums.map(album => `${album.title} (${album.year})`));
+
+            // STEP 2: Update cache with newly added albums (no database reload needed!)
+            if (newlyAddedAlbums.length > 0) {
+                const cacheMessage = `Added ${newlyAddedAlbums.length} albums from ${artistName} - visible immediately!`;
+                await this.updateCacheAndUI(newlyAddedAlbums, cacheMessage);
+            }
 
 
         } catch (error) {
@@ -4844,6 +4850,83 @@ class AlbumCollectionApp {
             // Update page title counts (may show partial counts)
             this.updatePageTitleCounts();
         }
+    }
+
+    // STEP 2: Cache update method to avoid database reloads after scraping
+    async updateCacheAndUI(newAlbums, successMessage) {
+        if (!newAlbums || newAlbums.length === 0) {
+            console.log('🔄 No new albums to add to cache');
+            return;
+        }
+
+        console.log(`🔄 Updating cache with ${newAlbums.length} new albums...`);
+
+        try {
+            // 1. Add new albums to the existing cache
+            this.collection.albums.push(...newAlbums);
+            console.log(`📚 Cache updated: Collection now has ${this.collection.albums.length} albums`);
+
+            // 2. Regenerate all derived data (artists, tracks, roles) from updated cache
+            await this.regenerateCollectionData();
+
+            // 3. Refresh current view to show new albums immediately
+            this.refreshCurrentView();
+
+            // 4. Show success notification to user
+            if (successMessage) {
+                this.showSuccessNotification(successMessage);
+            }
+
+            console.log(`✅ Cache update complete! New albums visible without database reload.`);
+            
+        } catch (error) {
+            console.error('❌ Error updating cache:', error);
+            console.log('💡 Fallback: User can manually refresh to see new albums');
+            
+            // Show fallback message to user
+            alert(`Albums saved successfully, but cache update failed.\n\nRefresh the page to see your new albums.`);
+        }
+    }
+
+    // STEP 2: Simple success notification method
+    showSuccessNotification(message) {
+        // Create and show a temporary success notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        `;
+        notification.textContent = `✅ ${message}`;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 4000);
     }
 
     refreshCurrentView() {
