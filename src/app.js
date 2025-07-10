@@ -5288,55 +5288,46 @@ class AlbumCollectionApp {
     // Check for albums added to database since cache was created
     async checkForNewerAlbums(cacheTimestamp) {
         try {
-            console.log(`🔍 Checking for albums newer than cache timestamp: ${new Date(cacheTimestamp).toLocaleString()}`);
+            console.log(`🔍 Checking for albums newer than cache (count-based approach)`);
             
             // Get total count from database first
             const totalInDatabase = await this.dataService.getAlbumsCount();
             console.log(`📊 Database has ${totalInDatabase} total albums`);
             
-            // If database has more albums than we know about, fetch only the newer ones
+            // If database has more albums than we know about, fetch the newest ones
             if (totalInDatabase > 0) {
-                // Get all albums and filter by timestamp (simple approach for now)
-                const allDatabaseAlbums = await this.dataService.getAllAlbums();
+                // Get current cache count
+                const currentCacheCount = this.collection.albums.length;
+                console.log(`📊 Cache has ${currentCacheCount} albums`);
                 
-                // Cache timestamp is in local time
-                const cacheDate = new Date(cacheTimestamp);
-                console.log(`📅 Cache date (local): ${cacheDate.toLocaleString()}`);
+                const albumsToAdd = totalInDatabase - currentCacheCount;
                 
-                let debugCount = 0;
-                const newerAlbums = allDatabaseAlbums.filter(album => {
-                    // Supabase timestamps are UTC but without timezone info
-                    // So we need to interpret them as UTC, not local time
-                    const albumTimestamp = album.created_at || album.timestamp;
-                    const albumCreatedUTC = new Date(albumTimestamp + '+00:00'); // Force UTC interpretation
-                    const albumCreatedLocal = new Date(albumCreatedUTC.getTime()); // Convert to local for comparison
+                if (albumsToAdd > 0) {
+                    console.log(`📈 Database has ${albumsToAdd} more albums than cache - fetching newest albums`);
                     
-                    const isNewer = albumCreatedLocal > cacheDate;
+                    // Get all albums and sort by creation date (newest first)
+                    const allDatabaseAlbums = await this.dataService.getAllAlbums();
+                    const sortedAlbums = allDatabaseAlbums.sort((a, b) => {
+                        const dateA = new Date(a.created_at || a.timestamp || 0);
+                        const dateB = new Date(b.created_at || b.timestamp || 0);
+                        return dateB - dateA; // Newest first
+                    });
                     
-                    // Debug first few comparisons
-                    if (debugCount < 3) {
-                        console.log(`🔍 Album "${album.title}":`);
-                        console.log(`   📅 Raw timestamp: ${albumTimestamp}`);
-                        console.log(`   📅 As UTC: ${albumCreatedUTC.toISOString()}`);
-                        console.log(`   📅 As Local: ${albumCreatedLocal.toLocaleString()}`);
-                        console.log(`   📅 Cache: ${cacheDate.toLocaleString()}`);
-                        console.log(`   📅 Newer than cache? ${isNewer}`);
-                        debugCount++;
+                    // Get the newest albums that aren't in cache
+                    const cachedAlbumIds = new Set(this.collection.albums.map(album => album.id));
+                    const newerAlbums = sortedAlbums.filter(album => !cachedAlbumIds.has(album.id));
+                    
+                    console.log(`📈 Found ${newerAlbums.length} albums not in cache`);
+                    if (newerAlbums.length > 0) {
+                        console.log(`📅 Newest album: ${newerAlbums[0]?.title} (${newerAlbums[0]?.created_at})`);
+                        console.log(`📅 Sample new albums:`, newerAlbums.slice(0, 3).map(a => `${a.title} (${a.created_at})`));
                     }
                     
-                    return isNewer;
-                });
-                
-                if (newerAlbums.length > 0) {
-                    console.log(`📈 Found ${newerAlbums.length} albums newer than cache`);
-                    console.log(`📅 Newest album: ${newerAlbums[0]?.title} (${newerAlbums[0]?.created_at})`);
-                    console.log(`📅 Sample newer albums:`, newerAlbums.slice(0, 3).map(a => `${a.title} (${a.created_at})`));
+                    return newerAlbums;
                 } else {
-                    console.log('✅ No newer albums found - cache is current');
-                    console.log(`🔍 DEBUG: Checked ${allDatabaseAlbums.length} albums against cache ${cacheDate.toLocaleString()}`);
+                    console.log('✅ Cache count matches database - no new albums to add');
+                    return [];
                 }
-                
-                return newerAlbums;
             }
             
             return [];
