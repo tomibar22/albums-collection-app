@@ -1518,7 +1518,7 @@ class AlbumCollectionApp {
 
     // Use provided albums or default to collection albums
 
-    const albumsToDisplay = albumsToRender || this.collection.albums;
+    let albumsToDisplay = albumsToRender || this.collection.albums;
 
 
 
@@ -1564,9 +1564,14 @@ class AlbumCollectionApp {
 
     console.log(`✅ Cleaned data: now ${cleanedAlbums.length} unique albums`);
 
-    // Re-render with cleaned data
 
-    return this.renderAlbumsGrid(cleanedAlbums);
+    // Update the collection data if we were using default collection
+    if (!albumsToRender) {
+        this.collection.albums = cleanedAlbums;
+    }
+    
+    // Continue rendering with cleaned data instead of recursive call
+    albumsToDisplay = cleanedAlbums;
 
     }
 
