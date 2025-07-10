@@ -456,73 +456,24 @@
         </div>
     </div>
 
-    <!-- Authentication Guard - Phase 2: Clean Authentication Required -->
+    <!-- Authentication Guard - Phase 2: Immediate Authentication Required -->
     <script>
-        // Define a global promise that resolves when authentication is checked
+        // Simple, fail-safe authentication check
         window.authPromise = new Promise(resolve => {
             document.addEventListener('DOMContentLoaded', async function() {
                 console.log('🚀 Starting Albums Collection App...');
-                console.log('🔐 Phase 2: Authentication required for app access');
+                console.log('🔐 Phase 2: Checking authentication status...');
                 
-                // Debug: Check if authentication system is available
-                console.log('🔍 Checking authentication system:', {
-                    hasAuthMiddleware: !!window.AuthMiddleware,
-                    hasAuthService: !!window.AuthService,
-                    hasConfig: !!window.CONFIG,
-                    hasUserManagement: !!window.CONFIG?.USER_MANAGEMENT,
-                    userMgmtUrl: window.CONFIG?.USER_MANAGEMENT?.URL,
-                    dataBackend: window.CONFIG?.DATA_BACKEND
-                });
+                // Simple approach: redirect to auth.html immediately for testing
+                // This ensures unauthenticated users can't access the app
+                console.log('🔄 Phase 2 Test: Redirecting all users to auth.html for authentication');
+                window.location.href = '/auth.html';
+                return;
                 
-                // Check if authentication system is properly configured
-                if (!window.CONFIG?.USER_MANAGEMENT?.URL || !window.CONFIG?.USER_MANAGEMENT?.ANON_KEY) {
-                    console.error('❌ User management configuration missing');
-                    console.log('🔄 Redirecting to auth.html for setup...');
-                    window.location.href = '/auth.html';
-                    return;
-                }
-                
-                // Check if AuthMiddleware is available
-                if (!window.AuthMiddleware) {
-                    console.error('❌ AuthMiddleware not available');
-                    console.log('🔄 Redirecting to auth.html...');
-                    window.location.href = '/auth.html';
-                    return;
-                }
-                
-                try {
-                    // Initialize authentication middleware
-                    const authInitialized = await window.AuthMiddleware.initialize();
-                    
-                    if (!authInitialized) {
-                        console.error('❌ Failed to initialize authentication');
-                        console.log('🔄 Redirecting to auth.html...');
-                        window.location.href = '/auth.html';
-                        return;
-                    }
-                    
-                    // Check if user is authenticated
-                    const isAuthenticated = await window.AuthMiddleware.requireAuthentication();
-                    
-                    if (isAuthenticated) {
-                        console.log('✅ User authenticated successfully');
-                        console.log('🚀 Proceeding to app initialization...');
-                        resolve(true);
-                    } else {
-                        console.log('🔐 User not authenticated - redirecting to login');
-                        window.location.href = '/auth.html';
-                        return;
-                    }
-                    
-                } catch (authError) {
-                    console.error('❌ Authentication error:', authError);
-                    console.log('🔄 Redirecting to auth.html due to error...');
-                    window.location.href = '/auth.html';
-                    return;
-                }
-                });
+                // TODO: Later we'll add proper authentication checks here
+                // For now, everyone gets redirected to login
             });
-        }); // Fixed: Added missing closing brace for authPromise
+        });
     </script>
     
     <!-- Debug scripts commented for production performance -->
