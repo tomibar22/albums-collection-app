@@ -9752,6 +9752,16 @@ class AlbumCollectionApp {
                 }
             }
 
+            // 🆕 CRITICAL FIX: Update IndexedDB cache after editing album
+            try {
+                console.log('💾 Updating IndexedDB cache after album edit...');
+                await this.forceUpdateCache();
+                console.log('✅ IndexedDB cache updated successfully');
+            } catch (cacheError) {
+                console.error('❌ Cache update failed after album edit:', cacheError);
+                console.log('💡 Continuing with memory-only update - cache will be refreshed on next startup');
+            }
+
             // Just refresh the current view instead of reloading all data
             this.refreshCurrentView();
 
@@ -10128,6 +10138,16 @@ class AlbumCollectionApp {
 
             // Update local collection immediately (no database reload needed)
             this.collection.albums = this.collection.albums.filter(a => a.id != albumId);
+
+            // 🆕 CRITICAL FIX: Update IndexedDB cache after deleting album
+            try {
+                console.log('💾 Updating IndexedDB cache after album deletion...');
+                await this.forceUpdateCache();
+                console.log('✅ IndexedDB cache updated successfully');
+            } catch (cacheError) {
+                console.error('❌ Cache update failed after album deletion:', cacheError);
+                console.log('💡 Continuing with memory-only update - cache will be refreshed on next startup');
+            }
 
             // Regenerate derived data locally (no Supabase reload)
             this.regenerateCollectionData();
