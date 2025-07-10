@@ -3861,10 +3861,10 @@ class AlbumCollectionApp {
                                 </div>
                             </div>
                             <div class="card-edit-overlay">
-                                <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${album.id || albumData.id}'); event.stopPropagation();" title="Edit Album">
+                                <button class="card-edit-btn edit" title="Edit Album">
                                     ✏️
                                 </button>
-                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', '${this.escapeForOnclick(album.title || albumData.title)}'); event.stopPropagation();" title="Delete Album">
+                                <button class="card-edit-btn delete" title="Delete Album">
                                     🗑️
                                 </button>
                             </div>
@@ -7746,10 +7746,10 @@ class AlbumCollectionApp {
                                     </div>
                                 </div>
                                 <div class="card-edit-overlay">
-                                    <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${albumData.id}'); event.stopPropagation();" title="Edit Album">
+                                    <button class="card-edit-btn edit" title="Edit Album">
                                         ✏️
                                     </button>
-                                    <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${albumData.id}', '${this.escapeForOnclick(albumData.title)}'); event.stopPropagation();" title="Delete Album">
+                                    <button class="card-edit-btn delete" title="Delete Album">
                                         🗑️
                                     </button>
                                 </div>
@@ -8795,10 +8795,10 @@ class AlbumCollectionApp {
                                 </div>
                             </div>
                             <div class="card-edit-overlay">
-                                <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${album.id || albumData.id}'); event.stopPropagation();" title="Edit Album">
+                                <button class="card-edit-btn edit" title="Edit Album">
                                     ✏️
                                 </button>
-                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', '${this.escapeForOnclick(album.title || albumData.title)}'); event.stopPropagation();" title="Delete Album">
+                                <button class="card-edit-btn delete" title="Delete Album">
                                     🗑️
                                 </button>
                             </div>
@@ -9060,6 +9060,33 @@ class AlbumCollectionApp {
                     // Add visual feedback to clicked role
                     document.querySelectorAll('.clickable-role-filter').forEach(r => r.classList.remove('active-filter'));
                     event.target.classList.add('active-filter');
+                }
+                return;
+            }
+
+            // Handle Edit button clicks
+            const editBtn = event.target.closest('.card-edit-btn.edit');
+            if (editBtn) {
+                event.stopPropagation();
+                const albumCard = editBtn.closest('.album-card');
+                const albumId = albumCard?.getAttribute('data-album-id');
+                console.log('Edit button clicked, album ID:', albumId);
+                if (albumId) {
+                    this.openEditAlbumModal(albumId);
+                }
+                return;
+            }
+
+            // Handle Delete button clicks
+            const deleteBtn = event.target.closest('.card-edit-btn.delete');
+            if (deleteBtn) {
+                event.stopPropagation();
+                const albumCard = deleteBtn.closest('.album-card');
+                const albumId = albumCard?.getAttribute('data-album-id');
+                const albumTitle = albumCard?.querySelector('.album-title')?.textContent || 'Unknown Album';
+                console.log('Delete button clicked, album ID:', albumId, 'title:', albumTitle);
+                if (albumId) {
+                    this.confirmDeleteAlbum(albumId, albumTitle);
                 }
                 return;
             }
@@ -11112,10 +11139,10 @@ class AlbumCollectionApp {
                                 </div>
                             </div>
                             <div class="card-edit-overlay">
-                                <button class="card-edit-btn edit" onclick="window.albumApp.openEditAlbumModal('${album.id || albumData.id}'); event.stopPropagation();" title="Edit Album">
+                                <button class="card-edit-btn edit" title="Edit Album">
                                     ✏️
                                 </button>
-                                <button class="card-edit-btn delete" onclick="window.albumApp.confirmDeleteAlbum('${album.id || albumData.id}', '${this.escapeForOnclick(album.title || albumData.title)}'); event.stopPropagation();" title="Delete Album">
+                                <button class="card-edit-btn delete" title="Delete Album">
                                     🗑️
                                 </button>
                             </div>
