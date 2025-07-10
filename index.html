@@ -456,28 +456,44 @@
         </div>
     </div>
 
-    <!-- Authentication Guard - DEBUG: Immediate visible redirect -->
+    <!-- Authentication Guard - Proper Authentication Check -->
     <script>
-        // IMMEDIATE execution - no waiting for DOM
-        console.log('🚨 IMMEDIATE AUTH DEBUG: Script executing...');
-        alert('🚨 DEBUG: Authentication guard is running - should redirect to auth.html');
-        
-        // Try immediate redirect
-        window.location.href = '/auth.html';
-        
-        // Also set up DOM listener as backup
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚨 DEBUG: DOM loaded, attempting redirect...');
-            alert('🚨 DEBUG: DOM loaded - redirecting to auth.html');
-            window.location.href = '/auth.html';
+        // Simple authentication check with proper user verification
+        window.authPromise = new Promise(resolve => {
+            document.addEventListener('DOMContentLoaded', async function() {
+                console.log('🔐 Checking authentication status...');
+                
+                try {
+                    // Wait for AuthService to be available
+                    if (!window.AuthService) {
+                        console.log('🔄 AuthService not available - redirecting to auth.html');
+                        window.location.href = '/auth.html';
+                        return;
+                    }
+                    
+                    // Wait for AuthService to initialize
+                    await window.AuthService.initPromise;
+                    
+                    // Check if user is currently authenticated
+                    const currentUser = await window.AuthService.getCurrentUser();
+                    
+                    if (currentUser) {
+                        console.log('✅ User authenticated - proceeding to app');
+                        resolve(true);
+                    } else {
+                        console.log('🔄 User not authenticated - redirecting to auth.html');
+                        window.location.href = '/auth.html';
+                        return;
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Authentication check failed:', error);
+                    console.log('🔄 Redirecting to auth.html due to error');
+                    window.location.href = '/auth.html';
+                    return;
+                }
+            });
         });
-        
-        // Set up backup timer
-        setTimeout(function() {
-            console.log('🚨 DEBUG: Timer redirect executing...');
-            alert('🚨 DEBUG: Timer - final redirect attempt');
-            window.location.href = '/auth.html';
-        }, 1000);
     </script>
     
     <!-- Debug scripts commented for production performance -->
