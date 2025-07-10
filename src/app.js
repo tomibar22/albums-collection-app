@@ -378,8 +378,44 @@ class AlbumCollectionApp {
                                 this.updateLoadingProgress('✅ Cache up to date', 'All albums current', 35);
                             }
                         } else {
-                            console.log('⚠️ Cache timestamp invalid - skipping newer albums check');
-                            this.updateLoadingProgress('⚠️ Cache timestamp invalid', 'Using cached data only', 35);
+                            console.log('⚠️ Cache timestamp invalid - using fallback count-based check');
+                            this.updateLoadingProgress('🔍 Fallback check', 'Checking database count...', 30);
+                            
+                            // 🆕 FALLBACK: Count-based check when timestamp is invalid
+                            try {
+                                const totalInDatabase = await this.dataService.getAlbumsCount();
+                                const currentCacheCount = albums.length;
+                                
+                                console.log(`📊 Fallback check: Database=${totalInDatabase}, Cache=${currentCacheCount}`);
+                                
+                                if (totalInDatabase > currentCacheCount) {
+                                    const missingCount = totalInDatabase - currentCacheCount;
+                                    console.log(`📈 Found ${missingCount} missing albums - fetching newest albums`);
+                                    
+                                    // Get the newest albums that aren't in cache
+                                    const newestAlbums = await this.dataService.getNewestAlbums(missingCount);
+                                    
+                                    if (newestAlbums && newestAlbums.length > 0) {
+                                        console.log(`📈 Fallback: Found ${newestAlbums.length} new albums!`);
+                                        albums = [...albums, ...newestAlbums];
+                                        
+                                        // Update cache with complete album list and fresh timestamp
+                                        console.log(`💾 Updating cache with ${newestAlbums.length} new albums...`);
+                                        await this.saveToCache(albums, scrapedHistory);
+                                        
+                                        this.updateLoadingProgress('✅ Fallback successful', `Found ${newestAlbums.length} new albums`, 35);
+                                    } else {
+                                        console.log('✅ Fallback: No new albums found');
+                                        this.updateLoadingProgress('✅ Fallback complete', 'Database matches cache', 35);
+                                    }
+                                } else {
+                                    console.log('✅ Fallback: Cache count matches database');
+                                    this.updateLoadingProgress('✅ Fallback complete', 'No new albums', 35);
+                                }
+                            } catch (fallbackError) {
+                                console.error('❌ Fallback check failed:', fallbackError);
+                                this.updateLoadingProgress('⚠️ Fallback failed', 'Using cached data only', 35);
+                            }
                         }
                     } catch (checkError) {
                         console.error('❌ Error checking for newer albums:', checkError);
@@ -1770,7 +1806,9 @@ class AlbumCollectionApp {
                     
                     resolve({
                         albums: cacheData.albums || [],
-                        scrapedHistory: cacheData.scrapedHistory || []
+                        scrapedHistory: cacheData.scrapedHistory || [],
+                        timestamp: cacheData.timestamp, // ✅ CRITICAL FIX: Include timestamp for new album detection
+                        timestampUTC: cacheData.timestampUTC // Include UTC string for debugging
                     });
                 };
                 

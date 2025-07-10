@@ -482,6 +482,32 @@ class SupabaseService {
         }
     }
 
+    /**
+     * Get the newest N albums - optimized for cache fallback scenarios
+     */
+    async getNewestAlbums(count) {
+        if (!this.initialized) throw new Error('Supabase service not initialized');
+
+        try {
+            console.log(`📈 Fetching ${count} newest albums from database`);
+            
+            const { data: albums, error } = await this.client
+                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                .select('*')
+                .order('created_at', { ascending: false }) // Newest first
+                .limit(count);
+
+            if (error) throw error;
+
+            console.log(`📈 Retrieved ${albums?.length || 0} newest albums`);
+            return albums || [];
+            
+        } catch (error) {
+            console.error('❌ Failed to get newest albums:', error);
+            throw error;
+        }
+    }
+
     async getAlbums() {
         if (!this.initialized) {
             console.error('❌ iPhone Debug: Supabase service not initialized!');

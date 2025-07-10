@@ -88,6 +88,29 @@ class DataService {
         });
     }
 
+    async getNewestAlbums(count) {
+        this.ensureInitialized();
+        
+        // If service has efficient newest albums method, use it
+        if (this.service.getNewestAlbums) {
+            return await this.service.getNewestAlbums(count);
+        }
+        
+        // Otherwise, fallback to getAllAlbums and sort (less efficient)
+        console.log(`⚠️ Using fallback newest albums - getting ${count} most recent`);
+        
+        const allAlbums = await this.service.getAllAlbums();
+        
+        // Sort by created_at descending (newest first) and take requested count
+        return allAlbums
+            .sort((a, b) => {
+                const dateA = new Date(a.created_at || a.timestamp || 0);
+                const dateB = new Date(b.created_at || b.timestamp || 0);
+                return dateB - dateA; // Newest first
+            })
+            .slice(0, count);
+    }
+
     async addAlbum(albumData) {
         this.ensureInitialized();
         return await this.service.addAlbum(albumData);
