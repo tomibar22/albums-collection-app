@@ -43,6 +43,19 @@ class DataService {
         return await this.service.getAllAlbums();
     }
 
+    async getAlbumsCount() {
+        this.ensureInitialized();
+        
+        // If service has dedicated count method, use it
+        if (this.service.getAlbumsCount) {
+            return await this.service.getAlbumsCount();
+        }
+        
+        // Otherwise, get all albums and return count (fallback)
+        const albums = await this.service.getAllAlbums();
+        return albums ? albums.length : 0;
+    }
+
     async addAlbum(albumData) {
         this.ensureInitialized();
         return await this.service.addAlbum(albumData);

@@ -341,6 +341,30 @@ class AlbumCollectionApp {
                     console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
                     this.updateLoadingProgress('⚡ Cache loaded successfully', `${albums.length} albums from cache`, 25);
 
+                    // 🔍 NEW: Check for newer albums since cache was created
+                    try {
+                        this.updateLoadingProgress('🔍 Checking for new albums...', 'Looking for recently added albums...', 30);
+                        const newerAlbums = await this.checkForNewerAlbums(cached.timestamp);
+                        
+                        if (newerAlbums && newerAlbums.length > 0) {
+                            console.log(`📈 Found ${newerAlbums.length} new albums since cache created!`);
+                            albums = [...albums, ...newerAlbums];
+                            
+                            // Update cache with complete album list
+                            console.log(`💾 Updating cache with ${newerAlbums.length} new albums...`);
+                            await this.saveToCache(albums, scrapedHistory);
+                            
+                            this.updateLoadingProgress('✅ New albums added', `Cache updated with ${newerAlbums.length} new albums`, 35);
+                        } else {
+                            console.log('✅ Cache is up to date - no newer albums found');
+                            this.updateLoadingProgress('✅ Cache up to date', 'All albums current', 35);
+                        }
+                    } catch (checkError) {
+                        console.error('❌ Error checking for newer albums:', checkError);
+                        console.log('💡 Continuing with cached data only');
+                        this.updateLoadingProgress('⚠️ Cache check failed', 'Using cached data only', 35);
+                    }
+
                 } else {
                     console.log('💾 Cache data empty or invalid, falling back to database');
                     console.log('📊 Cache data structure:', cached);
@@ -5247,6 +5271,43 @@ class AlbumCollectionApp {
         } catch (error) {
             console.error('❌ Force cache update failed:', error);
             throw error;
+        }
+    }
+
+    // Check for albums added to database since cache was created
+    async checkForNewerAlbums(cacheTimestamp) {
+        try {
+            console.log(`🔍 Checking for albums newer than cache timestamp: ${new Date(cacheTimestamp).toLocaleString()}`);
+            
+            // Get total count from database first
+            const totalInDatabase = await this.dataService.getAlbumsCount();
+            console.log(`📊 Database has ${totalInDatabase} total albums`);
+            
+            // If database has more albums than we know about, fetch only the newer ones
+            if (totalInDatabase > 0) {
+                // Get all albums and filter by timestamp (simple approach for now)
+                const allDatabaseAlbums = await this.dataService.getAllAlbums();
+                
+                const newerAlbums = allDatabaseAlbums.filter(album => {
+                    const albumCreated = new Date(album.created_at || album.timestamp || 0);
+                    return albumCreated > cacheTimestamp;
+                });
+                
+                if (newerAlbums.length > 0) {
+                    console.log(`📈 Found ${newerAlbums.length} albums newer than cache`);
+                    console.log(`📅 Newest album: ${newerAlbums[0]?.title} (${newerAlbums[0]?.created_at})`);
+                } else {
+                    console.log('✅ No newer albums found - cache is current');
+                }
+                
+                return newerAlbums;
+            }
+            
+            return [];
+            
+        } catch (error) {
+            console.error('❌ Error checking for newer albums:', error);
+            return []; // Return empty array to continue with cached data
         }
     }
 
