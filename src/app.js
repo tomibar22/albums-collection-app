@@ -9511,6 +9511,140 @@ class AlbumCollectionApp {
         }
     }
 
+    // Refresh modal stack content after album edit to show updated data
+    refreshModalStackAfterEdit(editedAlbumId) {
+        // Only refresh if there's a modal in the stack to return to
+        if (this.modalStack.length === 0) {
+            console.log('🔄 No modal stack to refresh after album edit');
+            return;
+        }
+
+        // Get the top modal from the stack (the one we'll return to)
+        const topModal = this.modalStack[this.modalStack.length - 1];
+        console.log(`🔄 Refreshing modal stack content for: "${topModal.title}"`);
+
+        // Determine modal type and regenerate content with fresh data
+        let freshContent = null;
+
+        // Check if this is an Artist Albums modal
+        if (topModal.title.includes('Albums (') && topModal.title.includes(' - ')) {
+            console.log('🎤 Detected Artist Albums modal - regenerating content');
+            freshContent = this.regenerateArtistAlbumsModal(topModal, editedAlbumId);
+        }
+        // Check if this is a Track Albums modal  
+        else if (topModal.title.includes('Albums containing "') && topModal.title.includes('"')) {
+            console.log('🎵 Detected Track Albums modal - regenerating content');
+            freshContent = this.regenerateTrackAlbumsModal(topModal, editedAlbumId);
+        }
+        // Check if this is a Role Artists modal
+        else if (topModal.title.includes('Artists with role: "') || topModal.title.includes('Artists for role:')) {
+            console.log('🎭 Detected Role Artists modal - regenerating content');
+            freshContent = this.regenerateRoleArtistsModal(topModal, editedAlbumId);
+        }
+
+        // Update the modal stack with fresh content if regeneration was successful
+        if (freshContent) {
+            topModal.content = freshContent;
+            console.log('✅ Modal stack content refreshed with updated album data');
+        } else {
+            console.log('⚠️ Could not determine modal type or regeneration failed, keeping original content');
+        }
+    }
+
+    // Regenerate Artist Albums modal content with fresh data
+    regenerateArtistAlbumsModal(modalData, editedAlbumId) {
+        try {
+            // Extract artist name from modal title (format: "Artist Name - Albums (count)")
+            const artistName = modalData.title.split(' - Albums (')[0];
+            console.log(`🎤 Regenerating content for artist: ${artistName}`);
+
+            // Find the artist in our current collection with updated data
+            const artist = this.collection.artists.find(a => a.name === artistName);
+            if (!artist) {
+                console.error(`❌ Could not find artist: ${artistName}`);
+                return null;
+            }
+
+            // Get updated albums for this artist
+            const artistAlbums = artist.albums || [];
+            console.log(`📀 Found ${artistAlbums.length} albums for ${artistName}`);
+
+            // Generate fresh modal content
+            return this.generateArtistAlbumsModalContent(artist, artistAlbums);
+        } catch (error) {
+            console.error('❌ Error regenerating artist albums modal:', error);
+            return null;
+        }
+    }
+
+    // Regenerate Track Albums modal content with fresh data
+    regenerateTrackAlbumsModal(modalData, editedAlbumId) {
+        try {
+            // Extract track title from modal title (format: 'Albums containing "Track Title" (count)')
+            const titleMatch = modalData.title.match(/Albums containing "([^"]+)"/);
+            if (!titleMatch) {
+                console.error('❌ Could not extract track title from modal title');
+                return null;
+            }
+
+            const trackTitle = titleMatch[1];
+            console.log(`🎵 Regenerating content for track: ${trackTitle}`);
+
+            // Find the track in our current collection with updated data
+            const track = this.collection.tracks.find(t => t.title === trackTitle);
+            if (!track) {
+                console.error(`❌ Could not find track: ${trackTitle}`);
+                return null;
+            }
+
+            console.log(`📀 Found ${track.albums ? track.albums.length : 0} albums for track: ${trackTitle}`);
+
+            // Generate fresh modal content
+            return this.generateTrackAlbumsModalContent(track);
+        } catch (error) {
+            console.error('❌ Error regenerating track albums modal:', error);
+            return null;
+        }
+    }
+
+    // Regenerate Role Artists modal content with fresh data  
+    regenerateRoleArtistsModal(modalData, editedAlbumId) {
+        try {
+            // Extract role from modal title (format: 'Artists with role: "Role Name"' or similar)
+            let roleName = null;
+            
+            if (modalData.title.includes('Artists with role: "')) {
+                const titleMatch = modalData.title.match(/Artists with role: "([^"]+)"/);
+                roleName = titleMatch ? titleMatch[1] : null;
+            } else if (modalData.title.includes('Artists for role:')) {
+                const titleMatch = modalData.title.match(/Artists for role: ([^(]+)/);
+                roleName = titleMatch ? titleMatch[1].trim() : null;
+            }
+
+            if (!roleName) {
+                console.error('❌ Could not extract role name from modal title');
+                return null;
+            }
+
+            console.log(`🎭 Regenerating content for role: ${roleName}`);
+
+            // Find the role in our current collection with updated data
+            const role = this.collection.roles.find(r => r.name === roleName);
+            if (!role) {
+                console.error(`❌ Could not find role: ${roleName}`);
+                return null;
+            }
+
+            console.log(`👥 Found ${role.artists ? role.artists.length : 0} artists for role: ${roleName}`);
+
+            // Generate fresh modal content (assuming there's a generateRoleArtistsModalContent method)
+            return this.generateRoleArtistsModalContent(role);
+        } catch (error) {
+            console.error('❌ Error regenerating role artists modal:', error);
+            return null;
+        }
+    }
+
     // Clean up modal observers to prevent memory leaks
     cleanupModalObservers() {
         console.log('🧹 Cleaning up modal observers');
@@ -9764,6 +9898,9 @@ class AlbumCollectionApp {
 
             // Just refresh the current view instead of reloading all data
             this.refreshCurrentView();
+
+            // 🆕 MODAL CONTENT REFRESH: Update modal stack with fresh data before returning
+            this.refreshModalStackAfterEdit(albumId);
 
             // 🆕 SMART MODAL NAVIGATION: Return to previous modal if in modal stack, otherwise close
             this.closeModal(); // Uses smart navigation instead of forceCloseModal()
@@ -10152,6 +10289,9 @@ class AlbumCollectionApp {
 
             // Regenerate derived data locally (no Supabase reload)
             this.regenerateCollectionData();
+
+            // 🆕 MODAL CONTENT REFRESH: Update modal stack with fresh data before returning  
+            this.refreshModalStackAfterEdit(albumId);
 
             // Close modal if available
             if (this.closeModal && typeof this.closeModal === 'function') {
