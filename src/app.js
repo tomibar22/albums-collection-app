@@ -102,6 +102,16 @@ class AlbumCollectionApp {
 
 
 
+    // Cache configuration for startup optimization
+    this.cacheConfig = {
+        CACHE_KEY: 'albums_collection_cache_v1',
+        CACHE_VERSION: '1.2',
+        MAX_AGE_HOURS: 24, // Cache expires after 24 hours
+        MAX_SIZE_MB: 50 // Maximum cache size in MB
+    };
+
+
+
     // Mobile detection for responsive features
 
     this.isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -291,128 +301,177 @@ class AlbumCollectionApp {
 
 
 
-    // Enhanced data loading with granular progress tracking
+    // Enhanced data loading with granular progress tracking and caching
 
     async loadDataFromSupabaseEnhanced() {
 
-    try {
-
-    this.updateLoadingProgress('📚 Loading albums...', 'Fetching album database...', 30);
-
-
-
-    // Load data with individual progress tracking
-
-    // Load albums with optimized loading
-    let albums = await this.loadAlbumsWithProgress();
-    
-    // Fallback if loading fails
-    if (!albums || albums.length === 0) {
         try {
-            albums = await this.dataService.getAlbums();
-        } catch (directError) {
-            console.error('❌ Failed to load albums:', directError);
+
+            // Step 1: Check cache first for instant loading
+
+            this.updateLoadingProgress('💾 Checking cache...', 'Looking for cached data...', 10);
+
+            
+
+            let albums = [];
+
+            let scrapedHistory = [];
+
+            
+
+            if (this.isCacheValid()) {
+
+                // Load from cache (instant, ~50KB)
+
+                this.updateLoadingProgress('🚀 Loading from cache...', 'Using cached collection data...', 20);
+
+                const cached = this.loadFromCache();
+
+                if (cached) {
+
+                    albums = cached.albums;
+
+                    scrapedHistory = cached.scrapedHistory;
+
+                    console.log(`🚀 Cache hit! Loaded ${albums.length} albums instantly`);
+
+                } else {
+
+                    console.log('💾 Cache failed to load, falling back to database');
+
+                }
+
+            }
+
+            
+
+            // Step 2: If no cache or cache invalid, load from database
+
+            if (!albums || albums.length === 0) {
+
+                this.updateLoadingProgress('📚 Loading albums...', 'Fetching from database...', 30);
+
+                
+
+                // Load albums with optimized loading
+
+                albums = await this.loadAlbumsWithProgress();
+
+                
+
+                // Fallback if loading fails
+
+                if (!albums || albums.length === 0) {
+
+                    try {
+
+                        albums = await this.dataService.getAlbums();
+
+                    } catch (directError) {
+
+                        console.error('❌ Failed to load albums:', directError);
+
+                    }
+
+                }
+
+                
+
+                this.updateLoadingProgress('📜 Loading history...', 'Fetching scraping history...', 40);
+
+                
+
+                // Load scraped history
+
+                const [fetchedScrapedHistory] = await Promise.all([
+
+                    this.dataService.getScrapedArtistsHistory()
+
+                ]);
+
+                
+
+                scrapedHistory = fetchedScrapedHistory || [];
+
+                
+
+                // Save to cache for next time (after successful database load)
+
+                this.updateLoadingProgress('💾 Caching data...', 'Saving for faster future startup...', 50);
+
+                this.saveToCache(albums, scrapedHistory);
+
+                console.log(`💾 Saved ${albums.length} albums to cache for next startup`);
+
+            } else {
+
+                // Using cached data, skip database loading
+
+                this.updateLoadingProgress('⚡ Cache loaded', 'Skipped database download!', 50);
+
+            }
+
+            
+
+            // Step 3: Always generate derived data (tracks, roles, artists)
+
+            this.updateLoadingProgress('🔄 Processing data...', 'Organizing your collection...', 60);
+
+            
+
+            // Update collection (faster assignment)
+
+            this.collection.albums = albums || [];
+
+            this.scrapedHistory = scrapedHistory;
+
+            
+
+            this.updateLoadingProgress('📊 Generating tracks...', 'Processing album tracklists...', 70);
+
+            this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+
+            
+
+            this.updateLoadingProgress('🎭 Generating roles...', 'Processing album credits...', 80);
+
+            this.collection.roles = await this.generateRolesFromAlbumsAsync();
+
+            
+
+            this.updateLoadingProgress('👥 Generating artists...', 'Processing artist relationships...', 90);
+
+            this.collection.artists = this.generateArtistsFromAlbums();
+
+            this.artistsNeedRegeneration = false; // Mark as freshly generated
+
+            
+
+            this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 95);
+
+            
+
+            // Generate collection statistics
+
+            this.generateCollectionStats();
+
+            
+
+            // Update UI elements
+
+            this.updatePageTitleCounts();
+
+            this.loadInitialView();
+
+            
+
+        } catch (error) {
+
+            console.error('❌ Failed to load data:', error);
+
+            throw error;
+
         }
-    }
-
-    this.updateLoadingProgress('👥 Loading artists...', 'Fetching artist information...', 55);
-
-
-
-    const [fetchedScrapedHistory] = await Promise.all([
-    // PHASE 1b: Skip loading relationship data (saves 36MB transfer)
-    // this.dataService.getArtists(),     // ← DISABLED (saves 3.8MB)
-    // this.dataService.getTracks(),      // ← DISABLED (saves 5.8MB)
-    // this.dataService.getRoles(),       // ← DISABLED (saves 2.3MB)
-    this.dataService.getScrapedArtistsHistory()
-
-    ]);
-
-
-
-    this.updateLoadingProgress('🔄 Processing data...', 'Organizing your collection...', 80);
-
-
-
-    // Update collection (faster assignment)
-    console.log('📚 iPhone Debug: Assigning albums to collection...', {
-        albumsLength: albums?.length || 0
-        // artistsLength: artists?.length || 0  // ← DISABLED (no longer loading artists)
-    });
-
-    this.collection.albums = albums || [];
-    // this.collection.artists = artists || [];     // ← DISABLED (will be generated instead)
-    
-    // CRITICAL DEBUG: Verify assignment worked
-    console.log('📚 iPhone Debug: Collection assignment result:', {
-        collectionAlbumsLength: this.collection.albums?.length || 0,
-        // collectionArtistsLength: this.collection.artists?.length || 0,  // ← DISABLED (will be generated)
-        actualCollectionAlbums: this.collection.albums,
-        isCollectionArray: Array.isArray(this.collection.albums)
-    });
-    
-    // Don't use database tracks/roles - generate from albums for rich data
-    // this.collection.tracks = tracks;
-    // this.collection.roles = roles;
-    this.scrapedHistory = fetchedScrapedHistory || [];
-
-
-
-    this.updateLoadingProgress('📊 Generating tracks...', 'Processing album tracklists...', 85);
-
-
-
-    // Generate tracks and roles from albums with progress updates
-
-    this.collection.tracks = await this.generateTracksFromAlbumsAsync();
-
-
-
-    this.updateLoadingProgress('🎭 Generating roles...', 'Processing album credits...', 88);
-
-    this.collection.roles = await this.generateRolesFromAlbumsAsync();
-
-
-
-    this.updateLoadingProgress('👥 Generating artists...', 'Processing artist relationships...', 92);
-
-    // Generate and cache artists during startup for better performance
-
-    this.collection.artists = this.generateArtistsFromAlbums();
-
-    this.artistsNeedRegeneration = false; // Mark as freshly generated
-
-
-
-    this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
-
-
-
-    // Generate collection statistics (moved to after loading)
-
-    this.generateCollectionStats();
-
-
-
-    // Update UI elements
-
-    this.updatePageTitleCounts();
-
-    this.loadInitialView();
-
-
-
-    // console.log(`✅ Data loaded: ${albums.length} albums, ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
-
-
-
-    } catch (error) {
-
-    console.error('❌ Failed to load data from Supabase:', error);
-
-    throw error;
-
-    }
 
     }
 
@@ -1538,6 +1597,146 @@ class AlbumCollectionApp {
     console.log(`🚀 Lazy loading initialized for ${albumsToDisplay.length} albums`);
 
     }
+
+    // =====================================
+    // CACHE MANAGEMENT METHODS - Step 3: Startup Caching System
+    // =====================================
+
+    // Check if cached albums exist and are valid
+    isCacheValid() {
+        try {
+            const cacheData = localStorage.getItem(this.cacheConfig.CACHE_KEY);
+            if (!cacheData) {
+                console.log('💾 No cache found');
+                return false;
+            }
+
+            const parsed = JSON.parse(cacheData);
+            
+            // Check version compatibility
+            if (parsed.version !== this.cacheConfig.CACHE_VERSION) {
+                console.log('💾 Cache version mismatch, invalidating');
+                this.clearCache();
+                return false;
+            }
+
+            // Check age
+            const now = Date.now();
+            const ageHours = (now - parsed.timestamp) / (1000 * 60 * 60);
+            
+            if (ageHours > this.cacheConfig.MAX_AGE_HOURS) {
+                console.log(`💾 Cache expired (${ageHours.toFixed(1)}h old), invalidating`);
+                this.clearCache();
+                return false;
+            }
+
+            console.log(`✅ Cache valid (${ageHours.toFixed(1)}h old, ${parsed.albums?.length || 0} albums)`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error checking cache:', error);
+            this.clearCache();
+            return false;
+        }
+    }
+
+    // Load albums from cache
+    loadFromCache() {
+        try {
+            const cacheData = localStorage.getItem(this.cacheConfig.CACHE_KEY);
+            if (!cacheData) return null;
+
+            const parsed = JSON.parse(cacheData);
+            console.log(`🚀 Loaded ${parsed.albums?.length || 0} albums from cache (saved ${Math.round((Date.now() - parsed.timestamp) / 1000)}s ago)`);
+            
+            return {
+                albums: parsed.albums || [],
+                scrapedHistory: parsed.scrapedHistory || []
+            };
+        } catch (error) {
+            console.error('❌ Error loading from cache:', error);
+            this.clearCache();
+            return null;
+        }
+    }
+
+    // Save albums to cache
+    saveToCache(albums, scrapedHistory = []) {
+        try {
+            const cacheData = {
+                version: this.cacheConfig.CACHE_VERSION,
+                timestamp: Date.now(),
+                albums: albums || [],
+                scrapedHistory: scrapedHistory || [],
+                albumCount: albums?.length || 0
+            };
+
+            const serialized = JSON.stringify(cacheData);
+            const sizeKB = Math.round(serialized.length / 1024);
+            
+            localStorage.setItem(this.cacheConfig.CACHE_KEY, serialized);
+            console.log(`💾 Cached ${cacheData.albumCount} albums (${sizeKB}KB) for future startup`);
+            
+        } catch (error) {
+            console.error('❌ Error saving to cache:', error);
+            // If cache save fails (e.g., quota exceeded), clear old cache and try again
+            this.clearCache();
+        }
+    }
+
+    // Clear cache
+    clearCache() {
+        try {
+            localStorage.removeItem(this.cacheConfig.CACHE_KEY);
+            console.log('🗑️ Cache cleared');
+        } catch (error) {
+            console.error('❌ Error clearing cache:', error);
+        }
+    }
+
+    // Add new albums to existing cache (for post-scraping updates)
+    addToCache(newAlbums) {
+        try {
+            const cached = this.loadFromCache();
+            if (!cached) {
+                console.log('💾 No existing cache to update');
+                return;
+            }
+
+            // Add new albums to existing cache
+            const updatedAlbums = [...cached.albums, ...newAlbums];
+            this.saveToCache(updatedAlbums, cached.scrapedHistory);
+            
+            console.log(`✅ Added ${newAlbums.length} albums to cache (total: ${updatedAlbums.length})`);
+        } catch (error) {
+            console.error('❌ Error adding to cache:', error);
+        }
+    }
+
+    // Get cache statistics
+    getCacheStats() {
+        try {
+            const cacheData = localStorage.getItem(this.cacheConfig.CACHE_KEY);
+            if (!cacheData) {
+                return { exists: false };
+            }
+
+            const parsed = JSON.parse(cacheData);
+            const sizeKB = Math.round(cacheData.length / 1024);
+            const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+            
+            return {
+                exists: true,
+                albumCount: parsed.albums?.length || 0,
+                sizeKB: sizeKB,
+                ageHours: ageHours.toFixed(1),
+                version: parsed.version,
+                isValid: this.isCacheValid()
+            };
+        } catch (error) {
+            return { exists: false, error: error.message };
+        }
+    }
+
     // ===== ALBUM SELECTION MODE METHODS =====
 
     /**
@@ -4862,17 +5061,20 @@ class AlbumCollectionApp {
         console.log(`🔄 Updating cache with ${newAlbums.length} new albums...`);
 
         try {
-            // 1. Add new albums to the existing cache
+            // 1. Add new albums to the existing in-memory cache
             this.collection.albums.push(...newAlbums);
-            console.log(`📚 Cache updated: Collection now has ${this.collection.albums.length} albums`);
+            console.log(`📚 Memory cache updated: Collection now has ${this.collection.albums.length} albums`);
 
-            // 2. Regenerate all derived data (artists, tracks, roles) from updated cache
+            // 2. Update localStorage cache for future startups
+            this.addToCache(newAlbums);
+
+            // 3. Regenerate all derived data (artists, tracks, roles) from updated cache
             await this.regenerateCollectionData();
 
-            // 3. Refresh current view to show new albums immediately
+            // 4. Refresh current view to show new albums immediately
             this.refreshCurrentView();
 
-            // 4. Show success notification to user
+            // 5. Show success notification to user
             if (successMessage) {
                 this.showSuccessNotification(successMessage);
             }
