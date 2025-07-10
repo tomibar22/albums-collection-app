@@ -326,31 +326,28 @@ class AlbumCollectionApp {
 
             
 
-            // Step 1: Try IndexedDB cache first (async)
+            // Step 1: Try IndexedDB cache first (with detailed logging)
             if (await this.isCacheValid()) {
 
                 // Load from IndexedDB cache (instant loading, preserves ALL data)
                 this.updateLoadingProgress('🚀 Loading from cache...', 'Using cached collection data...', 20);
-
                 const cached = await this.loadFromCache();
 
-                if (cached) {
-
+                if (cached && cached.albums && cached.albums.length > 0) {
                     albums = cached.albums;
-
-                    scrapedHistory = cached.scrapedHistory;
-
+                    scrapedHistory = cached.scrapedHistory || [];
                     
-
-                    console.log(`🚀 IndexedDB cache hit! Loaded ${albums.length} albums instantly with COMPLETE data preservation`);
-                    this.updateLoadingProgress('⚡ IndexedDB cache loaded', 'Complete collection data cached - no data loss', 25);
+                    console.log(`🚀 CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
+                    console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
+                    this.updateLoadingProgress('⚡ Cache loaded successfully', `${albums.length} albums from cache`, 25);
 
                 } else {
-
-                    console.log('💾 IndexedDB cache failed to load, falling back to database');
-
+                    console.log('💾 Cache data empty or invalid, falling back to database');
+                    console.log('📊 Cache data structure:', cached);
                 }
 
+            } else {
+                console.log('💾 Cache invalid or missing, loading from database');
             }
 
             
@@ -5180,42 +5177,76 @@ class AlbumCollectionApp {
         }
     }
 
-    // STEP 2: Cache update method to avoid database reloads after scraping
+    // STEP 2: Enhanced cache update method with robust error handling
     async updateCacheAndUI(newAlbums, successMessage) {
         if (!newAlbums || newAlbums.length === 0) {
             console.log('🔄 No new albums to add to cache');
             return;
         }
 
-        console.log(`🔄 Updating cache with ${newAlbums.length} new albums...`);
+        console.log(`🔄 CACHE UPDATE STARTING: ${newAlbums.length} new albums`);
+        const startTime = Date.now();
 
         try {
             // 1. Add new albums to the existing in-memory cache
+            const beforeCount = this.collection.albums.length;
             this.collection.albums.push(...newAlbums);
-            console.log(`📚 Memory cache updated: Collection now has ${this.collection.albums.length} albums`);
+            const afterCount = this.collection.albums.length;
+            console.log(`✅ Memory cache: ${beforeCount} → ${afterCount} albums (+${newAlbums.length})`);
 
-            // 2. Update IndexedDB cache for future startups
-            await this.addToCache(newAlbums);
+            // 2. Force IndexedDB cache update (with enhanced error handling)
+            try {
+                console.log('💾 Updating IndexedDB cache...');
+                await this.forceUpdateCache();
+                console.log('✅ IndexedDB cache updated successfully');
+            } catch (cacheError) {
+                console.error('❌ IndexedDB cache update failed:', cacheError);
+                console.log('💡 Continuing with memory-only update');
+            }
 
             // 3. Regenerate all derived data (artists, tracks, roles) from updated cache
+            console.log('🔄 Regenerating collection data...');
             await this.regenerateCollectionData();
+            console.log('✅ Collection data regenerated');
 
             // 4. Refresh current view to show new albums immediately
+            console.log('🎨 Refreshing UI...');
             this.refreshCurrentView();
+            console.log('✅ UI refreshed');
 
             // 5. Show success notification to user
             if (successMessage) {
                 this.showSuccessNotification(successMessage);
             }
 
-            console.log(`✅ Cache update complete! New albums visible without database reload.`);
+            const elapsed = Date.now() - startTime;
+            console.log(`🎉 CACHE UPDATE COMPLETE! (${elapsed}ms) - New albums visible immediately`);
             
         } catch (error) {
-            console.error('❌ Error updating cache:', error);
-            console.log('💡 Fallback: User can manually refresh to see new albums');
+            console.error('❌ Critical error in cache update:', error);
+            console.log('🔄 Attempting emergency refresh...');
             
-            // Show fallback message to user
-            alert(`Albums saved successfully, but cache update failed.\n\nRefresh the page to see your new albums.`);
+            try {
+                // Emergency: Force UI refresh and show albums
+                this.refreshCurrentView();
+                this.showSuccessNotification('Albums saved! Refresh browser if not visible.');
+            } catch (emergencyError) {
+                console.error('❌ Emergency refresh failed:', emergencyError);
+                alert(`Albums saved to database, but display update failed.\n\nPlease refresh the page to see your new albums.`);
+            }
+        }
+    }
+
+    // Enhanced cache forcing method
+    async forceUpdateCache() {
+        try {
+            // Save complete current collection to IndexedDB
+            const scrapedHistory = await this.dataService.getScrapedArtistsHistory() || [];
+            await this.saveToCache(this.collection.albums, scrapedHistory);
+            console.log(`💾 Forced cache update: ${this.collection.albums.length} albums saved to IndexedDB`);
+        } catch (error) {
+            console.error('❌ Force cache update failed:', error);
+            throw error;
         }
     }
 
