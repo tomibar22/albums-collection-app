@@ -11534,10 +11534,14 @@ class AlbumCollectionApp {
 
     // Setup event listeners for full-screen image viewer
     setupFullscreenImageListeners() {
+        // Remove existing listeners first to prevent duplicates
+        this.removeFullscreenButtonListeners();
+        
         // Close button
         const closeBtn = document.getElementById('fullscreen-close-btn');
         if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.closeFullscreenImage());
+            this.closeBtnHandler = () => this.closeFullscreenImage();
+            closeBtn.addEventListener('click', this.closeBtnHandler);
         }
         
         // Navigation buttons
@@ -11545,10 +11549,12 @@ class AlbumCollectionApp {
         const nextBtn = document.getElementById('fullscreen-next-btn');
         
         if (prevBtn) {
-            prevBtn.addEventListener('click', () => this.prevFullscreenImage());
+            this.prevBtnHandler = () => this.prevFullscreenImage();
+            prevBtn.addEventListener('click', this.prevBtnHandler);
         }
         if (nextBtn) {
-            nextBtn.addEventListener('click', () => this.nextFullscreenImage());
+            this.nextBtnHandler = () => this.nextFullscreenImage();
+            nextBtn.addEventListener('click', this.nextBtnHandler);
         }
 
         // Keyboard navigation
@@ -11587,8 +11593,33 @@ class AlbumCollectionApp {
         }
     }
 
+    // Remove event listeners for navigation buttons specifically
+    removeFullscreenButtonListeners() {
+        const closeBtn = document.getElementById('fullscreen-close-btn');
+        const prevBtn = document.getElementById('fullscreen-prev-btn');
+        const nextBtn = document.getElementById('fullscreen-next-btn');
+        
+        if (closeBtn && this.closeBtnHandler) {
+            closeBtn.removeEventListener('click', this.closeBtnHandler);
+            this.closeBtnHandler = null;
+        }
+        
+        if (prevBtn && this.prevBtnHandler) {
+            prevBtn.removeEventListener('click', this.prevBtnHandler);
+            this.prevBtnHandler = null;
+        }
+        
+        if (nextBtn && this.nextBtnHandler) {
+            nextBtn.removeEventListener('click', this.nextBtnHandler);
+            this.nextBtnHandler = null;
+        }
+    }
+
     // Remove event listeners for full-screen image viewer
     removeFullscreenImageListeners() {
+        // Remove button listeners
+        this.removeFullscreenButtonListeners();
+        
         if (this.fullscreenKeyListener) {
             document.removeEventListener('keydown', this.fullscreenKeyListener);
             this.fullscreenKeyListener = null;
