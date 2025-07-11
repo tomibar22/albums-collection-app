@@ -11595,7 +11595,6 @@ class AlbumCollectionApp {
             overlay.addEventListener('click', this.fullscreenClickListener);
         }
     }
-    }
 
     // Remove event listeners for full-screen image viewer
     removeFullscreenImageListeners() {
