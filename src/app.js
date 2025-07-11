@@ -340,6 +340,9 @@ class AlbumCollectionApp {
                     // ✅ FIX: Assign to collection immediately so checkForNewerAlbums() has data to work with
                     this.collection.albums = albums;
                     
+                    // ✅ FIX: Assign scraped history immediately for UI updates
+                    this.scrapedHistory = scrapedHistory;
+                    
                     console.log(`🚀 CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
                     
@@ -3070,7 +3073,7 @@ class AlbumCollectionApp {
             this.renderCurrentView();
 
             // Refresh scraped content display
-            this.refreshScrapedContentDisplay();
+            await this.refreshScrapedContentDisplay();
 
             // Update page title counts
             this.updatePageTitleCounts();
@@ -3097,7 +3100,7 @@ class AlbumCollectionApp {
             this.renderCurrentView();
 
             // Refresh scraped content display even with empty data
-            this.refreshScrapedContentDisplay();
+            await this.refreshScrapedContentDisplay();
 
             // Update page title counts (will show zeros)
             this.updatePageTitleCounts();
@@ -4577,11 +4580,11 @@ class AlbumCollectionApp {
         console.log(`📋 Updated scraped albums list: ${albums.length} total, showing ${sortedAlbums.length} most recent`);
     }
 
-    refreshScrapedContentDisplay() {
-        // Update scraped artists history display
-        this.renderScrapedHistory();
+    async refreshScrapedContentDisplay() {
+        // Load latest scraped history from database before rendering
+        await this.loadScrapedHistory();
 
-        console.log('🔄 Refreshed scraped content display');
+        console.log('🔄 Refreshed scraped content display with latest data');
     }
 
     // ============================================
@@ -5329,7 +5332,7 @@ class AlbumCollectionApp {
             this.updatePageTitleCounts();
 
             // Refresh scraped content display after data regeneration
-            this.refreshScrapedContentDisplay();
+            await this.refreshScrapedContentDisplay();
 
         } catch (error) {
             console.error('❌ Error regenerating collection data:', error);
@@ -5339,7 +5342,7 @@ class AlbumCollectionApp {
             if (!this.collection.roles) this.collection.roles = [];
 
             // Still try to refresh the display with whatever data we have
-            this.refreshScrapedContentDisplay();
+            await this.refreshScrapedContentDisplay();
 
             // Update page title counts (may show partial counts)
             this.updatePageTitleCounts();
@@ -6421,7 +6424,7 @@ class AlbumCollectionApp {
 
             case 'scraper':
                 // Refresh scraped content display when switching to scraper view
-                this.refreshScrapedContentDisplay();
+                await this.refreshScrapedContentDisplay();
                 break;
             default:
                 console.log('Unknown view type:', viewType);
