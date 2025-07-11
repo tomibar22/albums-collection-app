@@ -522,6 +522,8 @@ class AlbumCollectionApp {
             }
 
             this.scrapedHistory = scrapedHistory;
+            console.log('🎭 Loaded scrapedHistory on startup:', this.scrapedHistory);
+            console.log('🎭 scrapedHistory length:', this.scrapedHistory?.length);
 
             
 
@@ -10621,12 +10623,25 @@ class AlbumCollectionApp {
     }
 
     renderScrapedHistory() {
+        console.log('🎭 renderScrapedHistory() called');
+        console.log('🎭 this.scrapedHistory:', this.scrapedHistory);
+        console.log('🎭 this.scrapedHistory.length:', this.scrapedHistory?.length);
+        
         const container = document.getElementById('scraped-history-list');
         const countElement = document.getElementById('history-count');
 
-        if (!container || !countElement) return;
+        console.log('🎭 DOM elements found:', { 
+            container: !!container, 
+            countElement: !!countElement 
+        });
+
+        if (!container || !countElement) {
+            console.log('❌ Missing DOM elements for scraped history');
+            return;
+        }
 
         if (this.scrapedHistory.length === 0) {
+            console.log('🎭 Showing empty state (no scraped history)');
             container.innerHTML = `
                 <div class="empty-state">
                     <p>🎭 No artists scraped yet</p>
@@ -10636,6 +10651,9 @@ class AlbumCollectionApp {
             countElement.textContent = '0';
             return;
         }
+
+        console.log(`🎭 Rendering ${this.scrapedHistory.length} scraped history entries`);
+        console.log('🎭 Sample entry:', this.scrapedHistory[0]);
 
         const historyHtml = this.scrapedHistory.map(entry => {
             const date = new Date(entry.scraped_at).toLocaleDateString();
@@ -10653,12 +10671,24 @@ class AlbumCollectionApp {
             `;
         }).join('');
 
+        console.log('🎭 Generated HTML length:', historyHtml.length);
+        console.log('🎭 Generated HTML preview:', historyHtml.substring(0, 200) + '...');
+
         container.innerHTML = historyHtml;
         countElement.textContent = this.scrapedHistory.length.toString();
+        
+        console.log('🎭 Updated UI - count:', this.scrapedHistory.length);
+        console.log('🎭 renderScrapedHistory() completed');
     }
 
     async addToScrapedHistory(artistName, discogsId, searchQuery, albumsFound, albumsAdded, success = true, notes = null) {
-        if (!this.dataService?.initialized) return;
+        console.log('🎭 addToScrapedHistory() called for:', artistName);
+        console.log('🎭 Current scrapedHistory length before add:', this.scrapedHistory?.length);
+        
+        if (!this.dataService?.initialized) {
+            console.log('❌ DataService not initialized, cannot add to scraped history');
+            return;
+        }
 
         try {
             const artistData = {
@@ -10672,9 +10702,14 @@ class AlbumCollectionApp {
             };
 
             const entry = await this.dataService.addScrapedArtist(artistData);
+            console.log('🎭 Received entry from dataService:', entry);
 
             // Add to local array and re-render
+            console.log('🎭 Adding entry to local scrapedHistory array (unshift)');
             this.scrapedHistory.unshift(entry);
+            console.log('🎭 scrapedHistory length after unshift:', this.scrapedHistory.length);
+            
+            console.log('🎭 Calling renderScrapedHistory() to update UI');
             this.renderScrapedHistory();
 
             console.log(`✅ Added ${artistName} to scraped history: ${albumsAdded}/${albumsFound} albums`);
