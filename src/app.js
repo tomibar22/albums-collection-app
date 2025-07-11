@@ -414,6 +414,35 @@ class AlbumCollectionApp {
                                         console.log('✅ Fallback: No new albums found');
                                         this.updateLoadingProgress('✅ Fallback complete', 'Database matches cache', 35);
                                     }
+                                } else if (totalInDatabase < currentCacheCount) {
+                                    // 🔧 NEW: Handle deletions - cache has more albums than database
+                                    const deletedCount = currentCacheCount - totalInDatabase;
+                                    console.log(`🗑️ DELETION DETECTED: Cache has ${deletedCount} more albums than database`);
+                                    console.log(`🔄 Invalidating cache and reloading from database to sync deletions...`);
+                                    
+                                    // Force reload from database to get the current state
+                                    console.log('📊 Loading current albums from database...');
+                                    const currentAlbums = await this.loadAlbumsWithProgress();
+                                    
+                                    if (currentAlbums && currentAlbums.length === totalInDatabase) {
+                                        console.log(`✅ Loaded ${currentAlbums.length} albums from database (deletions synced)`);
+                                        albums = currentAlbums;
+                                        this.collection.albums = albums;
+                                        
+                                        // Update cache with the corrected album list
+                                        await this.saveToCache(albums, scrapedHistory);
+                                        console.log(`💾 Cache updated with corrected album list (${deletedCount} albums removed)`);
+                                        
+                                        this.updateLoadingProgress('✅ Deletions synced', `Removed ${deletedCount} deleted albums from cache`, 35);
+                                    } else {
+                                        console.error(`❌ Database reload failed: expected ${totalInDatabase} albums, got ${currentAlbums?.length || 0}`);
+                                        this.updateLoadingProgress('⚠️ Sync warning', 'Using cache data with potential inconsistency', 35);
+                                    }
+                                } else {
+                                    console.log('✅ Cache and database counts match - no sync needed');
+                                    this.updateLoadingProgress('✅ Counts match', 'Cache and database in sync', 35);
+                                }
+                                    }
                                 } else {
                                     console.log('✅ Fallback: Cache count matches database');
                                     this.updateLoadingProgress('✅ Fallback complete', 'No new albums', 35);
@@ -1799,6 +1828,9 @@ class AlbumCollectionApp {
     // Load albums from IndexedDB cache (preserves ALL data - no truncation)
     async loadFromCache() {
         try {
+            console.log(`🔍 CACHE LOAD DEBUG - Starting loadFromCache()`);
+            console.log(`🔍 Current collection state: ${this.collection.albums.length} albums`);
+            
             if (!this.db) {
                 await this.initializeIndexedDB();
             }
@@ -1812,6 +1844,7 @@ class AlbumCollectionApp {
                     const cacheData = request.result;
                     
                     if (!cacheData) {
+                        console.log(`🔍 CACHE LOAD DEBUG - No cache data found`);
                         resolve(null);
                         return;
                     }
@@ -1820,6 +1853,13 @@ class AlbumCollectionApp {
                     const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
                     
                     console.log(`🚀 Loaded ${cacheData.albums?.length || 0} albums from IndexedDB cache (${ageMinutes}m ago, ${sizeMB}MB) - COMPLETE data preserved`);
+                    
+                    // 🔍 DEBUG: Log cache contents
+                    if (cacheData.albums && cacheData.albums.length > 0) {
+                        console.log(`🔍 CACHE LOAD DEBUG - Cache contents:`);
+                        console.log(`🔍 Cache first 3 album IDs: ${cacheData.albums.slice(0, 3).map(a => a.id).join(', ')}`);
+                        console.log(`🔍 Cache last 3 album IDs: ${cacheData.albums.slice(-3).map(a => a.id).join(', ')}`);
+                    }
                     
                     resolve({
                         albums: cacheData.albums || [],
@@ -5370,10 +5410,29 @@ class AlbumCollectionApp {
     // Enhanced cache forcing method
     async forceUpdateCache() {
         try {
+            // 🔍 DEBUG: Log collection state before cache update
+            console.log(`🔍 CACHE UPDATE DEBUG - Before update:`);
+            console.log(`🔍 Collection albums count: ${this.collection.albums.length}`);
+            console.log(`🔍 First 3 album IDs: ${this.collection.albums.slice(0, 3).map(a => a.id).join(', ')}`);
+            console.log(`🔍 Last 3 album IDs: ${this.collection.albums.slice(-3).map(a => a.id).join(', ')}`);
+            
             // Save complete current collection to IndexedDB
             const scrapedHistory = await this.dataService.getScrapedArtistsHistory() || [];
             await this.saveToCache(this.collection.albums, scrapedHistory);
             console.log(`💾 Forced cache update: ${this.collection.albums.length} albums saved to IndexedDB`);
+            
+            // 🔍 DEBUG: Verify cache was updated by reading it back
+            const verifyCache = await this.loadFromCache();
+            if (verifyCache && verifyCache.albums) {
+                console.log(`🔍 CACHE VERIFICATION - After update:`);
+                console.log(`🔍 Cache albums count: ${verifyCache.albums.length}`);
+                console.log(`🔍 Cache first 3 album IDs: ${verifyCache.albums.slice(0, 3).map(a => a.id).join(', ')}`);
+                console.log(`🔍 Cache last 3 album IDs: ${verifyCache.albums.slice(-3).map(a => a.id).join(', ')}`);
+                
+                if (verifyCache.albums.length !== this.collection.albums.length) {
+                    console.error(`❌ CACHE MISMATCH: Collection has ${this.collection.albums.length} albums but cache has ${verifyCache.albums.length}`);
+                }
+            }
         } catch (error) {
             console.error('❌ Force cache update failed:', error);
             throw error;
