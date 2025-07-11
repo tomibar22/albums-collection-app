@@ -5523,7 +5523,6 @@ class AlbumCollectionApp {
             };
         }
     }
-    }
 
     // Check for albums added to database since cache was created
     async checkForNewerAlbums(cacheTimestamp) {
