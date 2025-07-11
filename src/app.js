@@ -2092,6 +2092,16 @@ class AlbumCollectionApp {
                 album => !deletedAlbums.includes(album.id)
             );
 
+            // Update IndexedDB cache to reflect deletions
+            try {
+                console.log(`💾 Updating cache after deleting ${deletedAlbums.length} albums...`);
+                await this.forceUpdateCache();
+                console.log('✅ Cache updated successfully after album deletion');
+            } catch (cacheError) {
+                console.error('❌ Failed to update cache after deletion:', cacheError);
+                console.log('💡 Albums deleted from database but cache update failed');
+            }
+
             // Clear selection and exit selection mode
             this.cancelSelection();
 
