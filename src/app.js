@@ -1286,16 +1286,20 @@ class AlbumCollectionApp {
     e.stopPropagation();
 
     const imageSrc = e.target.src;
+    const albumId = e.target.getAttribute('data-album-id');
 
     const title = e.target.closest('.album-modal-content')?.querySelector('.modal-album-title')?.textContent || 'Unknown Album';
 
     const artist = e.target.closest('.album-modal-content')?.querySelector('.modal-album-artist')?.textContent || 'Unknown Artist';
 
+    // Find the album in the collection to get all images
+    const album = this.collection.albums.find(a => a.id == albumId);
+    const albumImages = album && album.images ? album.images : null;
 
+    console.log('🖼️ Modal cover image clicked:', { imageSrc, albumId, title, artist });
+    console.log(`📸 Found ${albumImages ? albumImages.length : 0} images for album: ${title}`);
 
-    console.log('🖼️ Modal cover image clicked:', { imageSrc, title, artist });
-
-    this.openFullscreenImage(imageSrc, title, artist);
+    this.openFullscreenImage(imageSrc, title, artist, albumImages);
 
     }
 
@@ -3196,7 +3200,7 @@ class AlbumCollectionApp {
                 <div class="album-modal-header">
                     <div class="album-modal-image">
                         ${album.images && album.images[0] ?
-                            `<img src="${album.images[0].uri}" alt="Cover art for ${album.title}" class="modal-cover-image">` :
+                            `<img src="${album.images[0].uri}" alt="Cover art for ${album.title}" class="modal-cover-image" data-album-id="${album.id}">` :
                             `<div class="modal-placeholder-image">
                                 <div class="placeholder-icon">🎵</div>
                                 <div class="placeholder-text">No Cover</div>
@@ -11379,28 +11383,142 @@ class AlbumCollectionApp {
     }
 
     // ============================================
-    // Full-Screen Image Viewer
+    // Full-Screen Image Viewer (Enhanced Multi-Image Support)
     // ============================================
 
-    // Open full-screen image viewer
-    openFullscreenImage(imageSrc, title, artist) {
+    // Open full-screen image viewer with multiple image support
+    openFullscreenImage(imageSrc, title, artist, albumImages = null) {
         console.log(`🖼️ Opening fullscreen image: ${title} by ${artist}`);
+        
+        // Store images array for navigation (if provided)
+        this.currentFullscreenImages = albumImages || [{ uri: imageSrc, type: 'primary' }];
+        this.currentFullscreenTitle = title;
+        this.currentFullscreenArtist = artist;
+        
+        // Find current image index
+        this.currentImageIndex = 0;
+        if (albumImages) {
+            const clickedIndex = albumImages.findIndex(img => img.uri === imageSrc);
+            if (clickedIndex !== -1) {
+                this.currentImageIndex = clickedIndex;
+            }
+        }
 
         const overlay = document.getElementById('fullscreen-image-overlay');
-        const image = document.getElementById('fullscreen-image');
-
-        // Set image
-        image.src = imageSrc;
-        image.alt = `Cover art for ${title}`;
-
+        
+        // Display current image
+        this.displayCurrentFullscreenImage();
+        
         // Show overlay
-        overlay.classList.add('visible');
+        overlay.style.display = 'flex';
 
         // Prevent body scroll
         document.body.style.overflow = 'hidden';
 
-        // Add event listeners for closing
+        // Add event listeners for closing and navigation
         this.setupFullscreenImageListeners();
+    }
+    
+    // Display the current image in fullscreen
+    displayCurrentFullscreenImage() {
+        if (!this.currentFullscreenImages || this.currentFullscreenImages.length === 0) return;
+        
+        const image = document.getElementById('fullscreen-image');
+        const titleEl = document.getElementById('fullscreen-image-title');
+        const metaEl = document.getElementById('fullscreen-image-meta');
+        const prevBtn = document.getElementById('fullscreen-prev-btn');
+        const nextBtn = document.getElementById('fullscreen-next-btn');
+        
+        const currentImage = this.currentFullscreenImages[this.currentImageIndex];
+        const totalImages = this.currentFullscreenImages.length;
+        
+        // Update image
+        image.src = currentImage.uri;
+        image.alt = `${this.currentFullscreenTitle} - Image ${this.currentImageIndex + 1}`;
+        
+        // Update title and meta
+        if (titleEl) {
+            titleEl.textContent = `${this.currentFullscreenTitle}${this.currentFullscreenArtist ? ` • ${this.currentFullscreenArtist}` : ''}`;
+        }
+        
+        if (metaEl) {
+            const imageType = this.getImageTypeLabel(currentImage.type);
+            metaEl.textContent = `${imageType} • ${this.currentImageIndex + 1} of ${totalImages}`;
+        }
+        
+        // Show/hide and enable/disable navigation buttons
+        if (totalImages > 1) {
+            if (prevBtn) {
+                prevBtn.style.display = 'flex';
+                prevBtn.disabled = this.currentImageIndex === 0;
+            }
+            if (nextBtn) {
+                nextBtn.style.display = 'flex';
+                nextBtn.disabled = this.currentImageIndex === totalImages - 1;
+            }
+        } else {
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+        }
+        
+        // Update indicators
+        this.updateFullscreenIndicators();
+    }
+    
+    // Get user-friendly label for image type
+    getImageTypeLabel(type) {
+        switch(type) {
+            case 'primary': return 'Front Cover';
+            case 'secondary': return 'Additional Image';
+            default: return 'Image';
+        }
+    }
+    
+    // Update indicator dots
+    updateFullscreenIndicators() {
+        const indicators = document.getElementById('fullscreen-indicators');
+        if (!indicators || !this.currentFullscreenImages || this.currentFullscreenImages.length <= 1) {
+            if (indicators) indicators.style.display = 'none';
+            return;
+        }
+        
+        indicators.style.display = 'flex';
+        indicators.innerHTML = '';
+        
+        this.currentFullscreenImages.forEach((_, index) => {
+            const dot = document.createElement('div');
+            dot.className = `indicator-dot ${index === this.currentImageIndex ? 'active' : ''}`;
+            dot.addEventListener('click', () => this.goToFullscreenImage(index));
+            indicators.appendChild(dot);
+        });
+    }
+    
+    // Navigate to specific image
+    goToFullscreenImage(index) {
+        if (!this.currentFullscreenImages || index < 0 || index >= this.currentFullscreenImages.length) return;
+        
+        this.currentImageIndex = index;
+        this.displayCurrentFullscreenImage();
+    }
+    
+    // Navigate to next image
+    nextFullscreenImage() {
+        if (!this.currentFullscreenImages) return;
+        
+        const nextIndex = this.currentImageIndex + 1;
+        if (nextIndex < this.currentFullscreenImages.length) {
+            this.goToFullscreenImage(nextIndex);
+        }
+    }
+    
+    // Navigate to previous image
+    prevFullscreenImage() {
+        if (!this.currentFullscreenImages) return;
+        
+        const prevIndex = this.currentImageIndex - 1;
+        if (prevIndex >= 0) {
+            this.goToFullscreenImage(prevIndex);
+        }
     }
 
     // Close full-screen image viewer
@@ -11408,30 +11526,63 @@ class AlbumCollectionApp {
         console.log('❌ Closing fullscreen image');
 
         const overlay = document.getElementById('fullscreen-image-overlay');
-        overlay.classList.remove('visible');
+        overlay.style.display = 'none';
 
         // Restore body scroll
         document.body.style.overflow = '';
 
         // Remove event listeners
         this.removeFullscreenImageListeners();
+        
+        // Clear stored data
+        this.currentFullscreenImages = null;
+        this.currentFullscreenTitle = null;
+        this.currentFullscreenArtist = null;
+        this.currentImageIndex = 0;
     }
 
     // Setup event listeners for full-screen image viewer
     setupFullscreenImageListeners() {
         // Close button
         const closeBtn = document.getElementById('fullscreen-close-btn');
-        closeBtn.addEventListener('click', () => this.closeFullscreenImage());
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.closeFullscreenImage());
+        }
+        
+        // Navigation buttons
+        const prevBtn = document.getElementById('fullscreen-prev-btn');
+        const nextBtn = document.getElementById('fullscreen-next-btn');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => this.prevFullscreenImage());
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => this.nextFullscreenImage());
+        }
 
-        // ESC key
+        // Keyboard navigation
         this.fullscreenKeyListener = (event) => {
-            if (event.key === 'Escape') {
-                this.closeFullscreenImage();
+            if (document.getElementById('fullscreen-image-overlay').style.display === 'flex') {
+                switch(event.key) {
+                    case 'Escape':
+                        this.closeFullscreenImage();
+                        break;
+                    case 'ArrowLeft':
+                    case 'ArrowUp':
+                        event.preventDefault();
+                        this.prevFullscreenImage();
+                        break;
+                    case 'ArrowRight':
+                    case 'ArrowDown':
+                        event.preventDefault();
+                        this.nextFullscreenImage();
+                        break;
+                }
             }
         };
         document.addEventListener('keydown', this.fullscreenKeyListener);
 
-        // Click outside image
+        // Click outside image to close
         this.fullscreenClickListener = (event) => {
             const overlay = document.getElementById('fullscreen-image-overlay');
             const container = document.querySelector('.fullscreen-image-container');
@@ -11440,7 +11591,10 @@ class AlbumCollectionApp {
             }
         };
         const overlay = document.getElementById('fullscreen-image-overlay');
-        overlay.addEventListener('click', this.fullscreenClickListener);
+        if (overlay) {
+            overlay.addEventListener('click', this.fullscreenClickListener);
+        }
+    }
     }
 
     // Remove event listeners for full-screen image viewer
