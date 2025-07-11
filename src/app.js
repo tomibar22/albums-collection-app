@@ -442,11 +442,6 @@ class AlbumCollectionApp {
                                     console.log('✅ Cache and database counts match - no sync needed');
                                     this.updateLoadingProgress('✅ Counts match', 'Cache and database in sync', 35);
                                 }
-                                    }
-                                } else {
-                                    console.log('✅ Fallback: Cache count matches database');
-                                    this.updateLoadingProgress('✅ Fallback complete', 'No new albums', 35);
-                                }
                             } catch (fallbackError) {
                                 console.error('❌ Fallback check failed:', fallbackError);
                                 this.updateLoadingProgress('⚠️ Fallback failed', 'Using cached data only', 35);
