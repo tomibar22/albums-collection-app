@@ -1010,28 +1010,29 @@ class SupabaseService {
         if (!this.initialized) throw new Error('Supabase service not initialized');
 
         try {
-            console.log('🗑️ Supabase deleteAlbum called with ID:', albumId);
-            console.log('🗑️ Table name:', window.CONFIG.SUPABASE.TABLES.ALBUMS);
-            console.log('🗑️ Client initialized:', !!this.client);
+            if (this.debug) {
+                console.log('🗑️ Deleting album from Supabase:', albumId);
+            }
 
-            // Delete related records first (cascade handled by FK constraints)
-            const { data, error, count } = await this.client
+            // Delete album record
+            const { data, error } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                 .delete()
                 .eq('id', albumId)
-                .select(); // Add select to see what was deleted
-
-            console.log('🗑️ Supabase DELETE response:', { data, error, count });
+                .select();
 
             if (error) {
-                console.error('🗑️ Supabase DELETE error details:', error);
+                console.error('❌ Supabase DELETE error:', error);
                 throw error;
             }
 
             if (data && data.length === 0) {
                 console.warn('⚠️ No rows were deleted - album ID may not exist:', albumId);
-            } else {
-                console.log('✅ Album deleted from Supabase:', albumId, 'Deleted rows:', data?.length || 'unknown');
+                return false;
+            }
+
+            if (this.debug) {
+                console.log('✅ Album deleted from Supabase:', albumId);
             }
 
             return true;

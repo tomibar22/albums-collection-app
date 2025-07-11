@@ -2077,37 +2077,13 @@ class AlbumCollectionApp {
             const deletedAlbums = [];
             const selectedIds = Array.from(this.selectedAlbums);
 
-            // Test Supabase connection before attempting deletions
-            console.log(`🔍 Testing Supabase connection before deleting ${selectedIds.length} albums...`);
-            try {
-                if (this.dataService.service && this.dataService.service.testConnection) {
-                    await this.dataService.service.testConnection();
-                    console.log('✅ Supabase connection test passed');
-                } else {
-                    console.warn('⚠️ No connection test method available');
-                }
-            } catch (connectionError) {
-                console.error('❌ Supabase connection test failed:', connectionError);
-                throw new Error(`Cannot delete albums: Supabase connection failed - ${connectionError.message}`);
-            }
-
-            // Delete from Supabase with enhanced debugging
+            // Delete from Supabase
             for (const albumId of selectedIds) {
                 try {
-                    console.log(`🗑️ ATTEMPTING to delete album ID: ${albumId}`);
-                    console.log(`🔍 DataService backend: ${this.dataService.backend}`);
-                    console.log(`🔍 DataService initialized: ${this.dataService.initialized}`);
-                    
-                    const result = await this.dataService.deleteAlbum(albumId);
-                    console.log(`✅ DELETE SUCCESS for album ${albumId}:`, result);
+                    await this.dataService.deleteAlbum(albumId);
                     deletedAlbums.push(albumId);
                 } catch (error) {
-                    console.error(`❌ DELETE FAILED for album ${albumId}:`, error);
-                    console.error(`❌ Error details:`, {
-                        message: error.message,
-                        stack: error.stack,
-                        name: error.name
-                    });
+                    console.error(`❌ Failed to delete album ${albumId}:`, error);
                 }
             }
 
@@ -10357,13 +10333,16 @@ class AlbumCollectionApp {
 
             console.log(`🗑️ Attempting to delete album ID: ${albumId}`);
 
-            // Check if we have Supabase service available
-            if (this.supabaseService && this.dataService.deleteAlbum) {
-                // Delete from Supabase
+            // Delete from Supabase using DataService
+            try {
+                console.log(`🔍 DataService backend: ${this.dataService.backend}`);
+                console.log(`🔍 DataService initialized: ${this.dataService.initialized}`);
+                
                 await this.dataService.deleteAlbum(albumId);
-                console.log('✅ Album deleted from Supabase');
-            } else {
-                console.warn('⚠️ Supabase service not available, simulating deletion');
+                console.log('✅ Album deleted from Supabase successfully');
+            } catch (error) {
+                console.error('❌ Failed to delete album from Supabase:', error);
+                throw error; // Re-throw to trigger error handling below
             }
 
             // Update local collection immediately (no database reload needed)
