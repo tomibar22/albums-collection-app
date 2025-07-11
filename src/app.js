@@ -2077,13 +2077,37 @@ class AlbumCollectionApp {
             const deletedAlbums = [];
             const selectedIds = Array.from(this.selectedAlbums);
 
-            // Delete from Supabase
+            // Test Supabase connection before attempting deletions
+            console.log(`🔍 Testing Supabase connection before deleting ${selectedIds.length} albums...`);
+            try {
+                if (this.dataService.service && this.dataService.service.testConnection) {
+                    await this.dataService.service.testConnection();
+                    console.log('✅ Supabase connection test passed');
+                } else {
+                    console.warn('⚠️ No connection test method available');
+                }
+            } catch (connectionError) {
+                console.error('❌ Supabase connection test failed:', connectionError);
+                throw new Error(`Cannot delete albums: Supabase connection failed - ${connectionError.message}`);
+            }
+
+            // Delete from Supabase with enhanced debugging
             for (const albumId of selectedIds) {
                 try {
-                    await this.dataService.deleteAlbum(albumId);
+                    console.log(`🗑️ ATTEMPTING to delete album ID: ${albumId}`);
+                    console.log(`🔍 DataService backend: ${this.dataService.backend}`);
+                    console.log(`🔍 DataService initialized: ${this.dataService.initialized}`);
+                    
+                    const result = await this.dataService.deleteAlbum(albumId);
+                    console.log(`✅ DELETE SUCCESS for album ${albumId}:`, result);
                     deletedAlbums.push(albumId);
                 } catch (error) {
-                    console.error(`❌ Failed to delete album ${albumId}:`, error);
+                    console.error(`❌ DELETE FAILED for album ${albumId}:`, error);
+                    console.error(`❌ Error details:`, {
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
                 }
             }
 
