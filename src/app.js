@@ -11405,12 +11405,17 @@ class AlbumCollectionApp {
         }
 
         const overlay = document.getElementById('fullscreen-image-overlay');
+        console.log('🔍 Debug: overlay element found:', overlay);
         
         // Display current image
+        console.log('🔍 Debug: About to call displayCurrentFullscreenImage');
         this.displayCurrentFullscreenImage();
+        console.log('🔍 Debug: displayCurrentFullscreenImage completed');
         
         // Show overlay
+        console.log('🔍 Debug: Setting overlay display to flex');
         overlay.style.display = 'flex';
+        console.log('🔍 Debug: Overlay display set, current style:', overlay.style.display);
 
         // Prevent body scroll
         document.body.style.overflow = 'hidden';
@@ -11421,7 +11426,13 @@ class AlbumCollectionApp {
     
     // Display the current image in fullscreen
     displayCurrentFullscreenImage() {
-        if (!this.currentFullscreenImages || this.currentFullscreenImages.length === 0) return;
+        console.log('🔍 Debug: displayCurrentFullscreenImage called');
+        if (!this.currentFullscreenImages || this.currentFullscreenImages.length === 0) {
+            console.log('❌ Debug: No currentFullscreenImages found');
+            return;
+        }
+        
+        console.log('🔍 Debug: Found', this.currentFullscreenImages.length, 'images');
         
         const image = document.getElementById('fullscreen-image');
         const titleEl = document.getElementById('fullscreen-image-title');
@@ -11429,12 +11440,17 @@ class AlbumCollectionApp {
         const prevBtn = document.getElementById('fullscreen-prev-btn');
         const nextBtn = document.getElementById('fullscreen-next-btn');
         
+        console.log('🔍 Debug: Elements found:', { image, titleEl, metaEl, prevBtn, nextBtn });
+        
         const currentImage = this.currentFullscreenImages[this.currentImageIndex];
         const totalImages = this.currentFullscreenImages.length;
+        
+        console.log('🔍 Debug: Current image:', currentImage);
         
         // Update image
         image.src = currentImage.uri;
         image.alt = `${this.currentFullscreenTitle} - Image ${this.currentImageIndex + 1}`;
+        console.log('🔍 Debug: Image src set to:', currentImage.uri);
         
         // Update title and meta
         if (titleEl) {
