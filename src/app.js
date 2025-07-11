@@ -11428,29 +11428,15 @@ class AlbumCollectionApp {
         }
         
         const image = document.getElementById('fullscreen-image');
-        const titleEl = document.getElementById('fullscreen-image-title');
-        const metaEl = document.getElementById('fullscreen-image-meta');
         const prevBtn = document.getElementById('fullscreen-prev-btn');
         const nextBtn = document.getElementById('fullscreen-next-btn');
         
         const currentImage = this.currentFullscreenImages[this.currentImageIndex];
         const totalImages = this.currentFullscreenImages.length;
         
-        console.log('🔍 Debug: Current image:', currentImage);
-        
         // Update image
         image.src = currentImage.uri;
         image.alt = `${this.currentFullscreenTitle} - Image ${this.currentImageIndex + 1}`;
-        
-        // Update title and meta
-        if (titleEl) {
-            titleEl.textContent = `${this.currentFullscreenTitle}${this.currentFullscreenArtist ? ` • ${this.currentFullscreenArtist}` : ''}`;
-        }
-        
-        if (metaEl) {
-            const imageType = this.getImageTypeLabel(currentImage.type);
-            metaEl.textContent = `${imageType} • ${this.currentImageIndex + 1} of ${totalImages}`;
-        }
         
         // Show/hide and enable/disable navigation buttons
         if (totalImages > 1) {

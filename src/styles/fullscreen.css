@@ -230,3 +230,9 @@
         right: 10px;
     }
 }
+
+/* Hide text elements for clean image-only view */
+.fullscreen-image-info,
+.fullscreen-indicators {
+    display: none !important;
+}
