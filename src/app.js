@@ -5439,7 +5439,9 @@ class AlbumCollectionApp {
         } catch (error) {
             console.error('❌ Force cache update failed:', error);
             throw error;
+        }
     }
+    
     // STEP 2b: Enhanced cache refresh method for post-scraping data synchronization
     async refreshCacheFromSupabase(operationType = 'scraping') {
         console.log(`🔄 REFRESHING CACHE FROM SUPABASE: Starting ${operationType} data sync...`);
