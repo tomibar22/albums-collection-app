@@ -6228,7 +6228,7 @@ class AlbumCollectionApp {
                 } catch (updateError) {
                     console.error(`⚠️ Error refreshing view:`, updateError);
                 }
-            }            }
+            }
 
             // Clear cart
             this.albumCart = [];
