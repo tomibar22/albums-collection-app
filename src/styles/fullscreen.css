@@ -1,4 +1,5 @@
-/* Full-Screen Image Viewer */
+/* Full-Screen Image Viewer - MOVED TO components.css */
+/*
 .fullscreen-image-overlay {
     position: fixed;
     top: 0;
@@ -12,6 +13,7 @@
     z-index: 10000;
     backdrop-filter: blur(10px);
 }
+*/
 
 .fullscreen-image-container {
     position: relative;
