@@ -5073,12 +5073,20 @@ class AlbumCollectionApp {
             console.log(`🗂️ STEP 1 COMPLETE: Tracked ${newlyAddedAlbums.length} newly added albums:`, 
                 newlyAddedAlbums.map(album => `${album.title} (${album.year})`));
 
-            // STEP 2: Update cache with newly added albums (no database reload needed!)
+            // STEP 2: Refresh complete cache from Supabase (includes new albums + updated scraped history)
             if (newlyAddedAlbums.length > 0) {
-                const cacheMessage = `Added ${newlyAddedAlbums.length} albums from ${artistName} - visible immediately!`;
-                await this.updateCacheAndUI(newlyAddedAlbums, cacheMessage);
+                console.log(`🔄 Refreshing cache with ${newlyAddedAlbums.length} new albums from ${artistName}...`);
+                const refreshResult = await this.refreshCacheFromSupabase('artist-scraping');
+                
+                if (refreshResult.success) {
+                    this.showSuccessNotification(`Added ${newlyAddedAlbums.length} albums from ${artistName} - visible immediately!`);
+                    console.log(`✅ Cache refresh successful: ${refreshResult.albumCount} total albums, ${refreshResult.historyCount} scraped artists`);
+                } else {
+                    console.error(`❌ Cache refresh failed: ${refreshResult.error}`);
+                    // Fallback to old method
+                    await this.updateCacheAndUI(newlyAddedAlbums, `Added ${newlyAddedAlbums.length} albums from ${artistName} - visible immediately!`);
+                }
             }
-
 
         } catch (error) {
             console.error(`❌ Error scraping discography for ${artistName}:`, error);
@@ -5432,6 +5440,88 @@ class AlbumCollectionApp {
             console.error('❌ Force cache update failed:', error);
             throw error;
         }
+
+    // STEP 2b: Enhanced cache refresh method for post-scraping data synchronization
+    async refreshCacheFromSupabase(operationType = 'scraping') {
+        console.log(`🔄 REFRESHING CACHE FROM SUPABASE: Starting ${operationType} data sync...`);
+        const startTime = Date.now();
+
+        try {
+            // 1. Fetch latest albums from Supabase (get all to detect any new albums)
+            console.log('📊 Fetching latest album data from Supabase...');
+            const latestAlbums = await this.dataService.getAllAlbums();
+            
+            if (latestAlbums && latestAlbums.length > 0) {
+                // Update in-memory collection with fresh data
+                const beforeCount = this.collection.albums.length;
+                this.collection.albums = latestAlbums;
+                const afterCount = this.collection.albums.length;
+                console.log(`✅ Albums updated: ${beforeCount} → ${afterCount} (+${afterCount - beforeCount} new)`);
+            }
+
+            // 2. Fetch latest scraped history from Supabase
+            console.log('📋 Fetching latest scraped history from Supabase...');
+            const latestHistory = await this.dataService.getScrapedArtistsHistory();
+            
+            if (latestHistory && latestHistory.length > 0) {
+                // Update in-memory scraped history with fresh data
+                const beforeHistoryCount = this.scrapedHistory.length;
+                this.scrapedHistory = latestHistory;
+                const afterHistoryCount = this.scrapedHistory.length;
+                console.log(`✅ Scraped history updated: ${beforeHistoryCount} → ${afterHistoryCount} (+${afterHistoryCount - beforeHistoryCount} new)`);
+            }
+
+            // 3. Update IndexedDB cache with fresh data
+            try {
+                console.log('💾 Updating IndexedDB cache with fresh data...');
+                await this.saveToCache(this.collection.albums, this.scrapedHistory);
+                console.log('✅ IndexedDB cache updated with fresh data');
+            } catch (cacheError) {
+                console.error('❌ IndexedDB cache update failed:', cacheError);
+                console.log('💡 Continuing with memory-only update');
+            }
+
+            // 4. Regenerate all derived data (artists, tracks, roles) from updated cache
+            console.log('🔄 Regenerating collection data from fresh data...');
+            await this.regenerateCollectionData();
+            console.log('✅ Collection data regenerated from fresh data');
+
+            // 5. Refresh current view to show updated data
+            console.log('🎨 Refreshing UI with latest data...');
+            this.refreshCurrentView();
+            console.log('✅ UI refreshed with latest data');
+
+            // 6. Refresh scraped history display with latest data
+            this.renderScrapedHistory();
+            console.log('✅ Scraped history display refreshed');
+
+            const elapsed = Date.now() - startTime;
+            console.log(`🎉 CACHE REFRESH COMPLETE! (${elapsed}ms) - All data synchronized from Supabase`);
+            
+            return {
+                albumCount: this.collection.albums.length,
+                historyCount: this.scrapedHistory.length,
+                success: true
+            };
+            
+        } catch (error) {
+            console.error(`❌ Cache refresh from Supabase failed:`, error);
+            
+            // Attempt basic UI refresh as fallback
+            try {
+                this.refreshCurrentView();
+                this.renderScrapedHistory();
+                console.log('💡 Fallback UI refresh completed');
+            } catch (fallbackError) {
+                console.error('❌ Fallback UI refresh failed:', fallbackError);
+            }
+            
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
     }
 
     // Check for albums added to database since cache was created
@@ -6111,13 +6201,34 @@ class AlbumCollectionApp {
 
             this.hideLoading();
 
-            // Update UI
-            try {
-                this.regenerateCollectionData();
-                this.refreshCurrentView();
-            } catch (updateError) {
-                console.error(`⚠️ Error updating UI after successful scraping:`, updateError);
-            }
+            // Refresh complete cache from Supabase (includes new albums + updated scraped history)
+            if (successCount > 0) {
+                console.log(`🔄 Refreshing cache with ${successCount} new albums from batch scrape...`);
+                try {
+                    const refreshResult = await this.refreshCacheFromSupabase('album-cart-scraping');
+                    
+                    if (refreshResult.success) {
+                        console.log(`✅ Cache refresh successful: ${refreshResult.albumCount} total albums, ${refreshResult.historyCount} scraped artists`);
+                    } else {
+                        console.error(`❌ Cache refresh failed: ${refreshResult.error}`);
+                        // Fallback to old method
+                        this.regenerateCollectionData();
+                        this.refreshCurrentView();
+                    }
+                } catch (refreshError) {
+                    console.error(`❌ Cache refresh error:`, refreshError);
+                    // Fallback to old method
+                    this.regenerateCollectionData();
+                    this.refreshCurrentView();
+                }
+            } else {
+                // No new albums added, just refresh the current view
+                try {
+                    this.refreshCurrentView();
+                } catch (updateError) {
+                    console.error(`⚠️ Error refreshing view:`, updateError);
+                }
+            }            }
 
             // Clear cart
             this.albumCart = [];
