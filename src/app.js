@@ -7533,12 +7533,13 @@ class AlbumCollectionApp {
                 const modalBody = document.getElementById('modal-body');
                 this.setupRoleArtistEvents(modalBody);
 
-                // Set up lazy loading with a small delay to ensure DOM is ready
+                // Set up lazy loading with a longer delay to ensure DOM is ready
                 setTimeout(() => {
+                    console.log('🎭 Setting up role modal lazy loading...');
                     this.setupRoleArtistCardLazyLoading(modalBody);
                     this.initializeRoleModalLazyLoading(modalBody);
                     console.log('✅ Role modal lazy loading initialized');
-                }, 100);
+                }, 200);
             } else {
                 this.showModal(modalTitle, '<p>No content could be generated for this role.</p>');
             }
@@ -7753,7 +7754,8 @@ class AlbumCollectionApp {
                     <div class="role-artists-list" id="role-artists-list">
                         ${initialArtistsHtml}
                     </div>
-                    <div class="role-loading-sentinel" style="height: 1px; background: transparent;"></div>
+                    <!-- More visible sentinel for lazy loading -->
+                    <div class="role-loading-sentinel" style="height: 20px; background: transparent; margin: 10px 0;"></div>
                 </div>
             `;
 
@@ -7858,6 +7860,9 @@ class AlbumCollectionApp {
     // Setup lazy loading for role artist cards (alias for compatibility)
     setupRoleArtistCardLazyLoading(modalBody) {
         console.log('🎭 Setting up role artist card lazy loading...');
+        console.log('🎭 Modal body:', modalBody);
+        console.log('🎭 Current role artists:', this.currentRoleArtists?.length);
+        
         try {
             // Delegate to existing lazy loading methods
             this.initializeRoleCardLazyLoading(modalBody);
@@ -7870,10 +7875,11 @@ class AlbumCollectionApp {
     // Initialize lazy loading for more artist cards
     initializeRoleCardLazyLoading(modalBody) {
         if (!this.currentRoleArtists || this.currentRoleArtists.length <= this.roleCardsInitialLoad) {
+            console.log(`🎭 Lazy loading not needed: ${this.currentRoleArtists?.length || 0} artists, initial load: ${this.roleCardsInitialLoad}`);
             return;
         }
 
-        console.log(`🎭 Card lazy loading: ${this.currentRoleArtists.length - this.roleCardsInitialLoad} more cards available`);
+        console.log(`🎭 Setting up card lazy loading: ${this.currentRoleArtists.length - this.roleCardsInitialLoad} more cards available`);
 
         const sentinel = modalBody.querySelector('.role-loading-sentinel');
         if (!sentinel) {
@@ -7881,11 +7887,22 @@ class AlbumCollectionApp {
             return;
         }
 
+        console.log('🎭 Found sentinel element, setting up intersection observer');
+
         let currentlyLoaded = this.roleCardsInitialLoad;
+
+        // Clean up existing observer if any
+        if (this.cardObserver) {
+            this.cardObserver.disconnect();
+        }
 
         this.cardObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
+                console.log(`🎭 Sentinel intersection: ${entry.isIntersecting}, loaded: ${currentlyLoaded}/${this.currentRoleArtists.length}`);
+                
                 if (entry.isIntersecting && currentlyLoaded < this.currentRoleArtists.length) {
+                    console.log('🎭 Loading next batch of cards...');
+                    
                     // Load next batch
                     const nextBatch = this.currentRoleArtists.slice(
                         currentlyLoaded,
@@ -7916,7 +7933,7 @@ class AlbumCollectionApp {
                         // If all cards loaded, stop observing
                         if (currentlyLoaded >= this.currentRoleArtists.length) {
                             this.cardObserver.unobserve(sentinel);
-                            console.log('🎭 All cards loaded');
+                            console.log('🎭 All cards loaded, stopping observer');
                         }
                     }
                 }
@@ -7928,6 +7945,7 @@ class AlbumCollectionApp {
         });
 
         this.cardObserver.observe(sentinel);
+        console.log('🎭 Observer set up and observing sentinel');
     }
 
     // Observe new cards for image lazy loading
