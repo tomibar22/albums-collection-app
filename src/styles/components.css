@@ -2702,7 +2702,7 @@
     grid-template-columns: repeat(2, 1fr);
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 2rem;
+    padding: 1rem 1.5rem 2rem 1.5rem; /* Add horizontal padding for breathing room */
 }
 
 @media (max-width: 768px) {
@@ -2740,6 +2740,7 @@
 @media (max-width: 640px) {
     .role-artists-list {
         grid-template-columns: 1fr;
+        padding: 1rem; /* Adjust padding for mobile */
     }
 }
 
