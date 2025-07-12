@@ -604,28 +604,92 @@ class AlbumCollectionApp {
 
 
 
-    // Mobile-optimized data loading with lazy generation
+    // Mobile-optimized data loading with lazy generation AND IndexedDB caching
 
     async loadDataFromSupabaseMobileOptimized() {
 
-    try {
+        try {
 
-    this.updateLoadingProgress('📚 Loading albums...', 'Optimized for mobile performance...', 30);
+            // Step 1: Check IndexedDB cache first (same as desktop for consistency)
+            this.updateLoadingProgress('💾 Checking cache...', 'Looking for cached data...', 10);
+            
+            let albums = [];
+            let scrapedHistory = [];
+            
+            // Try IndexedDB cache first (mobile devices support this since iOS 10)
+            if (await this.isCacheValid()) {
+                this.updateLoadingProgress('🚀 Loading from cache...', 'Using cached collection data...', 20);
+                const cached = await this.loadFromCache();
 
+                if (cached && cached.albums && cached.albums.length > 0) {
+                    albums = cached.albums;
+                    scrapedHistory = cached.scrapedHistory || [];
+                    
+                    // Assign to collection immediately
+                    this.collection.albums = albums;
+                    this.scrapedHistory = scrapedHistory;
+                    
+                    console.log(`🚀 MOBILE CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
+                    this.updateLoadingProgress('⚡ Mobile cache loaded', `${albums.length} albums from cache`, 25);
 
+                    // Check for newer albums since cache was created (lightweight check)
+                    try {
+                        this.updateLoadingProgress('🔍 Checking for updates...', 'Looking for new albums...', 30);
+                        
+                        if (cached.timestamp && !isNaN(cached.timestamp)) {
+                            const newerAlbums = await this.checkForNewerAlbums(cached.timestamp);
+                            
+                            if (newerAlbums && newerAlbums.length > 0) {
+                                console.log(`📱 Found ${newerAlbums.length} newer albums, adding to cache`);
+                                albums = albums.concat(newerAlbums);
+                                this.collection.albums = albums;
+                                
+                                // Update cache with new albums
+                                await this.updateCacheWithNewAlbums(newerAlbums);
+                                this.updateLoadingProgress('✅ Cache updated', `${newerAlbums.length} new albums added`, 40);
+                            } else {
+                                this.updateLoadingProgress('✅ Cache up to date', 'No new albums found', 40);
+                            }
+                        }
+                        
+                    } catch (newerError) {
+                        console.log('⚠️ Could not check for newer albums, using cached data');
+                        this.updateLoadingProgress('📱 Using cached data...', 'Setting up interface...', 50);
+                    }
+                } else {
+                    // Cache invalid, load from database and cache it
+                    this.updateLoadingProgress('📚 Loading albums...', 'Downloading and caching...', 30);
+                    albums = await this.loadAlbumsWithProgressMobile();
+                    
+                    // Cache the loaded data for next time
+                    try {
+                        await this.cacheData(albums, scrapedHistory);
+                        console.log('💾 Mobile: Data cached for future loads');
+                    } catch (cacheError) {
+                        console.log('⚠️ Failed to cache data, but proceeding normally');
+                    }
+                }
+            } else {
+                // No valid cache, load from database and cache it
+                this.updateLoadingProgress('📚 Loading albums...', 'Downloading and caching...', 30);
+                albums = await this.loadAlbumsWithProgressMobile();
+                
+                // Cache the loaded data for next time
+                try {
+                    await this.cacheData(albums, scrapedHistory);
+                    console.log('💾 Mobile: Data cached for future loads');
+                } catch (cacheError) {
+                    console.log('⚠️ Failed to cache data, but proceeding normally');
+                }
+            }
 
-    // Load core data with smaller batch sizes for mobile
+            this.updateLoadingProgress('🎯 Albums loaded', 'Setting up interface...', 70);
 
-    const albums = await this.loadAlbumsWithProgressMobile();
-
-    this.updateLoadingProgress('🎯 Albums loaded', 'Setting up interface...', 70);
-
-
-
-    // For mobile, only load core data and defer heavy processing
-
-    // For mobile, only load scraped history (artists will be generated on-demand)
-    const fetchedScrapedHistory = await this.dataService.getScrapedArtistsHistory().catch(() => []);
+            // Load scraped history (use cached data if available, otherwise fetch)
+            if (!scrapedHistory || scrapedHistory.length === 0) {
+                const fetchedScrapedHistory = await this.dataService.getScrapedArtistsHistory().catch(() => []);
+                scrapedHistory = fetchedScrapedHistory || [];
+            }
 
 
 
@@ -653,9 +717,8 @@ class AlbumCollectionApp {
 
 
 
-    // Store scraped history
-
-    this.scrapedHistory = fetchedScrapedHistory || [];
+            // Store scraped history
+            this.scrapedHistory = scrapedHistory || [];
 
 
 
