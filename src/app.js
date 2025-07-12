@@ -663,10 +663,16 @@ class AlbumCollectionApp {
                     
                     // Cache the loaded data for next time
                     try {
-                        await this.cacheData(albums, scrapedHistory);
-                        console.log('💾 Mobile: Data cached for future loads');
+                        console.log('🔍 MOBILE: Attempting to cache albums for future loads...');
+                        await this.saveToCache(albums, scrapedHistory);
+                        console.log('💾 Mobile: Data cached successfully for future loads');
+                        this.updateLoadingProgress('💾 Data cached', 'Albums saved for next time', 95);
                     } catch (cacheError) {
-                        console.log('⚠️ Failed to cache data, but proceeding normally');
+                        console.error('⚠️ MOBILE CACHE FAILED:', cacheError);
+                        console.error('⚠️ Cache error type:', cacheError.name);
+                        console.error('⚠️ Cache error message:', cacheError.message);
+                        console.log('⚠️ Failed to cache data, but proceeding normally - app will work but reload data next time');
+                        this.updateLoadingProgress('⚠️ Cache unavailable', 'App working without cache', 95);
                     }
                 }
             } else {
@@ -676,10 +682,16 @@ class AlbumCollectionApp {
                 
                 // Cache the loaded data for next time
                 try {
-                    await this.cacheData(albums, scrapedHistory);
-                    console.log('💾 Mobile: Data cached for future loads');
+                    console.log('🔍 MOBILE: Attempting to cache albums for future loads...');
+                    await this.saveToCache(albums, scrapedHistory);
+                    console.log('💾 Mobile: Data cached successfully for future loads');
+                    this.updateLoadingProgress('💾 Data cached', 'Albums saved for next time', 95);
                 } catch (cacheError) {
-                    console.log('⚠️ Failed to cache data, but proceeding normally');
+                    console.error('⚠️ MOBILE CACHE FAILED:', cacheError);
+                    console.error('⚠️ Cache error type:', cacheError.name);
+                    console.error('⚠️ Cache error message:', cacheError.message);
+                    console.log('⚠️ Failed to cache data, but proceeding normally - app will work but reload data next time');
+                    this.updateLoadingProgress('⚠️ Cache unavailable', 'App working without cache', 95);
                 }
             }
 
@@ -1810,20 +1822,35 @@ class AlbumCollectionApp {
     // Initialize IndexedDB for caching
     async initializeIndexedDB() {
         return new Promise((resolve, reject) => {
+            console.log('🔍 INDEXEDDB INIT: Starting initialization');
+            console.log(`🔍 Browser: ${navigator.userAgent}`);
+            console.log(`🔍 IndexedDB support: ${typeof indexedDB !== 'undefined'}`);
+            
+            if (typeof indexedDB === 'undefined') {
+                const error = new Error('IndexedDB not supported in this browser');
+                console.error('❌ IndexedDB not available');
+                reject(error);
+                return;
+            }
+            
             const request = indexedDB.open(this.cacheConfig.DB_NAME, this.cacheConfig.DB_VERSION);
             
             request.onerror = () => {
                 console.error('❌ IndexedDB initialization failed:', request.error);
+                console.error('❌ Error name:', request.error?.name);
+                console.error('❌ Error message:', request.error?.message);
                 reject(request.error);
             };
             
             request.onsuccess = () => {
                 this.db = request.result;
                 console.log('✅ IndexedDB initialized successfully');
+                console.log(`✅ Database name: ${this.db.name}, version: ${this.db.version}`);
                 resolve(this.db);
             };
             
             request.onupgradeneeded = (event) => {
+                console.log('🔧 IndexedDB upgrade needed - creating object store');
                 const db = event.target.result;
                 
                 // Create object store for cache data
@@ -1831,7 +1858,13 @@ class AlbumCollectionApp {
                     const store = db.createObjectStore(this.cacheConfig.STORE_NAME, { keyPath: 'id' });
                     store.createIndex('timestamp', 'timestamp', { unique: false });
                     console.log('📦 IndexedDB object store created');
+                } else {
+                    console.log('📦 IndexedDB object store already exists');
                 }
+            };
+            
+            request.onblocked = () => {
+                console.warn('⚠️ IndexedDB blocked - another tab may be using the database');
             };
         });
     }
@@ -1950,7 +1983,12 @@ class AlbumCollectionApp {
     // Save albums to IndexedDB cache (preserves ALL data - no size limits)
     async saveToCache(albums, scrapedHistory = []) {
         try {
+            console.log('🔍 CACHE DEBUG: Starting saveToCache process');
+            console.log(`🔍 Device: ${navigator.userAgent}`);
+            console.log(`🔍 IndexedDB available: ${typeof indexedDB !== 'undefined'}`);
+            
             if (!this.db) {
+                console.log('🔍 CACHE DEBUG: Initializing IndexedDB...');
                 await this.initializeIndexedDB();
             }
 
@@ -1964,25 +2002,54 @@ class AlbumCollectionApp {
                 albumCount: albums?.length || 0
             };
 
+            const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
+            console.log(`🔍 CACHE DEBUG: Data to cache - ${cacheData.albumCount} albums (${sizeMB}MB)`);
+
+            // Check storage quota (if available)
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    const quotaMB = Math.round(estimate.quota / (1024 * 1024));
+                    const usageMB = Math.round(estimate.usage / (1024 * 1024));
+                    console.log(`🔍 STORAGE: Quota: ${quotaMB}MB, Used: ${usageMB}MB, Available: ${quotaMB - usageMB}MB`);
+                } catch (e) {
+                    console.log('🔍 STORAGE: Could not check storage quota');
+                }
+            }
+
             const transaction = this.db.transaction([this.cacheConfig.STORE_NAME], 'readwrite');
             const store = transaction.objectStore(this.cacheConfig.STORE_NAME);
             const request = store.put(cacheData);
             
             return new Promise((resolve, reject) => {
                 request.onsuccess = () => {
-                    const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
                     console.log(`💾 IndexedDB cached ${cacheData.albumCount} albums (${sizeMB}MB) - COMPLETE data preserved for future startup`);
                     resolve();
                 };
                 
                 request.onerror = () => {
-                    console.error('❌ Error saving to IndexedDB cache:', request.error);
+                    console.error('❌ IndexedDB PUT Error:', request.error);
+                    console.error('❌ Error type:', request.error?.name);
+                    console.error('❌ Error message:', request.error?.message);
                     reject(request.error);
+                };
+                
+                transaction.onerror = () => {
+                    console.error('❌ IndexedDB Transaction Error:', transaction.error);
+                    reject(transaction.error);
+                };
+                
+                transaction.onabort = () => {
+                    console.error('❌ IndexedDB Transaction Aborted:', transaction.error);
+                    reject(transaction.error);
                 };
             });
             
         } catch (error) {
-            console.error('❌ Error saving to IndexedDB cache:', error);
+            console.error('❌ saveToCache Error:', error);
+            console.error('❌ Error name:', error.name);
+            console.error('❌ Error message:', error.message);
+            console.error('❌ Error stack:', error.stack);
             throw error;
         }
     }
