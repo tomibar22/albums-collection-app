@@ -2998,6 +2998,73 @@ class AlbumCollectionApp {
             .replace(/\t/g, '\\t');  // Escape tabs
     }
 
+    // Utility function to escape text for use in HTML attributes
+    escapeForHtml(str) {
+        if (!str || typeof str !== 'string') {
+            return '';
+        }
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+    }
+
+    // Utility function to normalize track names for consistent matching
+    normalizeTrackName(trackName) {
+        if (!trackName || typeof trackName !== 'string') {
+            return '';
+        }
+        return trackName
+            .trim()
+            .toLowerCase()
+            .replace(/[^\w\s]/g, '') // Remove special characters
+            .replace(/\s+/g, ' ');   // Normalize whitespace
+    }
+
+    // Handle click events on track links in album modals
+    handleTrackLinkClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const trackTitle = event.target.getAttribute('data-track-title');
+        if (!trackTitle) {
+            console.warn('No track title found in clicked element');
+            return;
+        }
+
+        console.log(`🎵 Track link clicked: "${trackTitle}"`);
+        
+        // Show loading state
+        const trackElement = event.target;
+        const originalOpacity = trackElement.style.opacity;
+        trackElement.style.opacity = '0.6';
+        
+        try {
+            // Find the track in the collection using normalized matching
+            const track = this.collection.tracks.find(t => 
+                this.normalizeTrackName(t.title) === this.normalizeTrackName(trackTitle)
+            );
+            
+            if (track) {
+                console.log(`✅ Found track in collection: "${track.title}" (${track.frequency} albums)`);
+                // Navigate to track-album modal
+                this.showTrackAlbums(track.title);
+            } else {
+                console.warn(`❌ Track not found in collection: "${trackTitle}"`);
+                // Show user-friendly message
+                alert(`Track "${trackTitle}" not found in collection. This might be a rare track or there could be a data mismatch.`);
+            }
+        } catch (error) {
+            console.error('❌ Error handling track link click:', error);
+            alert('Error opening track details. Please try again.');
+        } finally {
+            // Restore visual state
+            trackElement.style.opacity = originalOpacity;
+        }
+    }
+
     unescapeHtmlAttribute(str) {
         if (!str || typeof str !== 'string') {
             return '';
@@ -3341,7 +3408,7 @@ class AlbumCollectionApp {
             ? album.tracklist.map(track => `
                 <div class="track-item">
                     <span class="track-position">${track.position}</span>
-                    <span class="track-title">${track.title}</span>
+                    <span class="track-title track-link" data-track-title="${this.escapeForHtml(track.title)}" title="View albums containing this track">${track.title}</span>
                     ${track.duration ? `<span class="track-duration">${track.duration}</span>` : ''}
                 </div>
             `).join('')
@@ -9301,6 +9368,14 @@ class AlbumCollectionApp {
         // Create bound event handler to preserve 'this' context
         this.handleModalClick = (event) => {
             console.log('Modal click detected:', event.target, event.target.classList);
+
+            // Handle track link clicks in album modals
+            const trackLink = event.target.closest('.track-link');
+            if (trackLink) {
+                console.log('Track link clicked:', trackLink);
+                this.handleTrackLinkClick(event);
+                return;
+            }
 
             // Handle "More Info" button clicks in artist albums modal
             // Use closest() to handle clicks on button children (icon/text spans)
