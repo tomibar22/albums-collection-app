@@ -3049,8 +3049,8 @@ class AlbumCollectionApp {
             
             if (track) {
                 console.log(`✅ Found track in collection: "${track.title}" (${track.frequency} albums)`);
-                // Navigate to track-album modal
-                this.showTrackAlbums(track.title);
+                // Navigate to track-album modal - pass the full track object
+                this.showTrackAlbums(track);
             } else {
                 console.warn(`❌ Track not found in collection: "${trackTitle}"`);
                 // Show user-friendly message
