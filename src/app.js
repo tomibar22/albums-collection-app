@@ -6352,7 +6352,8 @@ class AlbumCollectionApp {
                 
                 // Mobile lazy loading for artists
                 if (isMobile && this.artistsNeedRegeneration) {
-                    await this.generateArtistsLazyMobile();
+                    this.collection.artists = this.generateArtistsFromAlbums();
+                    this.artistsNeedRegeneration = false;
                 }
 
                 // Don't call renderArtistsGrid() here - sortArtists() will handle it
