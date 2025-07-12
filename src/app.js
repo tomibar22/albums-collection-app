@@ -4064,78 +4064,24 @@ class AlbumCollectionApp {
         // Generate role information with tabs
         const rolesTabsHtml = this.generateArtistRoleTabsHtml(artist, musicalRoles, technicalRoles);
 
-        const albumsHtml = sortedAlbums.map(album => {
-            // Get formatted artists display (same as main collection view)
-            const artistsDisplay = this.getAlbumArtistsDisplay(album);
+        // Create a container for album cards using the proper AlbumCard component
+        const albumCardsContainer = document.createElement('div');
 
-            // Get cover image URL with fallback logic
-            const coverImageUrl = album.images && album.images[0] ? album.images[0].uri : '';
-
-            // Generate genre and style tags (same as main album cards)
-            const tags = [];
-            if (album.genres && Array.isArray(album.genres)) {
-                tags.push(...album.genres);
+        // Convert sorted albums to proper AlbumCard components
+        const albumElements = sortedAlbums.map(album => {
+            // Ensure album has proper artist field for AlbumCard component
+            if (!album.artist) {
+                album.artist = this.getAlbumArtistsDisplay(album);
             }
-            if (album.styles && Array.isArray(album.styles)) {
-                tags.push(...album.styles);
-            }
-            const uniqueTags = [...new Set(tags)].slice(0, 4);
-            const genreStyleTagsHtml = uniqueTags.length > 0
-                ? `<div class="genre-tags-container">${uniqueTags.map(tag =>
-                    `<span class="genre-tag" title="${tag}">${tag}</span>`
-                ).join('')}</div>`
-                : '';
 
-            return `
-                <div class="album-card" data-album-id="${album.id}">
-                    <div class="album-card-inner">
-                        <div class="album-cover">
-                            <img
-                                src="${coverImageUrl}"
-                                alt="${this.escapeAttributeValue('Cover art for ' + album.title)}"
-                                class="cover-image"
-                                loading="lazy"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                            />
-                            <div class="album-placeholder" style="display: none;">
-                                <div class="placeholder-icon">🎵</div>
-                                <div class="placeholder-text">No Cover</div>
-                            </div>
-                            <div class="album-overlay">
-                                <div class="album-actions">
-                                    <button class="overlay-circle-btn more-info-btn" data-album-id="${album.id || albumData.id}" title="More Info">
-                                        ℹ️
-                                    </button>
-                                    <button class="overlay-circle-btn spotify-btn" data-search-query="${(artistsDisplay || albumData.artist)} ${(album.title || albumData.title)}" title="Spotify">
-                                        🎵
-                                    </button>
-                                    <button class="overlay-circle-btn youtube-btn" data-search-query="${(artistsDisplay || albumData.artist)} ${(album.title || albumData.title)}" title="YouTube">
-                                        📺
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="card-edit-overlay">
-                                <button class="card-edit-btn edit" title="Edit Album">
-                                    ✏️
-                                </button>
-                                <button class="card-edit-btn delete" title="Delete Album">
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                        <div class="album-info">
-                            <h3 class="album-title" title="${album.title}">${album.title}</h3>
-                            <p class="album-artist" title="${artistsDisplay}">${artistsDisplay}</p>
-                            <p class="album-year">${album.year || 'Unknown Year'}</p>
-                            <div class="album-meta">
-                                <span class="track-count">${album.track_count || album.trackCount || 0} tracks</span>
-                                ${genreStyleTagsHtml}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+            // Create AlbumCard component (same as main albums page)
+            const albumCard = new AlbumCard(album);
+            return albumCard.render();
+        });
+
+        // Convert elements to HTML string for the modal
+        albumElements.forEach(element => albumCardsContainer.appendChild(element));
+        const albumsHtml = albumCardsContainer.innerHTML;
 
         return `
             <div class="artist-albums-modal">
@@ -8097,88 +8043,46 @@ class AlbumCollectionApp {
                 return yearA - yearB;
             });
 
-            // Convert sorted albums to HTML
-            const albumsHtml = sortedAlbums.map(albumData => {
+            // Create a container for album cards using the proper AlbumCard component
+            const albumCardsContainer = document.createElement('div');
+
+            // Convert sorted albums to proper AlbumCard components
+            const albumElements = sortedAlbums.map(albumData => {
                 console.log('🎵 Processing consolidated album:', albumData);
 
-                const artistNames = albumData.albumArtists && Array.isArray(albumData.albumArtists)
-                    ? albumData.albumArtists.map(artist => typeof artist === 'string' ? artist : artist.name).join(', ')
-                    : 'Unknown Artist';
-
-                // Get cover image URL with fallback logic
-                const coverImageUrl = albumData.images && albumData.images[0] ? albumData.images[0].uri : '';
-
-                // Generate genre and style tags (same as main album cards)
-                const tags = [];
-                if (albumData.genres && Array.isArray(albumData.genres)) {
-                    tags.push(...albumData.genres);
+                // Ensure album has proper artist field for AlbumCard component
+                if (albumData.albumArtists && Array.isArray(albumData.albumArtists)) {
+                    albumData.artist = albumData.albumArtists.map(artist => 
+                        typeof artist === 'string' ? artist : artist.name
+                    ).join(', ');
                 }
-                if (albumData.styles && Array.isArray(albumData.styles)) {
-                    tags.push(...albumData.styles);
+
+                // Add track positions as additional info for track context
+                if (albumData.trackPositions && albumData.trackPositions.length > 0) {
+                    albumData.trackPositionsDisplay = `Track positions: ${albumData.trackPositions.map(track => track.position).join(', ')}`;
                 }
-                const uniqueTags = [...new Set(tags)].slice(0, 4);
-                const genreStyleTagsHtml = uniqueTags.length > 0
-                    ? `<div class="genre-tags-container">${uniqueTags.map(tag =>
-                        `<span class="genre-tag" title="${tag}">${tag}</span>`
-                    ).join('')}</div>`
-                    : '';
 
-                // Generate track positions display for track context
-                const trackPositionsHtml = albumData.trackPositions && albumData.trackPositions.length > 0
-                    ? `<div class="track-positions">Track positions: ${albumData.trackPositions.map(track => track.position).join(', ')}</div>`
-                    : '';
+                // Create AlbumCard component (same as main albums page)
+                const albumCard = new AlbumCard(albumData);
+                const cardElement = albumCard.render();
 
-                return `
-                    <div class="album-card" data-album-id="${albumData.id}">
-                        <div class="album-card-inner">
-                            <div class="album-cover">
-                                <img
-                                    src="${coverImageUrl}"
-                                    alt="${this.escapeAttributeValue('Cover art for ' + albumData.title)}"
-                                    class="cover-image"
-                                    loading="lazy"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                />
-                                <div class="album-placeholder" style="display: none;">
-                                    <div class="placeholder-icon">🎵</div>
-                                    <div class="placeholder-text">No Cover</div>
-                                </div>
-                                <div class="album-overlay">
-                                    <div class="album-actions">
-                                        <button class="overlay-circle-btn more-info-btn" data-album-id="${albumData.id}" title="More Info">
-                                            ℹ️
-                                        </button>
-                                        <button class="overlay-circle-btn spotify-btn" data-search-query="${artistNames} ${albumData.title}" title="Spotify">
-                                            🎵
-                                        </button>
-                                        <button class="overlay-circle-btn youtube-btn" data-search-query="${artistNames} ${albumData.title}" title="YouTube">
-                                            📺
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-edit-overlay">
-                                    <button class="card-edit-btn edit" title="Edit Album">
-                                        ✏️
-                                    </button>
-                                    <button class="card-edit-btn delete" title="Delete Album">
-                                        🗑️
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="album-info">
-                                <h3 class="album-title" title="${albumData.title}">${albumData.title}</h3>
-                                <p class="album-artist" title="${this.escapeHtmlAttribute(artistNames)}">${artistNames}</p>
-                                <p class="album-year">${albumData.year}</p>
-                                <div class="album-meta">
-                                    <span class="track-count">${albumData.track_count || 0} tracks</span>
-                                    ${genreStyleTagsHtml}
-                                </div>
-                                ${trackPositionsHtml}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                // Add track positions info if available
+                if (albumData.trackPositionsDisplay) {
+                    const albumInfo = cardElement.querySelector('.album-info');
+                    if (albumInfo) {
+                        const trackPositionsDiv = document.createElement('div');
+                        trackPositionsDiv.className = 'track-positions';
+                        trackPositionsDiv.textContent = albumData.trackPositionsDisplay;
+                        albumInfo.appendChild(trackPositionsDiv);
+                    }
+                }
+
+                return cardElement;
+            });
+
+            // Convert elements to HTML string for the modal
+            albumElements.forEach(element => albumCardsContainer.appendChild(element));
+            const albumsHtml = albumCardsContainer.innerHTML;
 
             const uniqueAlbumCount = sortedAlbums.length;
             const result = `
@@ -8944,81 +8848,44 @@ class AlbumCollectionApp {
             return;
         }
 
-        // Generate HTML for albums
-        const albumsHtml = albums.map(albumData => {
-            const artistNames = albumData.albumArtists && Array.isArray(albumData.albumArtists)
-                ? albumData.albumArtists.map(artist => typeof artist === 'string' ? artist : artist.name).join(', ')
-                : 'Unknown Artist';
+        // Create a container for album cards using the proper AlbumCard component
+        const albumCardsContainer = document.createElement('div');
 
-            // Get cover image URL with fallback logic
-            const coverImageUrl = albumData.images && albumData.images[0] ? albumData.images[0].uri : '';
-
-            // Generate genre and style tags
-            const tags = [];
-            if (albumData.genres && Array.isArray(albumData.genres)) {
-                tags.push(...albumData.genres);
+        // Generate albums using AlbumCard component
+        const albumElements = albums.map(albumData => {
+            // Ensure album has proper artist field for AlbumCard component
+            if (albumData.albumArtists && Array.isArray(albumData.albumArtists)) {
+                albumData.artist = albumData.albumArtists.map(artist => 
+                    typeof artist === 'string' ? artist : artist.name
+                ).join(', ');
             }
-            if (albumData.styles && Array.isArray(albumData.styles)) {
-                tags.push(...albumData.styles);
+
+            // Add track positions as additional info for track context
+            if (albumData.trackPositions && albumData.trackPositions.length > 0) {
+                albumData.trackPositionsDisplay = `Track positions: ${albumData.trackPositions.map(track => track.position).join(', ')}`;
             }
-            const uniqueTags = [...new Set(tags)].slice(0, 4);
-            const genreStyleTagsHtml = uniqueTags.length > 0
-                ? `<div class="genre-tags-container">${uniqueTags.map(tag =>
-                    `<span class="genre-tag" title="${tag}">${tag}</span>`
-                ).join('')}</div>`
-                : '';
 
-            // Generate track positions display for track context
-            const trackPositionsHtml = albumData.trackPositions && albumData.trackPositions.length > 0
-                ? `<div class="track-positions">Track positions: ${albumData.trackPositions.map(track => track.position).join(', ')}</div>`
-                : '';
+            // Create AlbumCard component (same as main albums page)
+            const albumCard = new AlbumCard(albumData);
+            const cardElement = albumCard.render();
 
-            return `
-                <div class="album-card" data-album-id="${albumData.id}">
-                    <div class="album-card-inner">
-                        <div class="album-cover">
-                            <img
-                                src="${coverImageUrl}"
-                                alt="${this.escapeAttributeValue('Cover art for ' + albumData.title)}"
-                                class="cover-image"
-                                loading="lazy"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                            />
-                            <div class="album-placeholder" style="display: none;">
-                                <div class="placeholder-icon">🎵</div>
-                                <div class="placeholder-text">No Cover</div>
-                            </div>
-                            <div class="album-overlay">
-                                <div class="album-actions">
-                                    <button class="action-btn more-info-btn" data-album-id="${albumData.id}" title="View album details">
-                                        <span class="btn-icon">ℹ️</span>
-                                        <span class="btn-text">More Info</span>
-                                    </button>
-                                    <button class="action-btn spotify-btn" data-search-query="${artistNames} ${albumData.title}" title="Open in Spotify">
-                                        <span class="btn-icon">🎵</span>
-                                        <span class="btn-text">Spotify</span>
-                                    </button>
-                                    <button class="action-btn youtube-btn" data-search-query="${artistNames} ${albumData.title}" title="Open in YouTube">
-                                        <span class="btn-icon">📺</span>
-                                        <span class="btn-text">YouTube</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="album-info">
-                            <h3 class="album-title" title="${albumData.title}">${albumData.title}</h3>
-                            <p class="album-artist" title="${this.escapeHtmlAttribute(artistNames)}">${artistNames}</p>
-                            <p class="album-year">${albumData.year}</p>
-                            <div class="album-meta">
-                                <span class="track-count">${albumData.track_count || 0} tracks</span>
-                                ${genreStyleTagsHtml}
-                            </div>
-                            ${trackPositionsHtml}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+            // Add track positions info if available
+            if (albumData.trackPositionsDisplay) {
+                const albumInfo = cardElement.querySelector('.album-info');
+                if (albumInfo) {
+                    const trackPositionsDiv = document.createElement('div');
+                    trackPositionsDiv.className = 'track-positions';
+                    trackPositionsDiv.textContent = albumData.trackPositionsDisplay;
+                    albumInfo.appendChild(trackPositionsDiv);
+                }
+            }
+
+            return cardElement;
+        });
+
+        // Convert elements to HTML string for the grid
+        albumElements.forEach(element => albumCardsContainer.appendChild(element));
+        const albumsHtml = albumCardsContainer.innerHTML;
 
         // Update the grid content
         albumsGrid.innerHTML = albumsHtml;
@@ -9154,79 +9021,24 @@ class AlbumCollectionApp {
             albumsGrid.setAttribute('data-all-albums', JSON.stringify(albums));
         }
 
-        // Generate albums HTML
-        const albumsHtml = albums.map(album => {
-            // Get formatted artists display (same as main collection view)
-            const artistsDisplay = this.getAlbumArtistsDisplay(album);
+        // Create a container for album cards using the proper AlbumCard component
+        const albumCardsContainer = document.createElement('div');
 
-            // Get cover image URL with fallback logic
-            const coverImageUrl = album.images && album.images[0] ? album.images[0].uri : '';
-
-            // Generate genre and style tags (same as main album cards)
-            const tags = [];
-            if (album.genres && Array.isArray(album.genres)) {
-                tags.push(...album.genres);
+        // Generate albums using AlbumCard component
+        const albumElements = albums.map(album => {
+            // Ensure album has proper artist field for AlbumCard component
+            if (!album.artist) {
+                album.artist = this.getAlbumArtistsDisplay(album);
             }
-            if (album.styles && Array.isArray(album.styles)) {
-                tags.push(...album.styles);
-            }
-            const uniqueTags = [...new Set(tags)].slice(0, 4);
-            const genreStyleTagsHtml = uniqueTags.length > 0
-                ? `<div class="genre-tags-container">${uniqueTags.map(tag =>
-                    `<span class="genre-tag" title="${tag}">${tag}</span>`
-                ).join('')}</div>`
-                : '';
 
-            return `
-                <div class="album-card" data-album-id="${album.id}">
-                    <div class="album-card-inner">
-                        <div class="album-cover">
-                            <img
-                                src="${coverImageUrl}"
-                                alt="${this.escapeAttributeValue('Cover art for ' + album.title)}"
-                                class="cover-image"
-                                loading="lazy"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                            />
-                            <div class="album-placeholder" style="display: none;">
-                                <div class="placeholder-icon">🎵</div>
-                                <div class="placeholder-text">No Cover</div>
-                            </div>
-                            <div class="album-overlay">
-                                <div class="album-actions">
-                                    <button class="overlay-circle-btn more-info-btn" data-album-id="${album.id || albumData.id}" title="More Info">
-                                        ℹ️
-                                    </button>
-                                    <button class="overlay-circle-btn spotify-btn" data-search-query="${(artistsDisplay || albumData.artist)} ${(album.title || albumData.title)}" title="Spotify">
-                                        🎵
-                                    </button>
-                                    <button class="overlay-circle-btn youtube-btn" data-search-query="${(artistsDisplay || albumData.artist)} ${(album.title || albumData.title)}" title="YouTube">
-                                        📺
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="card-edit-overlay">
-                                <button class="card-edit-btn edit" title="Edit Album">
-                                    ✏️
-                                </button>
-                                <button class="card-edit-btn delete" title="Delete Album">
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                        <div class="album-info">
-                            <h3 class="album-title" title="${album.title}">${album.title}</h3>
-                            <p class="album-artist" title="${artistsDisplay}">${artistsDisplay}</p>
-                            <p class="album-year">${album.year || 'Unknown Year'}</p>
-                            <div class="album-meta">
-                                <span class="track-count">${album.track_count || album.trackCount || 0} tracks</span>
-                                ${genreStyleTagsHtml}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+            // Create AlbumCard component (same as main albums page)
+            const albumCard = new AlbumCard(album);
+            return albumCard.render();
+        });
+
+        // Convert elements to HTML string for the grid
+        albumElements.forEach(element => albumCardsContainer.appendChild(element));
+        const albumsHtml = albumCardsContainer.innerHTML;
 
         // Update the grid HTML
         albumsGrid.innerHTML = albumsHtml;
