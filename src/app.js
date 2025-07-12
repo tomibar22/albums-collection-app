@@ -3049,6 +3049,16 @@ class AlbumCollectionApp {
             
             if (track) {
                 console.log(`✅ Found track in collection: "${track.title}" (${track.frequency} albums)`);
+                
+                // 🔍 PHASE 1: Debug Track Object Structure
+                console.log('🔍 Full track object structure:', track);
+                console.log('🔍 Track properties:', Object.keys(track));
+                console.log('🔍 Track.title:', track.title);
+                console.log('🔍 Track.albums:', track.albums);
+                console.log('🔍 Track.frequency:', track.frequency);
+                console.log('🔍 Track.albums is array:', Array.isArray(track.albums));
+                console.log('🔍 Track.albums length:', track.albums ? track.albums.length : 'undefined');
+                
                 // Navigate to track-album modal - pass the full track object
                 this.showTrackAlbums(track);
             } else {
@@ -7960,9 +7970,35 @@ class AlbumCollectionApp {
     showTrackAlbums(trackData) {
         console.log(`📀 Showing albums for track: ${trackData.title}`, trackData);
 
-        if (!trackData || !trackData.albums) {
-            console.error('❌ Invalid track data:', trackData);
+        // 🔍 Enhanced validation with specific error messages
+        if (!trackData) {
+            console.error('❌ No track data provided');
             this.showModal('Error', '<p>No track data available.</p>');
+            return;
+        }
+        
+        if (typeof trackData === 'string') {
+            console.error('❌ Track data is string, expected object:', trackData);
+            this.showModal('Error', '<p>Invalid track data format.</p>');
+            return;
+        }
+        
+        if (!trackData.title) {
+            console.error('❌ Track missing title property:', trackData);
+            this.showModal('Error', '<p>Track data missing title.</p>');
+            return;
+        }
+        
+        if (!trackData.albums) {
+            console.error('❌ Track missing albums property:', trackData);
+            console.error('❌ Available properties:', Object.keys(trackData));
+            this.showModal('Error', '<p>Track data missing albums information.</p>');
+            return;
+        }
+        
+        if (!Array.isArray(trackData.albums)) {
+            console.error('❌ Track albums is not an array:', typeof trackData.albums, trackData.albums);
+            this.showModal('Error', '<p>Track albums data is invalid format.</p>');
             return;
         }
 
