@@ -7745,6 +7745,11 @@ class AlbumCollectionApp {
 
             const result = `
                 <div class="role-modal-content">
+                    <!-- Hidden tracking elements for lazy loading -->
+                    <div class="role-artists-stats" style="display: none;">
+                        <span id="role-artists-loaded">${initialArtists.length}</span>
+                        <span id="role-artists-total">${sortedArtists.length}</span>
+                    </div>
                     <div class="role-artists-list" id="role-artists-list">
                         ${initialArtistsHtml}
                     </div>
