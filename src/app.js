@@ -487,7 +487,7 @@ class AlbumCollectionApp {
 
                     try {
 
-                        albums = await this.dataService.getAlbums();
+                        albums = await this.dataService.getAllAlbums();
 
                     } catch (directError) {
 
