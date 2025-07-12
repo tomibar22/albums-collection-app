@@ -5895,6 +5895,12 @@ class AlbumCollectionApp {
             // Apply smooth transition
             progressFill.style.transition = 'width 0.3s ease-out';
             progressFill.style.width = `${clampedProgress}%`;
+            
+            // Force a reflow to ensure the style is applied immediately
+            progressFill.offsetHeight;
+        } else if (typeof progress === 'number') {
+            // Debug: Log when progress bar element is not found
+            console.log(`⚠️ Progress bar element not found, progress: ${progress}%`);
         }
 
         // Update progress count/percentage
@@ -7509,6 +7515,9 @@ class AlbumCollectionApp {
             0
         );
 
+        // Small delay to ensure loading modal DOM elements are ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         try {
             // Generate modal content with progress tracking
             const modalContent = await this.generateRoleArtistsModalContentWithProgress(roleData);
@@ -7736,10 +7745,6 @@ class AlbumCollectionApp {
 
             const result = `
                 <div class="role-modal-content">
-                    <div class="role-modal-header">
-                        <p>${PersonTerm} who worked as <strong>${roleData.name}</strong> in <strong>${roleData.frequency}</strong> album${roleData.frequency !== 1 ? 's' : ''} (sorted by most albums with this role):</p>
-                        <p class="role-artists-stats">Showing <span id="role-artists-loaded">${initialArtists.length}</span> of <span id="role-artists-total">${sortedArtists.length}</span> ${personTerm}</p>
-                    </div>
                     <div class="role-artists-list" id="role-artists-list">
                         ${initialArtistsHtml}
                     </div>
