@@ -5870,6 +5870,41 @@ class AlbumCollectionApp {
         }
     }
 
+    // Update loading progress with visual progress bar
+    updateLoadingProgress(title, step, progress) {
+        // Update main loading text
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) {
+            const htmlTitle = title.replace(/\n/g, '<br>');
+            loadingText.innerHTML = htmlTitle;
+        }
+
+        // Update progress step details
+        const progressStep = document.getElementById('progress-step');
+        if (progressStep) {
+            const htmlStep = step.replace(/\n/g, '<br>');
+            progressStep.innerHTML = htmlStep;
+        }
+
+        // Update visual progress bar
+        const progressFill = document.getElementById('progress-fill');
+        if (progressFill && typeof progress === 'number') {
+            // Ensure progress is within valid range
+            const clampedProgress = Math.max(0, Math.min(100, progress));
+            
+            // Apply smooth transition
+            progressFill.style.transition = 'width 0.3s ease-out';
+            progressFill.style.width = `${clampedProgress}%`;
+        }
+
+        // Update progress count/percentage
+        const progressCount = document.getElementById('progress-count');
+        if (progressCount && typeof progress === 'number') {
+            const clampedProgress = Math.max(0, Math.min(100, progress));
+            progressCount.textContent = `${Math.round(clampedProgress)}%`;
+        }
+    }
+
     // ============================================
     // STEP 3.2: SPECIFIC ALBUMS SCRAPER
     // ============================================
@@ -7625,8 +7660,14 @@ class AlbumCollectionApp {
             for (let i = 0; i < roleData.artists.length; i += batchSize) {
                 const batch = roleData.artists.slice(i, i + batchSize);
                 
-                // Process this batch
+                // Process this batch with validation
                 const batchResults = batch.map(artistInfo => {
+                    // Validate artistInfo before processing
+                    if (!artistInfo || typeof artistInfo !== 'object' || !artistInfo.name || typeof artistInfo.name !== 'string') {
+                        console.warn('⚠️ Invalid artist data found, skipping:', artistInfo);
+                        return null; // Skip invalid entries
+                    }
+
                     // Count albums where this artist performed this SPECIFIC role (silent processing)
                     let roleSpecificAlbumCount = 0;
                     const roleSpecificAlbums = new Set(); // Use Set to avoid duplicates
@@ -7650,7 +7691,7 @@ class AlbumCollectionApp {
                     };
                 });
 
-                artistsWithCounts.push(...batchResults);
+                artistsWithCounts.push(...batchResults.filter(result => result !== null));
 
                 // Update progress
                 const progress = 10 + Math.round((i + batch.length) / roleData.artists.length * 70); // 10-80%
@@ -7718,9 +7759,27 @@ class AlbumCollectionApp {
     // Generate HTML for a batch of role artist cards
     generateRoleArtistCards(artists, startIndex) {
         return artists.map((artistInfo, relativeIndex) => {
+            // Validate artistInfo before processing
+            if (!artistInfo || typeof artistInfo !== 'object' || !artistInfo.name || typeof artistInfo.name !== 'string') {
+                console.warn('⚠️ Invalid artist data in generateRoleArtistCards, skipping:', artistInfo);
+                return ''; // Return empty string for invalid entries
+            }
+
             const absoluteIndex = startIndex + relativeIndex;
-            const albumText = artistInfo.roleSpecificAlbumCount === 1 ? '1 album' : `${artistInfo.roleSpecificAlbumCount} albums`;
-            const initials = artistInfo.name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
+            const albumCount = artistInfo.roleSpecificAlbumCount || 0;
+            const albumText = albumCount === 1 ? '1 album' : `${albumCount} albums`;
+            
+            // Safe initials generation with fallback
+            let initials = 'AA'; // Default fallback
+            try {
+                initials = artistInfo.name.split(' ')
+                    .map(word => word && word.length > 0 ? word[0] : '')
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase() || 'AA';
+            } catch (error) {
+                console.warn('⚠️ Error generating initials for artist:', artistInfo.name, error);
+            }
 
             return `
                 <div class="role-artist-item clickable-artist-item"
@@ -7741,7 +7800,7 @@ class AlbumCollectionApp {
                     </div>
                     <div class="role-artist-details">
                         <div class="role-artist-name" title="${this.escapeHtmlAttribute(artistInfo.name)}">${artistInfo.name}</div>
-                        <div class="role-artist-role">${this.currentRoleData.name}</div>
+                        <div class="role-artist-role">${this.currentRoleData ? this.currentRoleData.name : 'Unknown Role'}</div>
                         <div class="role-artist-count">${albumText}</div>
                     </div>
                     <div class="role-artist-actions">
@@ -7751,7 +7810,7 @@ class AlbumCollectionApp {
                     </div>
                 </div>
             `;
-        }).join('');
+        }).filter(html => html !== '').join(''); // Filter out empty strings from invalid entries
     }
 
     // Setup event handlers for role artist interactions
@@ -7784,6 +7843,18 @@ class AlbumCollectionApp {
         // Initialize lazy loading for both cards and images
         this.initializeRoleModalLazyLoading(modalBody);
         this.initializeRoleCardLazyLoading(modalBody);
+    }
+
+    // Setup lazy loading for role artist cards (alias for compatibility)
+    setupRoleArtistCardLazyLoading(modalBody) {
+        console.log('🎭 Setting up role artist card lazy loading...');
+        try {
+            // Delegate to existing lazy loading methods
+            this.initializeRoleCardLazyLoading(modalBody);
+            this.initializeRoleModalLazyLoading(modalBody);
+        } catch (error) {
+            console.error('❌ Error setting up role artist card lazy loading:', error);
+        }
     }
 
     // Initialize lazy loading for more artist cards
