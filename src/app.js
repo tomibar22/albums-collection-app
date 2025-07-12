@@ -7437,7 +7437,7 @@ class AlbumCollectionApp {
     }
 
     // Show artists that have a specific role
-    showRoleArtists(roleData) {
+    async showRoleArtists(roleData) {
         // console.log(`🎭 Showing artists for role: ${roleData?.name || 'Unknown'}`, roleData);
 
         if (!roleData || !roleData.name) {
@@ -7466,8 +7466,21 @@ class AlbumCollectionApp {
         const personTerm = category === 'musical' ? 'Artists' : 'Contributors';
         const modalTitle = `${personTerm} with role: "${roleData.name}"`;
 
+        // Show loading indicator for role processing
+        const artistCount = roleData.artists.length;
+        this.showLoadingModal(
+            `🎭 Loading ${personTerm}...`,
+            `Analyzing ${artistCount} ${personTerm.toLowerCase()} for role "${roleData.name}"`,
+            0
+        );
+
         try {
-            const modalContent = this.generateRoleArtistsModalContent(roleData);
+            // Generate modal content with progress tracking
+            const modalContent = await this.generateRoleArtistsModalContentWithProgress(roleData);
+            
+            // Hide loading modal
+            this.hideLoadingModal();
+            
             if (modalContent) {
                 // Use the proper showModal method with isNestedModal flag to ensure proper stack management
                 this.showModal(modalTitle, modalContent, true);
@@ -7487,6 +7500,7 @@ class AlbumCollectionApp {
             }
         } catch (error) {
             console.error('❌ Error generating modal content:', error);
+            this.hideLoadingModal();
             this.showModal('Error', '<p>Error loading role information.</p>');
         }
     }
@@ -7554,6 +7568,134 @@ class AlbumCollectionApp {
             const result = `
                 <div class="role-artists-content">
                     <div class="role-artists-header">
+                        <p>${PersonTerm} who worked as <strong>${roleData.name}</strong> in <strong>${roleData.frequency}</strong> album${roleData.frequency !== 1 ? 's' : ''} (sorted by most albums with this role):</p>
+                        <p class="role-artists-stats">Showing <span id="role-artists-loaded">${initialArtists.length}</span> of <span id="role-artists-total">${sortedArtists.length}</span> ${personTerm}</p>
+                    </div>
+                    <div class="role-artists-list" id="role-artists-list">
+                        ${initialArtistsHtml}
+                    </div>
+                    <div class="role-loading-sentinel" style="height: 1px; background: transparent;"></div>
+                </div>
+            `;
+
+            console.log(`🎭 Generated modal with ${initialArtists.length}/${sortedArtists.length} artists initially loaded`);
+            return result;
+
+        } catch (error) {
+            console.error('❌ Error generating role artists content:', error);
+            return `<p>Error loading ${personTerm} information for this role.</p>`;
+        }
+    }
+
+    // Generate modal content for role artists with progress tracking
+    async generateRoleArtistsModalContentWithProgress(roleData) {
+        console.log('🎭 Generating modal content for role with progress:', roleData);
+
+        // Determine category for appropriate terminology
+        const category = window.roleCategorizer.categorizeRole(roleData.name);
+        const personTerm = category === 'musical' ? 'artists' : 'contributors';
+        const PersonTerm = category === 'musical' ? 'Artists' : 'Contributors';
+
+        if (!roleData || !roleData.artists || !Array.isArray(roleData.artists)) {
+            console.error('❌ Invalid role data for modal generation:', roleData);
+            return `<p>No ${personTerm} found for this role.</p>`;
+        }
+
+        if (roleData.artists.length === 0) {
+            return `<p>This role has no associated ${personTerm}.</p>`;
+        }
+
+        try {
+            // Update progress: Starting processing
+            this.updateLoadingProgress(
+                `🎭 Loading ${PersonTerm}...`,
+                `Processing ${roleData.artists.length} ${personTerm} for role-specific album counts`,
+                10
+            );
+
+            // Small delay to allow UI to update
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            console.log(`🎭 Processing ${roleData.artists.length} artists for role: ${roleData.name}`);
+
+            // Process artists in batches to show progress
+            const batchSize = Math.max(1, Math.floor(roleData.artists.length / 10)); // 10 progress updates max
+            const artistsWithCounts = [];
+            
+            for (let i = 0; i < roleData.artists.length; i += batchSize) {
+                const batch = roleData.artists.slice(i, i + batchSize);
+                
+                // Process this batch
+                const batchResults = batch.map(artistInfo => {
+                    // Count albums where this artist performed this SPECIFIC role (silent processing)
+                    let roleSpecificAlbumCount = 0;
+                    const roleSpecificAlbums = new Set(); // Use Set to avoid duplicates
+
+                    // Look through all albums in the collection for this artist in this role
+                    this.collection.albums.forEach(album => {
+                        if (album.credits && Array.isArray(album.credits)) {
+                            // Use the same sophisticated role checking as the filtering logic
+                            const hasRoleInAlbum = this.artistHasRoleOnAlbum(artistInfo.name, roleData.name, album);
+                            if (hasRoleInAlbum) {
+                                roleSpecificAlbums.add(album.id);
+                            }
+                        }
+                    });
+
+                    roleSpecificAlbumCount = roleSpecificAlbums.size;
+
+                    return {
+                        ...artistInfo,
+                        roleSpecificAlbumCount
+                    };
+                });
+
+                artistsWithCounts.push(...batchResults);
+
+                // Update progress
+                const progress = 10 + Math.round((i + batch.length) / roleData.artists.length * 70); // 10-80%
+                this.updateLoadingProgress(
+                    `🎭 Loading ${PersonTerm}...`,
+                    `Processed ${Math.min(i + batch.length, roleData.artists.length)} of ${roleData.artists.length} ${personTerm}`,
+                    progress
+                );
+
+                // Small delay for UI responsiveness
+                if (i + batchSize < roleData.artists.length) {
+                    await new Promise(resolve => setTimeout(resolve, 20));
+                }
+            }
+
+            // Update progress: Sorting
+            this.updateLoadingProgress(
+                `🎭 Loading ${PersonTerm}...`,
+                `Sorting ${personTerm} by album count`,
+                85
+            );
+
+            await new Promise(resolve => setTimeout(resolve, 30));
+
+            // Sort artists by role-specific album count (most albums for this role first)
+            const sortedArtists = artistsWithCounts.sort((a, b) => b.roleSpecificAlbumCount - a.roleSpecificAlbumCount);
+
+            // Update progress: Generating content
+            this.updateLoadingProgress(
+                `🎭 Loading ${PersonTerm}...`,
+                'Generating modal content',
+                95
+            );
+
+            await new Promise(resolve => setTimeout(resolve, 30));
+
+            // Generate the initial content (first 24 artists for quick display)
+            const initialCount = Math.min(24, sortedArtists.length);
+            const initialArtists = sortedArtists.slice(0, initialCount);
+
+            const initialArtistsHtml = this.generateRoleArtistCards(initialArtists, 0);
+
+            const result = `
+                <div class="role-modal-content">
+                    <div class="role-modal-header">
                         <p>${PersonTerm} who worked as <strong>${roleData.name}</strong> in <strong>${roleData.frequency}</strong> album${roleData.frequency !== 1 ? 's' : ''} (sorted by most albums with this role):</p>
                         <p class="role-artists-stats">Showing <span id="role-artists-loaded">${initialArtists.length}</span> of <span id="role-artists-total">${sortedArtists.length}</span> ${personTerm}</p>
                     </div>
