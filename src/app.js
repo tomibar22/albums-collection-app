@@ -716,7 +716,7 @@ class AlbumCollectionApp {
 
     // Mobile-optimized batch size (smaller for better responsiveness)
 
-    const batchSize = 250; // Much smaller than desktop (1000)
+    const batchSize = 1000; // Increased from 250 to 1000
 
     let allAlbums = [];
 
@@ -725,6 +725,17 @@ class AlbumCollectionApp {
     let hasMore = true;
 
     let batchCount = 0;
+
+    // Get total count first for better progress indication
+    console.log('📊 Getting total album count for progress tracking...');
+    const { count: totalCount, error: countError } = await this.dataService.service.client
+        .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+        .select('*', { count: 'exact', head: true });
+
+    if (countError) throw countError;
+
+    const estimatedBatches = Math.ceil(totalCount / batchSize);
+    console.log(`📊 Total albums: ${totalCount}, estimated batches: ${estimatedBatches}`);
 
 
 
@@ -736,11 +747,11 @@ class AlbumCollectionApp {
 
     this.updateLoadingProgress(
 
-    `📚 Loading batch ${batchCount}...`,
+    `📚 Loading batch ${batchCount}/${estimatedBatches}...`,
 
-    `📱 Mobile-optimized loading... ${allAlbums.length} albums`,
+    `📱 ${allAlbums.length}/${totalCount} albums loaded`,
 
-    30 + (batchCount * 8) // Slower progress for mobile batches
+    30 + ((batchCount / estimatedBatches) * 40) // Better progress calculation
 
     );
 
@@ -772,13 +783,13 @@ class AlbumCollectionApp {
 
 
 
-    console.log(`📱 Mobile batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`);
+    console.log(`📱 Mobile batch ${batchCount}/${estimatedBatches}: ${batch.length} albums (total: ${allAlbums.length}/${totalCount})`);
 
 
 
-    // Yield to main thread more frequently on mobile
+    // Smaller yield time since batches are larger
 
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 5));
 
     } else {
 
