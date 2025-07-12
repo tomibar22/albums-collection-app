@@ -624,13 +624,8 @@ class AlbumCollectionApp {
 
     // For mobile, only load core data and defer heavy processing
 
-    const [artists, fetchedScrapedHistory] = await Promise.all([
-
-    this.dataService.getArtists().catch(() => []), // Graceful fallback
-
-    this.dataService.getScrapedArtistsHistory().catch(() => [])
-
-    ]);
+    // For mobile, only load scraped history (artists will be generated on-demand)
+    const fetchedScrapedHistory = await this.dataService.getScrapedArtistsHistory().catch(() => []);
 
 
 
@@ -3000,20 +2995,16 @@ class AlbumCollectionApp {
             console.log('📊 Loading data from Supabase...');
             this.updateLoadingProgress('Loading your collection...', 'Fetching albums from database...', 50);
 
-            // Load all data from Supabase, INCLUDING scrapedHistory in the destructuring
-            const [albums, artists, tracks, roles, fetchedScrapedHistory] = await Promise.all([ // <<< CORRECTED LINE
-                this.dataService.getAlbums(),
-                this.dataService.getArtists(),
-                this.dataService.getTracks(),
-                this.dataService.getRoles(),
+            // Load albums and scraped history (relationship data will be generated)
+            const [albums, fetchedScrapedHistory] = await Promise.all([
+                this.dataService.getAllAlbums(),
                 this.dataService.getScrapedArtistsHistory()
             ]);
 
             this.updateLoadingProgress('Collection data loaded', 'Processing albums and artists...', 70);
 
-            // Update collection with core data
+            // Update collection with core data (relationship data will be generated)
             this.collection.albums = albums;
-            this.collection.artists = artists;
             this.scrapedHistory = fetchedScrapedHistory;
 
             // 🔍 DEBUG: Check year distribution in loaded albums
@@ -3048,21 +3039,12 @@ class AlbumCollectionApp {
 
             this.updateLoadingProgress('Processing data relationships...', 'Organizing tracks and roles...', 80, `${albums.length} albums loaded`);
 
-            // Normalize artist data to ensure all required properties exist
-            this.collection.artists = this.collection.artists.map(artist => ({
-                ...artist,
-                albums: artist.albums || [],
-                roles: artist.roles || [],
-                albumCount: artist.albumCount || artist.album_count || 0
-            }));
-
-            // 🔧 FIX: Regenerate tracks and roles from albums to ensure proper relationships
-            // console.log('🔄 Regenerating tracks and roles from albums to fix relationship data...');
+            // 🔧 FIX: Generate all relationship data from albums to ensure proper relationships
             this.collection.tracks = this.generateTracksFromAlbums();
             this.collection.roles = this.generateRolesFromAlbums();
-            // console.log(`✅ Regenerated ${this.collection.tracks.length} tracks and ${this.collection.roles.length} roles with proper relationships`);
+            this.collection.artists = this.generateArtistsFromAlbums();
 
-            this.updateLoadingProgress('Finalizing interface...', 'Rendering your collection...', 90, `${albums.length} albums, ${artists.length} artists`);
+            this.updateLoadingProgress('Finalizing interface...', 'Rendering your collection...', 90, `${albums.length} albums, ${this.collection.artists.length} artists`);
 
             // Log the loaded data, including scraped history length
             // console.log(`✅ Data loaded from Supabase: ${albums.length} albums, ${artists.length} artists`);
