@@ -7744,6 +7744,12 @@ class AlbumCollectionApp {
 
             const initialArtistsHtml = this.generateRoleArtistCards(initialArtists, 0);
 
+            // Store sorted artists for lazy loading (FIX: Variables needed by setupRoleArtistCardLazyLoading)
+            this.currentRoleArtists = sortedArtists;
+            this.currentRoleData = roleData;
+            this.roleCardsInitialLoad = initialCount; // Use actual initial count (24)
+            this.roleCardsLoadIncrement = 20; // Load 20 more at a time
+
             const result = `
                 <div class="role-modal-content">
                     <!-- Hidden tracking elements for lazy loading -->
