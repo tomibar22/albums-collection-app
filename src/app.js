@@ -7392,24 +7392,60 @@ class AlbumCollectionApp {
         if (rolesCount) rolesCount.textContent = this.collection.roles.length;
     }
 
-    // Refresh current view with filtered data and updated counts
+    // Get current sort state for each view
+    getCurrentSortState(viewType) {
+        const sortSelects = {
+            'albums': document.getElementById('albums-sort'),
+            'artists': document.getElementById('artists-sort'),
+            'tracks': document.getElementById('tracks-sort'),
+            'roles': document.getElementById('roles-sort')
+        };
+        
+        const sortSelect = sortSelects[viewType];
+        return sortSelect ? sortSelect.value : null;
+    }
+    
+    // Refresh current view with filtered data and updated counts, preserving sort state
     refreshCurrentViewWithCounts() {
         // Update navigation counts
         this.updateNavigationCounts();
         
-        // Refresh current view based on active view
+        // Get current sort state before refreshing
+        const currentSort = this.getCurrentSortState(this.currentView);
+        
+        // Refresh current view based on active view, preserving sort state
         switch(this.currentView) {
             case 'albums':
-                this.renderAlbumsGrid();
+                if (currentSort) {
+                    console.log(`🔄 Refreshing albums view with preserved sort: ${currentSort}`);
+                    this.sortAlbums(currentSort); // This includes rendering
+                } else {
+                    this.renderAlbumsGrid();
+                }
                 break;
             case 'artists':
-                this.renderArtistsGrid();
+                if (currentSort) {
+                    console.log(`🔄 Refreshing artists view with preserved sort: ${currentSort}`);
+                    this.sortArtists(currentSort); // This includes rendering
+                } else {
+                    this.renderArtistsGrid();
+                }
                 break;
             case 'tracks':
-                this.renderTracksGrid();
+                if (currentSort) {
+                    console.log(`🔄 Refreshing tracks view with preserved sort: ${currentSort}`);
+                    this.sortTracks(currentSort); // This includes rendering
+                } else {
+                    this.renderTracksGrid();
+                }
                 break;
             case 'roles':
-                this.renderRolesGrid();
+                if (currentSort) {
+                    console.log(`🔄 Refreshing roles view with preserved sort: ${currentSort}`);
+                    this.sortRoles(currentSort); // This includes rendering
+                } else {
+                    this.renderRolesGrid();
+                }
                 break;
         }
     }
