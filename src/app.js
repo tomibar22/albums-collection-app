@@ -6760,10 +6760,25 @@ class AlbumCollectionApp {
         const currentSearchQuery = this.currentSearchQueries.albums;
         let albumsToDisplay;
 
+        // FIX: Get the correct data source (filtered or full)
+        let sourceAlbums;
+        if (this.yearFilter.enabled) {
+            // Use filtered albums from original collection
+            sourceAlbums = this.filterAlbumsByYearRange(
+                this.originalCollection.albums,
+                this.yearFilter.selectedMin, 
+                this.yearFilter.selectedMax
+            );
+            console.log(`🎯 Sorting with year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax} (${sourceAlbums.length} albums)`);
+        } else {
+            // Use full collection
+            sourceAlbums = this.collection.albums;
+        }
+
         if (currentSearchQuery && currentSearchQuery.trim()) {
             // There's an active search - get filtered results and sort them
             console.log(`🔍 Sorting with active search filter: "${currentSearchQuery}"`);
-            albumsToDisplay = this.collection.albums.filter(album => {
+            albumsToDisplay = sourceAlbums.filter(album => {
                 const searchText = currentSearchQuery.toLowerCase();
                 return (
                     album.title.toLowerCase().includes(searchText) ||
@@ -6774,8 +6789,8 @@ class AlbumCollectionApp {
                 );
             });
         } else {
-            // No active search - sort the full collection
-            albumsToDisplay = [...this.collection.albums]; // Create a copy to sort
+            // No active search - sort the appropriate collection (filtered or full)
+            albumsToDisplay = [...sourceAlbums]; // Create a copy to sort
         }
 
         // Sort the data to display
@@ -6841,9 +6856,15 @@ class AlbumCollectionApp {
         if (!this.musicalArtists) this.musicalArtists = [];
         if (!this.technicalArtists) this.technicalArtists = [];
 
-        // Generate artists if not already done
-        if (this.musicalArtists.length === 0 && this.technicalArtists.length === 0) {
-            this.collection.artists = this.generateArtistsFromAlbums();
+        // FIX: If year filter is active, regenerate artists from filtered albums to ensure accuracy
+        if (this.yearFilter.enabled) {
+            console.log(`🎯 Regenerating artists for year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`);
+            this.collection.artists = this.generateArtistsFromAlbums(); // Uses this.collection.albums which should be filtered
+        } else {
+            // Generate artists if not already done (normal case without filter)
+            if (this.musicalArtists.length === 0 && this.technicalArtists.length === 0) {
+                this.collection.artists = this.generateArtistsFromAlbums();
+            }
         }
 
         // Only sort if we have artists
@@ -9013,6 +9034,12 @@ class AlbumCollectionApp {
         const currentSearchQuery = this.currentSearchQueries.tracks;
         let tracksToDisplay;
 
+        // FIX: If year filter is active, regenerate tracks from filtered albums to ensure accuracy
+        if (this.yearFilter.enabled) {
+            console.log(`🎯 Regenerating tracks for year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`);
+            this.collection.tracks = this.generateTracksFromAlbums(); // Uses this.collection.albums which should be filtered
+        }
+
         if (currentSearchQuery && currentSearchQuery.trim()) {
             // There's an active search - get filtered results and sort them
             console.log(`🔍 Sorting tracks with active search filter: "${currentSearchQuery}"`);
@@ -9020,7 +9047,7 @@ class AlbumCollectionApp {
                 return track.title.toLowerCase().includes(currentSearchQuery.toLowerCase());
             });
         } else {
-            // No active search - sort the full collection
+            // No active search - sort the collection (filtered or full)
             tracksToDisplay = [...this.collection.tracks]; // Create a copy to sort
         }
 
@@ -9063,6 +9090,12 @@ class AlbumCollectionApp {
             return;
         }
 
+        // FIX: If year filter is active, regenerate roles from filtered albums to ensure accuracy
+        if (this.yearFilter.enabled) {
+            console.log(`🎯 Regenerating roles for year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`);
+            this.collection.roles = this.generateRolesFromAlbums(); // Uses this.collection.albums which should be filtered
+        }
+
         // Check if there's an active search filter
         const currentSearchQuery = this.currentSearchQueries.roles;
         let rolesToSort;
@@ -9075,7 +9108,7 @@ class AlbumCollectionApp {
                 return role.name.toLowerCase().includes(searchText);
             });
         } else {
-            // No active search - use full collection
+            // No active search - use collection (filtered or full)
             rolesToSort = [...this.collection.roles]; // Create a copy to sort
         }
 
