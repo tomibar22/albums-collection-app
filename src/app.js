@@ -6858,7 +6858,9 @@ class AlbumCollectionApp {
     }
 
     sortArtists(sortType) {
-        console.log(`Sorting artists by: ${sortType}`);
+        console.log(`🔄 sortArtists called with: ${sortType}`);
+        console.log(`📊 Year filter state: enabled=${this.yearFilter.enabled}, range=${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`);
+        console.log(`👥 Current artist counts: musical=${this.musicalArtists?.length || 0}, technical=${this.technicalArtists?.length || 0}`);
 
         // Show/hide shuffle button based on sort type
         const shuffleBtn = document.getElementById('shuffle-artists');
@@ -6878,11 +6880,18 @@ class AlbumCollectionApp {
         if (this.yearFilter.enabled) {
             console.log(`🎯 Regenerating artists for year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`);
             this.collection.artists = this.generateArtistsFromAlbums(); // Uses this.collection.albums which should be filtered
+            // The generateArtistsFromAlbums() method automatically updates this.musicalArtists and this.technicalArtists
         } else {
             // Generate artists if not already done (normal case without filter)
             if (this.musicalArtists.length === 0 && this.technicalArtists.length === 0) {
                 this.collection.artists = this.generateArtistsFromAlbums();
             }
+        }
+
+        // Ensure we have properly categorized artists after any regeneration
+        if (!this.musicalArtists || !this.technicalArtists) {
+            console.log('🔄 Artists not properly categorized, regenerating...');
+            this.collection.artists = this.generateArtistsFromAlbums();
         }
 
         // Only sort if we have artists
@@ -6946,6 +6955,7 @@ class AlbumCollectionApp {
 
         // SIMPLIFIED: Always use clean render for consistent behavior
         console.log('🔄 Using clean render for consistent artists lazy loading behavior');
+        console.log(`🎯 About to render active artists tab with sortType: ${sortType}`);
         this.renderActiveArtistsTab();
     }
 
