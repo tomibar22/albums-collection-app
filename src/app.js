@@ -208,6 +208,8 @@ class AlbumCollectionApp {
     // Initialize Year Range Filter after data loads
     this.initializeYearFilter();
 
+    // Update navigation counts to show actual collection sizes
+    this.updateNavigationCounts();
 
     // Hide loading modal with faster delay for improved UX
 
