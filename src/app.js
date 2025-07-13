@@ -128,6 +128,20 @@ class AlbumCollectionApp {
         selectedMax: null
     };
     
+    // 🛡️ DEFENSIVE: Ensure yearFilter is never undefined
+    this.ensureYearFilterInitialized = () => {
+        if (!this.yearFilter) {
+            console.error('🚨 CRITICAL: yearFilter was undefined, reinitializing...');
+            this.yearFilter = {
+                enabled: false,
+                minYear: null,
+                maxYear: null,
+                selectedMin: null,
+                selectedMax: null
+            };
+        }
+    };
+    
     // Original unfiltered collection data
     this.originalCollection = { albums: [], artists: [], tracks: [], roles: [] };
 
@@ -6803,6 +6817,9 @@ class AlbumCollectionApp {
     // Sorting methods
     sortAlbums(sortType) {
         console.log(`Sorting albums by: ${sortType}`);
+        
+        // 🛡️ DEFENSIVE: Ensure yearFilter is initialized
+        this.ensureYearFilterInitialized();
 
         // 🔍 DEBUG: Year Filter State During Sort
         console.log('🔍 SORT DEBUG:', {
@@ -6926,6 +6943,10 @@ class AlbumCollectionApp {
 
     sortArtists(sortType) {
         console.log(`🔄 sortArtists called with: ${sortType}`);
+        
+        // 🛡️ DEFENSIVE: Ensure yearFilter is initialized
+        this.ensureYearFilterInitialized();
+        
         console.log(`📊 Year filter state: enabled=${this.yearFilter.enabled}, range=${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`);
         console.log(`👥 Current artist counts: musical=${this.musicalArtists?.length || 0}, technical=${this.technicalArtists?.length || 0}`);
 
@@ -7556,6 +7577,9 @@ class AlbumCollectionApp {
 
     // Core method to filter albums by year range
     filterAlbumsByYearRange(albums, minYear, maxYear) {
+        // 🛡️ DEFENSIVE: Ensure yearFilter is initialized
+        this.ensureYearFilterInitialized();
+        
         if (!this.yearFilter.enabled) return albums;
         
         return albums.filter(album => {
@@ -7719,6 +7743,9 @@ class AlbumCollectionApp {
     // Handle year range changes from the slider
     async onYearRangeChange(minYear, maxYear) {
         console.log(`📅 Year range changed: ${minYear} - ${maxYear}`);
+        
+        // 🛡️ DEFENSIVE: Ensure yearFilter is initialized
+        this.ensureYearFilterInitialized();
         
         // Update filter state
         this.yearFilter.selectedMin = minYear;
