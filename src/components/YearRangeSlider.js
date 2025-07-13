@@ -7,45 +7,53 @@ class YearRangeSlider {
         this.selectedMin = minYear;
         this.selectedMax = maxYear;
         this.isDragging = false;
+        this.isCollapsed = false; // NEW: Track collapse state
     }
     
     // Generate the HTML structure for the slider
     render() {
         return `
-            <div class="year-range-slider-container" id="year-range-slider-container">
+            <div class="year-range-slider-container ${this.isCollapsed ? 'collapsed' : ''}" id="year-range-slider-container">
                 <div class="year-range-header">
-                    <span class="year-range-label">📅 Filter by Year:</span>
-                    <span class="year-range-display" id="year-range-display">${this.selectedMin} - ${this.selectedMax}</span>
+                    <div class="year-range-header-left">
+                        <button class="year-range-collapse-btn" id="year-range-collapse-btn" title="Toggle year filter">
+                            <span class="collapse-icon">${this.isCollapsed ? '▶️' : '🔽'}</span>
+                        </button>
+                        <span class="year-range-label">📅 Filter by Year:</span>
+                        <span class="year-range-display" id="year-range-display">${this.selectedMin} - ${this.selectedMax}</span>
+                    </div>
                     <button class="year-filter-reset" id="year-filter-reset" title="Reset to full range">
                         🔄 Reset
                     </button>
                 </div>
-                <div class="year-range-slider-wrapper">
-                    <div class="year-range-slider" id="year-range-slider">
-                        <input 
-                            type="range" 
-                            class="range-input range-min" 
-                            id="range-min"
-                            min="${this.minYear}" 
-                            max="${this.maxYear}" 
-                            value="${this.selectedMin}"
-                            step="1"
-                        >
-                        <input 
-                            type="range" 
-                            class="range-input range-max" 
-                            id="range-max"
-                            min="${this.minYear}" 
-                            max="${this.maxYear}" 
-                            value="${this.selectedMax}"
-                            step="1"
-                        >
-                        <div class="slider-track" id="slider-track"></div>
-                        <div class="slider-range" id="slider-range"></div>
-                    </div>
-                    <div class="year-range-labels">
-                        <span class="year-label-min">${this.minYear}</span>
-                        <span class="year-label-max">${this.maxYear}</span>
+                <div class="year-range-content" id="year-range-content" style="display: ${this.isCollapsed ? 'none' : 'block'}">
+                    <div class="year-range-slider-wrapper">
+                        <div class="year-range-slider" id="year-range-slider">
+                            <input 
+                                type="range" 
+                                class="range-input range-min" 
+                                id="range-min"
+                                min="${this.minYear}" 
+                                max="${this.maxYear}" 
+                                value="${this.selectedMin}"
+                                step="1"
+                            >
+                            <input 
+                                type="range" 
+                                class="range-input range-max" 
+                                id="range-max"
+                                min="${this.minYear}" 
+                                max="${this.maxYear}" 
+                                value="${this.selectedMax}"
+                                step="1"
+                            >
+                            <div class="slider-track" id="slider-track"></div>
+                            <div class="slider-range" id="slider-range"></div>
+                        </div>
+                        <div class="year-range-labels">
+                            <span class="year-label-min">${this.minYear}</span>
+                            <span class="year-label-max">${this.maxYear}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -57,10 +65,18 @@ class YearRangeSlider {
         const rangeMin = document.getElementById('range-min');
         const rangeMax = document.getElementById('range-max');
         const resetBtn = document.getElementById('year-filter-reset');
+        const collapseBtn = document.getElementById('year-range-collapse-btn'); // NEW: Collapse button
         
         if (!rangeMin || !rangeMax) {
             console.error('❌ Year range slider elements not found');
             return;
+        }
+        
+        // NEW: Collapse/expand functionality
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', () => {
+                this.toggleCollapse();
+            });
         }
         
         // Input event listeners for real-time updates
@@ -227,6 +243,42 @@ class YearRangeSlider {
     // Check if filter is active (not at full range)
     isFilterActive() {
         return this.selectedMin !== this.minYear || this.selectedMax !== this.maxYear;
+    }
+    
+    // NEW: Toggle collapse/expand state
+    toggleCollapse() {
+        this.isCollapsed = !this.isCollapsed;
+        this.updateCollapseState();
+        console.log(`📅 Year filter ${this.isCollapsed ? 'collapsed' : 'expanded'}`);
+    }
+    
+    // NEW: Update the UI to reflect collapse state
+    updateCollapseState() {
+        const container = document.getElementById('year-range-slider-container');
+        const content = document.getElementById('year-range-content');
+        const collapseIcon = document.querySelector('.collapse-icon');
+        
+        if (container) {
+            if (this.isCollapsed) {
+                container.classList.add('collapsed');
+            } else {
+                container.classList.remove('collapsed');
+            }
+        }
+        
+        if (content) {
+            content.style.display = this.isCollapsed ? 'none' : 'block';
+        }
+        
+        if (collapseIcon) {
+            collapseIcon.textContent = this.isCollapsed ? '▶️' : '🔽';
+        }
+    }
+    
+    // NEW: Set collapse state programmatically
+    setCollapsed(collapsed) {
+        this.isCollapsed = collapsed;
+        this.updateCollapseState();
     }
 }
 

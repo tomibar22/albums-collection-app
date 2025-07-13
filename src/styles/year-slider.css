@@ -293,3 +293,87 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* NEW: Collapsible functionality styles */
+.year-range-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.year-range-collapse-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+}
+
+.year-range-collapse-btn:hover {
+    background: var(--border-color);
+    transform: scale(1.1);
+}
+
+.year-range-collapse-btn:active {
+    transform: scale(0.95);
+}
+
+.collapse-icon {
+    font-size: 0.9rem;
+    transition: transform 0.2s ease;
+}
+
+/* Collapsed state styles */
+.year-range-slider-container.collapsed {
+    gap: 0;
+}
+
+.year-range-content {
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.year-range-slider-container.collapsed .year-range-content {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    margin-top: 0;
+}
+
+.year-range-slider-container:not(.collapsed) .year-range-content {
+    max-height: 200px;
+    opacity: 1;
+    padding-top: 8px;
+}
+
+/* Smooth icon rotation when toggling */
+.year-range-slider-container.collapsed .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+/* Compact header when collapsed */
+.year-range-slider-container.collapsed .year-range-header {
+    margin-bottom: 0;
+}
+
+/* Mobile adjustments for collapse functionality */
+@media (max-width: 768px) {
+    .year-range-header-left {
+        gap: 8px;
+    }
+    
+    .year-range-collapse-btn {
+        min-width: 28px;
+        height: 28px;
+    }
+    
+    .collapse-icon {
+        font-size: 1rem;
+    }
+}
