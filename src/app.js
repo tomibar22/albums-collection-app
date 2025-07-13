@@ -7335,18 +7335,24 @@ class AlbumCollectionApp {
                                                    (album.artist ? [album.artist] : ['Unknown Artist']);
 
                                 if (trackMap.has(trackTitle)) {
-                                    // Increment frequency for existing track
+                                    // Check if this album is already associated with this track
                                     const existingTrack = trackMap.get(trackTitle);
-                                    existingTrack.frequency++;
-                                    existingTrack.albums.push({
-                                        albumId: album.id,
-                                        albumTitle: album.title,
-                                        albumYear: album.year,
-                                        albumArtists: albumArtists,
-                                        albumImage: album.images && album.images[0] ? album.images[0].uri : null,
-                                        trackPosition: track.position,
-                                        trackDuration: track.duration
-                                    });
+                                    const albumAlreadyExists = existingTrack.albums.some(albumEntry => albumEntry.albumId === album.id);
+                                    
+                                    if (!albumAlreadyExists) {
+                                        // Only increment frequency for unique albums
+                                        existingTrack.frequency++;
+                                        existingTrack.albums.push({
+                                            albumId: album.id,
+                                            albumTitle: album.title,
+                                            albumYear: album.year,
+                                            albumArtists: albumArtists,
+                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null,
+                                            trackPosition: track.position,
+                                            trackDuration: track.duration
+                                        });
+                                    }
+                                    // If album already exists, skip adding duplicate
                                 } else {
                                     // Create new track entry
                                     trackMap.set(trackTitle, {
@@ -7645,18 +7651,24 @@ class AlbumCollectionApp {
                                                        (album.artist ? [album.artist] : ['Unknown Artist']);
 
                                     if (trackMap.has(trackTitle)) {
-                                        // Increment frequency for existing track
+                                        // Check if this album is already associated with this track
                                         const existingTrack = trackMap.get(trackTitle);
-                                        existingTrack.frequency++;
-                                        existingTrack.albums.push({
-                                            albumId: album.id,
-                                            albumTitle: album.title,
-                                            albumYear: album.year,
-                                            albumArtists: albumArtists,
-                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null,
-                                            trackPosition: track.position,
-                                            trackDuration: track.duration
-                                        });
+                                        const albumAlreadyExists = existingTrack.albums.some(albumEntry => albumEntry.albumId === album.id);
+                                        
+                                        if (!albumAlreadyExists) {
+                                            // Only increment frequency for unique albums
+                                            existingTrack.frequency++;
+                                            existingTrack.albums.push({
+                                                albumId: album.id,
+                                                albumTitle: album.title,
+                                                albumYear: album.year,
+                                                albumArtists: albumArtists,
+                                                albumImage: album.images && album.images[0] ? album.images[0].uri : null,
+                                                trackPosition: track.position,
+                                                trackDuration: track.duration
+                                            });
+                                        }
+                                        // If album already exists, skip adding duplicate
                                     } else {
                                         // Create new track entry
                                         trackMap.set(trackTitle, {
