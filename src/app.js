@@ -119,6 +119,18 @@ class AlbumCollectionApp {
 
 
 
+    // Year Range Filter Configuration
+    this.yearFilter = {
+        enabled: false,
+        minYear: null,
+        maxYear: null,
+        selectedMin: null,
+        selectedMax: null
+    };
+    
+    // Original unfiltered collection data
+    this.originalCollection = { albums: [], artists: [], tracks: [], roles: [] };
+
     // Mobile detection for responsive features
 
     this.isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -7320,6 +7332,89 @@ class AlbumCollectionApp {
 
         return tracksArray;
     }
+
+    // ====================================================================
+    // YEAR RANGE FILTER METHODS
+    // ====================================================================
+
+    // Core method to filter albums by year range
+    filterAlbumsByYearRange(albums, minYear, maxYear) {
+        if (!this.yearFilter.enabled) return albums;
+        
+        return albums.filter(album => {
+            const year = parseInt(album.year);
+            return !isNaN(year) && year >= minYear && year <= maxYear;
+        });
+    }
+
+    // Regenerate all collection data with year filter applied
+    async regenerateCollectionDataWithFilter() {
+        console.log(`🎯 Regenerating collection data with year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`);
+        
+        // Filter albums by year range
+        const filteredAlbums = this.filterAlbumsByYearRange(
+            this.originalCollection.albums, 
+            this.yearFilter.selectedMin, 
+            this.yearFilter.selectedMax
+        );
+        
+        console.log(`📊 Filtered ${this.originalCollection.albums.length} albums to ${filteredAlbums.length} albums`);
+        
+        // Update filtered collection
+        this.collection.albums = filteredAlbums;
+        
+        // Regenerate derived data from filtered albums
+        this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+        this.collection.roles = await this.generateRolesFromAlbumsAsync();  
+        this.collection.artists = this.generateArtistsFromAlbums();
+        
+        // Reset artist regeneration flag since we just regenerated
+        this.artistsNeedRegeneration = false;
+        
+        // Refresh current view with updated data
+        this.refreshCurrentViewWithCounts();
+        
+        console.log(`✅ Collection regeneration complete: ${this.collection.albums.length} albums, ${this.collection.artists.length} artists, ${this.collection.tracks.length} tracks, ${this.collection.roles.length} roles`);
+    }
+
+    // Update navigation counts to reflect filtered data
+    updateNavigationCounts() {
+        const albumsCount = document.querySelector('[data-view="albums"] .nav-count');
+        const artistsCount = document.querySelector('[data-view="artists"] .nav-count');
+        const tracksCount = document.querySelector('[data-view="tracks"] .nav-count');
+        const rolesCount = document.querySelector('[data-view="roles"] .nav-count');
+
+        if (albumsCount) albumsCount.textContent = this.collection.albums.length;
+        if (artistsCount) artistsCount.textContent = this.collection.artists.length;
+        if (tracksCount) tracksCount.textContent = this.collection.tracks.length;
+        if (rolesCount) rolesCount.textContent = this.collection.roles.length;
+    }
+
+    // Refresh current view with filtered data and updated counts
+    refreshCurrentViewWithCounts() {
+        // Update navigation counts
+        this.updateNavigationCounts();
+        
+        // Refresh current view based on active view
+        switch(this.currentView) {
+            case 'albums':
+                this.renderAlbumsGrid();
+                break;
+            case 'artists':
+                this.renderArtistsGrid();
+                break;
+            case 'tracks':
+                this.renderTracksGrid();
+                break;
+            case 'roles':
+                this.renderRolesGrid();
+                break;
+        }
+    }
+
+    // ====================================================================
+    // END YEAR RANGE FILTER METHODS
+    // ====================================================================
 
     // Async version with progress updates - optimized for mobile performance
     async generateTracksFromAlbumsAsync() {
