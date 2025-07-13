@@ -719,7 +719,10 @@ class AlbumCollectionApp {
 
     this.collection.artists = []; // Will be generated on-demand
 
-    this.collection.tracks = []; // Will be generated on-demand
+    // Generate tracks immediately for iPhone track link functionality
+    console.log('📱 Mobile: Generating tracks data for track link functionality...');
+    this.updateLoadingProgress('🎵 Mobile: Setting up tracks...', 'Enabling track navigation...', 88);
+    this.collection.tracks = await this.generateTracksFromAlbumsAsync(); // Generate immediately for track links
 
     this.collection.roles = []; // Will be generated on-demand
 
