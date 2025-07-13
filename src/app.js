@@ -2396,7 +2396,21 @@ class AlbumCollectionApp {
 
         // 🔧 ENHANCED FIX: Always check if year filter is active and regenerate accordingly
         if (this.yearFilter && this.yearFilter.enabled) {
-            console.log('🎯 Year filter active during tab render - regenerating artists from filtered albums');
+            console.log(`🎯 Year filter active during tab render - regenerating artists from filtered albums`);
+            console.log(`📊 DEBUG: Collection has ${this.collection.albums.length} albums, original has ${this.originalCollection.albums.length}`);
+            
+            // CRITICAL FIX: Ensure we're working with filtered albums
+            // If collection.albums has been reset to original, re-filter it
+            if (this.collection.albums.length === this.originalCollection.albums.length) {
+                console.log('⚠️ Collection appears to be reset - re-applying year filter');
+                const filteredAlbums = this.filterAlbumsByYearRange(
+                    this.originalCollection.albums, 
+                    this.yearFilter.selectedMin, 
+                    this.yearFilter.selectedMax
+                );
+                this.collection.albums = filteredAlbums;
+                console.log(`🔄 Re-filtered to ${filteredAlbums.length} albums`);
+            }
             
             // Store current sort state before regeneration
             const currentSort = this.getCurrentSortState('artists');
