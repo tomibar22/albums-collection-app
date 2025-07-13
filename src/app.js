@@ -6910,10 +6910,16 @@ class AlbumCollectionApp {
                 break;
         }
 
+        // FIX Bug 1: Update collection.albums with sorted filtered results to maintain filter state
+        this.collection.albums = albumsToDisplay;
+        
         // SIMPLIFIED: Always use clean render for consistent behavior
         // This eliminates timing issues between updateGridItems and renderAlbumsGrid
         console.log('🔄 Using clean render for consistent lazy loading behavior');
         this.renderAlbumsGrid(albumsToDisplay);
+        
+        // Update page counts to reflect filtered results
+        this.updatePageTitleCounts();
 
         console.log(`✅ Sorted and displayed ${albumsToDisplay.length} albums`);
     }
