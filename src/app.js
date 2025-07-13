@@ -1347,7 +1347,11 @@ class AlbumCollectionApp {
 
     const view = e.target.getAttribute('data-view');
 
-    this.switchView(view);
+    if (view) {
+        this.switchView(view);
+    } else {
+        console.warn('⚠️ Navigation button clicked but no data-view attribute found');
+    }
 
     });
 
@@ -6565,17 +6569,29 @@ class AlbumCollectionApp {
         // Clear all search inputs when switching views
         this.clearAllSearchInputs();
 
-        // Update navigation
+        // Update navigation with null safety checks
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+        
+        const targetNavBtn = document.querySelector(`[data-view="${viewName}"]`);
+        if (targetNavBtn) {
+            targetNavBtn.classList.add('active');
+        } else {
+            console.warn(`⚠️ Navigation button not found for view: ${viewName}`);
+        }
 
-        // Update view containers
+        // Update view containers with null safety checks
         document.querySelectorAll('.view-container').forEach(container => {
             container.classList.remove('active');
         });
-        document.getElementById(`${viewName}-view`).classList.add('active');
+        
+        const targetViewContainer = document.getElementById(`${viewName}-view`);
+        if (targetViewContainer) {
+            targetViewContainer.classList.add('active');
+        } else {
+            console.warn(`⚠️ View container not found for view: ${viewName}`);
+        }
 
         this.currentView = viewName;
         this.loadViewContent(viewName);
@@ -6881,17 +6897,34 @@ class AlbumCollectionApp {
             console.log(`🎯 Regenerating artists for year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`);
             this.collection.artists = this.generateArtistsFromAlbums(); // Uses this.collection.albums which should be filtered
             // The generateArtistsFromAlbums() method automatically updates this.musicalArtists and this.technicalArtists
+            
+            // Ensure categorized arrays are properly set after regeneration
+            if (!this.musicalArtists || !this.technicalArtists) {
+                console.log('⚠️ Artists not categorized after regeneration, forcing re-categorization...');
+                const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(this.collection.artists);
+                this.musicalArtists = musicalArtists;
+                this.technicalArtists = technicalArtists;
+            }
         } else {
             // Generate artists if not already done (normal case without filter)
-            if (this.musicalArtists.length === 0 && this.technicalArtists.length === 0) {
+            if (!this.musicalArtists || !this.technicalArtists || 
+                (this.musicalArtists.length === 0 && this.technicalArtists.length === 0)) {
+                console.log('🔄 Generating artists for first time...');
                 this.collection.artists = this.generateArtistsFromAlbums();
             }
         }
 
-        // Ensure we have properly categorized artists after any regeneration
-        if (!this.musicalArtists || !this.technicalArtists) {
-            console.log('🔄 Artists not properly categorized, regenerating...');
+        // Final safety check: Ensure we have properly categorized artists
+        if (!this.musicalArtists || !this.technicalArtists || 
+            (!Array.isArray(this.musicalArtists) || !Array.isArray(this.technicalArtists))) {
+            console.log('🚨 Critical: Artists not properly categorized, forcing regeneration...');
             this.collection.artists = this.generateArtistsFromAlbums();
+            
+            // Double-check after regeneration
+            if (!this.musicalArtists || !this.technicalArtists) {
+                console.error('❌ Failed to categorize artists even after regeneration');
+                return; // Exit early to prevent further errors
+            }
         }
 
         // Only sort if we have artists
