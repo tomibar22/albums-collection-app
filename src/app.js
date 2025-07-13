@@ -2394,10 +2394,28 @@ class AlbumCollectionApp {
         }
         this.lastArtistRenderTime = now;
 
-        // 🔧 FIX: If year filter is active, regenerate artists from filtered albums to ensure accuracy
+        // 🔧 ENHANCED FIX: Always check if year filter is active and regenerate accordingly
         if (this.yearFilter && this.yearFilter.enabled) {
             console.log('🎯 Year filter active during tab render - regenerating artists from filtered albums');
+            
+            // Store current sort state before regeneration
+            const currentSort = this.getCurrentSortState('artists');
+            
+            // Regenerate artists from current filtered album collection
             this.generateArtistsFromAlbums(); // Uses this.collection.albums which should be filtered
+            
+            // Reapply sorting if it was active
+            if (currentSort && currentSort !== 'random') {
+                console.log(`🔄 Reapplying sort after artist regeneration: ${currentSort}`);
+                this.applySortingToArtists(currentSort); // Apply sorting without triggering full render
+            }
+        } else {
+            // Ensure we have artists even without year filter
+            if (!this.musicalArtists || !this.technicalArtists || 
+                (this.musicalArtists.length === 0 && this.technicalArtists.length === 0)) {
+                console.log('🔄 No artists found, regenerating from full collection');
+                this.generateArtistsFromAlbums();
+            }
         }
 
         const activeTab = this.currentArtistsTab || 'musical';
@@ -2452,6 +2470,9 @@ class AlbumCollectionApp {
     switchArtistsTab(tabType) {
         console.log(`🔄 Switching to ${tabType} artists tab`);
 
+        // Store current sort state before tab switch
+        const currentSort = this.getCurrentSortState('artists');
+        
         // Update current tab
         this.currentArtistsTab = tabType;
 
@@ -2477,8 +2498,18 @@ class AlbumCollectionApp {
             musicalContent.classList.remove('active');
         }
 
-        // Render the new active tab
+        // Render the new active tab (this will respect year filter state)
         this.renderActiveArtistsTab();
+        
+        // Reapply current sorting if it was active
+        if (currentSort && currentSort !== 'random') {
+            console.log(`🔄 Reapplying sort after tab switch: ${currentSort}`);
+            // Use setTimeout to ensure tab switch completes before sorting
+            setTimeout(() => {
+                this.applySortingToArtists(currentSort);
+                this.renderActiveArtistsTab(); // Re-render with sorted data
+            }, 50);
+        }
 
         // Ensure intersection observer is set up after tab becomes visible
         // Small delay to allow CSS transitions to complete
@@ -6930,6 +6961,14 @@ class AlbumCollectionApp {
         // Only sort if we have artists
         if ((!this.musicalArtists || this.musicalArtists.length === 0) &&
             (!this.technicalArtists || this.technicalArtists.length === 0)) {
+            console.log('⚠️ No artists to sort, rendering empty state');
+            this.renderActiveArtistsTab(); // Render empty state
+            return;
+        }
+
+        // Only sort if we have artists
+        if ((!this.musicalArtists || this.musicalArtists.length === 0) &&
+            (!this.technicalArtists || this.technicalArtists.length === 0)) {
             console.log('No artists to sort');
             return;
         }
@@ -6990,6 +7029,59 @@ class AlbumCollectionApp {
         console.log('🔄 Using clean render for consistent artists lazy loading behavior');
         console.log(`🎯 About to render active artists tab with sortType: ${sortType}`);
         this.renderActiveArtistsTab();
+    }
+
+    // Helper method to apply sorting to artists without triggering full render
+    applySortingToArtists(sortType) {
+        console.log(`🔧 Applying sorting to artists: ${sortType}`);
+
+        // Ensure artists collections are initialized
+        if (!this.musicalArtists) this.musicalArtists = [];
+        if (!this.technicalArtists) this.technicalArtists = [];
+
+        // Define sort functions for different contexts
+        const musicalSortFunction = (a, b) => {
+            switch(sortType) {
+                case 'most-albums':
+                    const aCount = a.musicalAlbumCount !== undefined ? a.musicalAlbumCount : (a.albumCount || 0);
+                    const bCount = b.musicalAlbumCount !== undefined ? b.musicalAlbumCount : (b.albumCount || 0);
+                    return bCount - aCount;
+                case 'a-z':
+                    return (a.name || '').localeCompare(b.name || '');
+                case 'random':
+                    return Math.random() - 0.5;
+                default:
+                    return 0;
+            }
+        };
+
+        const technicalSortFunction = (a, b) => {
+            switch(sortType) {
+                case 'most-albums':
+                    const aCount = a.technicalAlbumCount !== undefined ? a.technicalAlbumCount : (a.albumCount || 0);
+                    const bCount = b.technicalAlbumCount !== undefined ? b.technicalAlbumCount : (b.albumCount || 0);
+                    return bCount - aCount;
+                case 'a-z':
+                    return (a.name || '').localeCompare(b.name || '');
+                case 'random':
+                    return Math.random() - 0.5;
+                default:
+                    return 0;
+            }
+        };
+
+        // Apply tab-specific sorting to both arrays
+        this.musicalArtists.sort(musicalSortFunction);
+        this.technicalArtists.sort(technicalSortFunction);
+
+        // Update combined collection for backward compatibility
+        const uniqueArtistsMap = new Map();
+        [...this.musicalArtists, ...this.technicalArtists].forEach(artist => {
+            uniqueArtistsMap.set(artist.name, artist);
+        });
+        this.collection.artists = Array.from(uniqueArtistsMap.values());
+
+        console.log(`✅ Applied sorting: ${this.musicalArtists.length} musical, ${this.technicalArtists.length} technical`);
     }
 
     // Tracks View Implementation
@@ -7529,9 +7621,11 @@ class AlbumCollectionApp {
             case 'artists':
                 if (currentSort) {
                     console.log(`🔄 Refreshing artists view with preserved sort: ${currentSort}`);
-                    this.sortArtists(currentSort); // This includes rendering
+                    // For artists, we need to be more careful about preserving tab state
+                    this.sortArtists(currentSort); // This includes rendering with current tab
                 } else {
-                    this.renderArtistsGrid();
+                    // If no sort is active, just render the current tab
+                    this.renderActiveArtistsTab();
                 }
                 break;
             case 'tracks':
