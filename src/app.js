@@ -6735,6 +6735,16 @@ class AlbumCollectionApp {
     sortAlbums(sortType) {
         console.log(`Sorting albums by: ${sortType}`);
 
+        // 🔍 DEBUG: Year Filter State During Sort
+        console.log('🔍 SORT DEBUG:', {
+            yearFilterEnabled: this.yearFilter.enabled,
+            selectedMin: this.yearFilter.selectedMin,
+            selectedMax: this.yearFilter.selectedMax,
+            collectionSize: this.collection.albums?.length,
+            originalCollectionSize: this.originalCollection?.albums?.length,
+            yearFilterObject: this.yearFilter
+        });
+
         // Show/hide shuffle button based on sort type
         const shuffleBtn = document.getElementById('shuffle-albums');
         if (shuffleBtn) {
