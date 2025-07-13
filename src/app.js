@@ -7173,6 +7173,21 @@ class AlbumCollectionApp {
 
     // Render the currently active roles tab with Lazy Loading
     renderActiveRolesTab() {
+        // 🔧 FIX: If year filter is active, regenerate roles from filtered albums to ensure accuracy
+        if (this.yearFilter && this.yearFilter.enabled) {
+            console.log('🎯 Year filter active during roles tab render - regenerating roles from filtered albums');
+            this.collection.roles = this.generateRolesFromAlbums(); // Uses this.collection.albums which should be filtered
+            
+            // Separate the regenerated roles into musical and technical categories
+            const { musicalRoles, technicalRoles } = this.separateRolesByCategory(this.collection.roles);
+            this.musicalRoles = musicalRoles;
+            this.technicalRoles = technicalRoles;
+            
+            // Update tab counts to reflect filtered data
+            document.getElementById('musical-roles-count').textContent = `(${musicalRoles.length})`;
+            document.getElementById('technical-roles-count').textContent = `(${technicalRoles.length})`;
+        }
+
         const activeTab = this.currentRolesTab || 'musical';
         const roles = activeTab === 'musical' ? this.musicalRoles : this.technicalRoles;
         const gridId = activeTab === 'musical' ? 'musical-roles-grid' : 'technical-roles-grid';
