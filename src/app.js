@@ -7744,6 +7744,27 @@ class AlbumCollectionApp {
     async onYearRangeChange(minYear, maxYear) {
         console.log(`📅 Year range changed: ${minYear} - ${maxYear}`);
         
+        // 🐛 DEBUG: Check what parameters we're actually receiving
+        console.log(`🔍 DEBUG onYearRangeChange parameters:`, {
+            minYear: minYear,
+            minYearType: typeof minYear,
+            maxYear: maxYear,
+            maxYearType: typeof maxYear,
+            argumentsLength: arguments.length,
+            allArguments: Array.from(arguments)
+        });
+        
+        // Check if we received an object instead of separate parameters
+        if (typeof minYear === 'object' && minYear !== null) {
+            console.warn(`🚨 BUG DETECTED: Received object instead of separate parameters!`, minYear);
+            // Fix the parameters if we got an object
+            if (minYear.min !== undefined && minYear.max !== undefined) {
+                maxYear = minYear.max;
+                minYear = minYear.min;
+                console.log(`🔧 FIXED: Extracted parameters - minYear: ${minYear}, maxYear: ${maxYear}`);
+            }
+        }
+        
         // 🛡️ DEFENSIVE: Ensure yearFilter is initialized
         this.ensureYearFilterInitialized();
         
