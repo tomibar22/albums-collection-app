@@ -3042,7 +3042,51 @@ class AlbumCollectionApp {
         trackElement.style.opacity = '0.6';
         
         try {
-            // Find the track in the collection using normalized matching
+            // 📱 iPhone-specific debugging
+            const isIPhone = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            if (isIPhone) {
+                console.log('📱 iPhone detected - enhanced debugging:');
+                console.log('📱 Raw trackTitle:', JSON.stringify(trackTitle));
+                console.log('📱 trackTitle length:', trackTitle.length);
+                console.log('📱 trackTitle char codes:', Array.from(trackTitle).map(c => c.charCodeAt(0)));
+                console.log('📱 Collection tracks count:', this.collection.tracks.length);
+                console.log('📱 First 5 track titles:', this.collection.tracks.slice(0, 5).map(t => t.title));
+                
+                // Try exact match first (for iPhone)
+                const exactMatch = this.collection.tracks.find(t => t.title === trackTitle);
+                if (exactMatch) {
+                    console.log('📱 ✅ Found exact match on iPhone:', exactMatch.title);
+                    this.showTrackAlbums(exactMatch);
+                    trackElement.style.opacity = originalOpacity;
+                    return;
+                }
+                
+                // Try case-insensitive match (for iPhone)
+                const caseInsensitiveMatch = this.collection.tracks.find(t => 
+                    t.title.toLowerCase() === trackTitle.toLowerCase()
+                );
+                if (caseInsensitiveMatch) {
+                    console.log('📱 ✅ Found case-insensitive match on iPhone:', caseInsensitiveMatch.title);
+                    this.showTrackAlbums(caseInsensitiveMatch);
+                    trackElement.style.opacity = originalOpacity;
+                    return;
+                }
+                
+                // Try partial match (for iPhone)
+                const partialMatch = this.collection.tracks.find(t => 
+                    t.title.includes(trackTitle) || trackTitle.includes(t.title)
+                );
+                if (partialMatch) {
+                    console.log('📱 ✅ Found partial match on iPhone:', partialMatch.title);
+                    this.showTrackAlbums(partialMatch);
+                    trackElement.style.opacity = originalOpacity;
+                    return;
+                }
+                
+                console.log('📱 ❌ No matches found on iPhone with any strategy');
+            }
+            
+            // Find the track in the collection using normalized matching (desktop path)
             const track = this.collection.tracks.find(t => 
                 this.normalizeTrackName(t.title) === this.normalizeTrackName(trackTitle)
             );
@@ -3050,19 +3094,20 @@ class AlbumCollectionApp {
             if (track) {
                 console.log(`✅ Found track in collection: "${track.title}" (${track.frequency} albums)`);
                 
-                // 🔍 PHASE 1: Debug Track Object Structure
-                console.log('🔍 Full track object structure:', track);
-                console.log('🔍 Track properties:', Object.keys(track));
-                console.log('🔍 Track.title:', track.title);
-                console.log('🔍 Track.albums:', track.albums);
-                console.log('🔍 Track.frequency:', track.frequency);
-                console.log('🔍 Track.albums is array:', Array.isArray(track.albums));
-                console.log('🔍 Track.albums length:', track.albums ? track.albums.length : 'undefined');
-                
                 // Navigate to track-album modal - pass the full track object
                 this.showTrackAlbums(track);
             } else {
                 console.warn(`❌ Track not found in collection: "${trackTitle}"`);
+                
+                // More detailed debugging for failed matches
+                console.log('🔍 Normalized clicked track:', this.normalizeTrackName(trackTitle));
+                console.log('🔍 Sample normalized collection tracks:', 
+                    this.collection.tracks.slice(0, 5).map(t => ({
+                        original: t.title,
+                        normalized: this.normalizeTrackName(t.title)
+                    }))
+                );
+                
                 // Show user-friendly message
                 alert(`Track "${trackTitle}" not found in collection. This might be a rare track or there could be a data mismatch.`);
             }
