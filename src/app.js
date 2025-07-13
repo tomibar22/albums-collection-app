@@ -205,6 +205,8 @@ class AlbumCollectionApp {
     //     timestamp: new Date().toISOString()
     // });
 
+    // Initialize Year Range Filter after data loads
+    this.initializeYearFilter();
 
 
     // Hide loading modal with faster delay for improved UX
@@ -7410,6 +7412,114 @@ class AlbumCollectionApp {
                 this.renderRolesGrid();
                 break;
         }
+    }
+
+    // Initialize the year range filter after data loads
+    initializeYearFilter() {
+        console.log('🎯 Initializing Year Range Filter...');
+        
+        // Calculate min/max years from albums
+        const years = this.collection.albums
+            .map(album => parseInt(album.year))
+            .filter(year => !isNaN(year) && year > 0);
+        
+        if (years.length === 0) {
+            console.log('⚠️ No valid years found in albums, skipping year filter initialization');
+            return;
+        }
+        
+        this.yearFilter.minYear = Math.min(...years);
+        this.yearFilter.maxYear = Math.max(...years);
+        this.yearFilter.selectedMin = this.yearFilter.minYear;
+        this.yearFilter.selectedMax = this.yearFilter.maxYear;
+        
+        console.log(`📅 Year range: ${this.yearFilter.minYear} - ${this.yearFilter.maxYear}`);
+        
+        // Store original unfiltered data
+        this.originalCollection = {
+            albums: [...this.collection.albums],
+            artists: [...this.collection.artists],
+            tracks: [...this.collection.tracks],
+            roles: [...this.collection.roles]
+        };
+        
+        console.log(`💾 Stored original collection: ${this.originalCollection.albums.length} albums`);
+        
+        // Create and render slider
+        this.yearSlider = new window.YearRangeSlider(
+            this.yearFilter.minYear,
+            this.yearFilter.maxYear,
+            (minYear, maxYear) => this.onYearRangeChange(minYear, maxYear)
+        );
+        
+        const container = document.getElementById('year-filter-container');
+        if (container) {
+            container.innerHTML = this.yearSlider.render();
+            container.style.display = 'block'; // Show the year filter
+            this.yearSlider.setupEventListeners();
+            console.log('✅ Year range slider rendered and event listeners setup');
+        } else {
+            console.error('❌ Year filter container not found');
+        }
+    }
+
+    // Handle year range changes from the slider
+    async onYearRangeChange(minYear, maxYear) {
+        console.log(`📅 Year range changed: ${minYear} - ${maxYear}`);
+        
+        // Update filter state
+        this.yearFilter.selectedMin = minYear;
+        this.yearFilter.selectedMax = maxYear;
+        this.yearFilter.enabled = (minYear !== this.yearFilter.minYear || maxYear !== this.yearFilter.maxYear);
+        
+        // Add loading class for visual feedback
+        const container = document.getElementById('year-filter-container');
+        if (container) {
+            container.classList.add('year-filter-loading');
+        }
+        
+        // Regenerate collection data with the new filter
+        try {
+            await this.regenerateCollectionDataWithFilter();
+            
+            // Add active class if filter is active
+            if (container) {
+                container.classList.toggle('year-filter-active', this.yearFilter.enabled);
+            }
+            
+            console.log(`✅ Year filter applied: ${this.yearFilter.enabled ? 'ACTIVE' : 'RESET'}`);
+        } catch (error) {
+            console.error('❌ Error applying year filter:', error);
+        } finally {
+            // Remove loading class
+            if (container) {
+                container.classList.remove('year-filter-loading');
+            }
+        }
+    }
+
+    // Reset year filter to full range
+    resetYearFilter() {
+        if (this.yearSlider) {
+            this.yearSlider.resetRange();
+        }
+    }
+
+    // Get current year filter status
+    getYearFilterStatus() {
+        return {
+            enabled: this.yearFilter.enabled,
+            range: {
+                min: this.yearFilter.selectedMin,
+                max: this.yearFilter.selectedMax
+            },
+            fullRange: {
+                min: this.yearFilter.minYear,
+                max: this.yearFilter.maxYear
+            },
+            filteredCount: this.collection.albums.length,
+            totalCount: this.originalCollection.albums.length
+        };
     }
 
     // ====================================================================

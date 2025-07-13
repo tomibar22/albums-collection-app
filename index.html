@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="src/styles/fullscreen.css">
     <link rel="stylesheet" href="src/styles/mobile-enhancements.css">
     <link rel="stylesheet" href="src/styles/migration.css">
+    <link rel="stylesheet" href="src/styles/year-slider.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -32,6 +33,11 @@
                 </div>
             </div>
         </header>
+
+        <!-- Year Range Filter (Global) -->
+        <div id="year-filter-container" class="year-filter-global" style="display: none;">
+            <!-- Year slider component will be inserted here -->
+        </div>
 
         <!-- Main Content Area -->
         <main class="app-main">
@@ -445,6 +451,7 @@
     <!-- Components -->
     <script src="src/components/AlbumCard.js"></script>
     <script src="src/components/ArtistCard.js"></script>
+    <script src="src/components/YearRangeSlider.js"></script>
     
     <!-- Main Application -->
     <script src="src/app.js"></script>
