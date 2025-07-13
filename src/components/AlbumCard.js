@@ -71,13 +71,19 @@ class AlbumCard {
                     </div>
                     <div class="album-overlay">
                         <div class="album-actions">
-                            <button class="overlay-circle-btn more-info-btn" title="More Info">
+                            <button class="overlay-circle-btn more-info-btn" 
+                                    title="More Info"
+                                    data-album-id="${this.album.id}">
                                 ℹ️
                             </button>
-                            <button class="overlay-circle-btn spotify-btn" title="Spotify">
+                            <button class="overlay-circle-btn spotify-btn" 
+                                    title="Spotify"
+                                    data-search-query="${this.escapeAttributeValue(this.getSpotifySearchQuery())}">
                                 🎵
                             </button>
-                            <button class="overlay-circle-btn youtube-btn" title="YouTube">
+                            <button class="overlay-circle-btn youtube-btn" 
+                                    title="YouTube"
+                                    data-search-query="${this.escapeAttributeValue(this.getYouTubeSearchQuery())}">
                                 📺
                             </button>
                         </div>
@@ -208,6 +214,24 @@ class AlbumCard {
         
         // For desktop and other devices, use the albums-specific URL
         return `https://open.spotify.com/search/${encodedQuery}/albums`;
+    }
+
+    /**
+     * Get Spotify search query string
+     * @returns {string} Search query for Spotify
+     */
+    getSpotifySearchQuery() {
+        const primaryArtist = this.getPrimaryArtist();
+        return `${primaryArtist} ${this.album.title}`;
+    }
+
+    /**
+     * Get YouTube search query string  
+     * @returns {string} Search query for YouTube
+     */
+    getYouTubeSearchQuery() {
+        const primaryArtist = this.getPrimaryArtist();
+        return `${this.album.title} ${primaryArtist}`;
     }
 
     /**
