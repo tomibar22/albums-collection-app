@@ -2390,6 +2390,12 @@ class AlbumCollectionApp {
         }
         this.lastArtistRenderTime = now;
 
+        // 🔧 FIX: If year filter is active, regenerate artists from filtered albums to ensure accuracy
+        if (this.yearFilter && this.yearFilter.enabled) {
+            console.log('🎯 Year filter active during tab render - regenerating artists from filtered albums');
+            this.generateArtistsFromAlbums(); // Uses this.collection.albums which should be filtered
+        }
+
         const activeTab = this.currentArtistsTab || 'musical';
         const artists = activeTab === 'musical' ? this.musicalArtists : this.technicalArtists;
         const gridId = activeTab === 'musical' ? 'musical-artists-grid' : 'technical-artists-grid';
