@@ -1294,59 +1294,50 @@ class AlbumCollectionApp {
     // Update page title counts
 
     updatePageTitleCounts() {
+        // Check if year filter is active
+        const isYearFilterActive = this.yearFilter && this.yearFilter.enabled;
+        
+        // Update Albums count
+        const albumsCountEl = document.getElementById('albums-count');
+        if (albumsCountEl) {
+            if (isYearFilterActive) {
+                albumsCountEl.textContent = `(${this.collection.albums.length} filtered)`;
+            } else {
+                albumsCountEl.textContent = `(${this.collection.albums.length})`;
+            }
+        }
 
+        // Update Artists count (total unique artists)
+        const artistsCountEl = document.getElementById('artists-count');
+        if (artistsCountEl) {
+            if (isYearFilterActive) {
+                artistsCountEl.textContent = `(${this.collection.artists.length} filtered)`;
+            } else {
+                artistsCountEl.textContent = `(${this.collection.artists.length})`;
+            }
+        }
 
+        // Update Tracks count
+        const tracksCountEl = document.getElementById('tracks-count');
+        if (tracksCountEl) {
+            if (isYearFilterActive) {
+                tracksCountEl.textContent = `(${this.collection.tracks.length} filtered)`;
+            } else {
+                tracksCountEl.textContent = `(${this.collection.tracks.length})`;
+            }
+        }
 
-    // Update Albums count
+        // Update Roles count
+        const rolesCountEl = document.getElementById('roles-count');
+        if (rolesCountEl) {
+            if (isYearFilterActive) {
+                rolesCountEl.textContent = `(${this.collection.roles.length} filtered)`;
+            } else {
+                rolesCountEl.textContent = `(${this.collection.roles.length})`;
+            }
+        }
 
-    const albumsCountEl = document.getElementById('albums-count');
-
-    if (albumsCountEl) {
-
-    albumsCountEl.textContent = `(${this.collection.albums.length})`;
-
-    }
-
-
-
-    // Update Artists count (total unique artists)
-
-    const artistsCountEl = document.getElementById('artists-count');
-
-    if (artistsCountEl) {
-
-    artistsCountEl.textContent = `(${this.collection.artists.length})`;
-
-    }
-
-
-
-    // Update Tracks count
-
-    const tracksCountEl = document.getElementById('tracks-count');
-
-    if (tracksCountEl) {
-
-    tracksCountEl.textContent = `(${this.collection.tracks.length})`;
-
-    }
-
-
-
-    // Update Roles count
-
-    const rolesCountEl = document.getElementById('roles-count');
-
-    if (rolesCountEl) {
-
-    rolesCountEl.textContent = `(${this.collection.roles.length})`;
-
-    }
-
-
-
-    // console.log(`📊 Updated counts - Albums: ${this.collection.albums.length}, Artists: ${this.collection.artists.length}, Tracks: ${this.collection.tracks.length}, Roles: ${this.collection.roles.length}`);
-
+        // console.log(`📊 Updated counts - Albums: ${this.collection.albums.length}, Artists: ${this.collection.artists.length}, Tracks: ${this.collection.tracks.length}, Roles: ${this.collection.roles.length}`);
     }
 
 
@@ -7070,6 +7061,9 @@ class AlbumCollectionApp {
         console.log('🔄 Using clean render for consistent artists lazy loading behavior');
         console.log(`🎯 About to render active artists tab with sortType: ${sortType}`);
         this.renderActiveArtistsTab();
+        
+        // Update page title counts to reflect current filter state
+        this.updatePageTitleCounts();
     }
 
     // Helper method to apply sorting to artists without triggering full render
