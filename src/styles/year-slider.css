@@ -1,0 +1,295 @@
+/* Year Range Slider Styles for Albums Collection App */
+
+/* Global container - sticky positioning for always-visible filtering */
+.year-filter-global {
+    position: sticky;
+    top: 80px; /* Below main navigation */
+    z-index: 100;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 20px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+/* Container for the entire slider component */
+.year-range-slider-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Header section with label, display, and reset button */
+.year-range-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.year-range-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.year-range-display {
+    background: var(--accent-color);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 80px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.year-filter-reset {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.year-filter-reset:hover {
+    background: var(--accent-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.year-filter-reset:active {
+    transform: translateY(0);
+}
+
+/* Slider wrapper */
+.year-range-slider-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Main slider container */
+.year-range-slider {
+    position: relative;
+    height: 6px;
+    margin: 20px 0;
+}
+
+/* Track (background) */
+.slider-track {
+    position: absolute;
+    width: 100%;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    top: 0;
+}
+
+/* Active range indicator */
+.slider-range {
+    position: absolute;
+    height: 6px;
+    background: linear-gradient(90deg, var(--accent-color), #60a5fa);
+    border-radius: 3px;
+    top: 0;
+    transition: all 0.1s ease;
+}
+
+/* Range input styling */
+.range-input {
+    position: absolute;
+    width: 100%;
+    height: 6px;
+    background: none;
+    pointer-events: none;
+    appearance: none;
+    -webkit-appearance: none;
+    top: 0;
+}
+
+.range-input::-webkit-slider-track {
+    background: none;
+    border: none;
+    height: 6px;
+}
+
+.range-input::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    pointer-events: all;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: 3px solid white;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 10;
+}
+
+.range-input::-webkit-slider-thumb:hover {
+    background: #3b82f6;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.range-input::-webkit-slider-thumb:active {
+    transform: scale(1.2);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.6);
+}
+
+/* Firefox slider styling */
+.range-input::-moz-range-track {
+    background: none;
+    border: none;
+    height: 6px;
+}
+
+.range-input::-moz-range-thumb {
+    pointer-events: all;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: 3px solid white;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.range-input::-moz-range-thumb:hover {
+    background: #3b82f6;
+    transform: scale(1.1);
+}
+
+/* Year labels */
+.year-range-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.year-label-min,
+.year-label-max {
+    font-weight: 500;
+    padding: 2px 6px;
+    background: var(--surface-color);
+    border-radius: 8px;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .year-filter-global {
+        top: 70px; /* Adjust for smaller mobile nav */
+        padding: 12px 16px;
+    }
+    
+    .year-range-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .year-range-slider-container {
+        gap: 8px;
+    }
+    
+    .year-range-slider {
+        margin: 16px 0;
+    }
+    
+    .range-input::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .range-input::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .year-range-label {
+        font-size: 0.9rem;
+    }
+    
+    .year-range-display {
+        font-size: 1rem;
+        padding: 8px 16px;
+    }
+}
+
+/* Tablet adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .year-range-header {
+        gap: 12px;
+    }
+    
+    .year-range-slider-container {
+        max-width: 900px;
+    }
+}
+
+/* Dark theme enhancements */
+@media (prefers-color-scheme: dark) {
+    .year-filter-global {
+        background: rgba(31, 41, 55, 0.95);
+        border-bottom-color: rgba(75, 85, 99, 0.5);
+    }
+    
+    .slider-track {
+        background: rgba(75, 85, 99, 0.6);
+    }
+    
+    .year-label-min,
+    .year-label-max {
+        background: rgba(55, 65, 81, 0.8);
+    }
+}
+
+/* Animation for filter activation */
+.year-filter-active .year-range-display {
+    animation: pulse-glow 0.3s ease;
+}
+
+@keyframes pulse-glow {
+    0% { 
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); 
+    }
+    50% { 
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1); 
+    }
+    100% { 
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); 
+    }
+}
+
+/* Loading state for when filter is processing */
+.year-filter-loading .year-range-display {
+    opacity: 0.7;
+}
+
+.year-filter-loading .year-range-display::after {
+    content: " ⏳";
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
