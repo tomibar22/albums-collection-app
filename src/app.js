@@ -7818,7 +7818,6 @@ class AlbumCollectionApp {
                     </div>
                     <div class="role-artist-details">
                         <div class="role-artist-name" title="${this.escapeHtmlAttribute(artistInfo.name)}">${artistInfo.name}</div>
-                        <div class="role-artist-role">${this.currentRoleData ? this.currentRoleData.name : 'Unknown Role'}</div>
                         <div class="role-artist-count">${albumText}</div>
                     </div>
                     <div class="role-artist-actions">
