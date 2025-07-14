@@ -9109,6 +9109,9 @@ class AlbumCollectionApp {
             return;
         }
 
+        // Store albums data for searching
+        albumsGrid.setAttribute('data-all-albums', JSON.stringify(albums));
+
         // Create a container for album cards using the proper AlbumCard component
         const albumCardsContainer = document.createElement('div');
 
@@ -9144,12 +9147,13 @@ class AlbumCollectionApp {
             return cardElement;
         });
 
-        // Convert elements to HTML string for the grid
-        albumElements.forEach(element => albumCardsContainer.appendChild(element));
-        const albumsHtml = albumCardsContainer.innerHTML;
+        // Clear existing content
+        albumsGrid.innerHTML = '';
 
-        // Update the grid content
-        albumsGrid.innerHTML = albumsHtml;
+        // Append album elements directly to preserve event listeners
+        albumElements.forEach(element => albumsGrid.appendChild(element));
+        
+        console.log(`✅ Rendered ${albums.length} albums in track albums grid with preserved event listeners`);
 
         // Update search results count
         const resultsCount = document.getElementById('track-search-results-count');
@@ -9282,11 +9286,11 @@ class AlbumCollectionApp {
             albumsGrid.setAttribute('data-all-albums', JSON.stringify(albums));
         }
 
-        // Create a container for album cards using the proper AlbumCard component
-        const albumCardsContainer = document.createElement('div');
+        // Clear existing content
+        albumsGrid.innerHTML = '';
 
-        // Generate albums using AlbumCard component
-        const albumElements = albums.map(album => {
+        // Generate albums using AlbumCard component and append directly to preserve event listeners
+        albums.forEach(album => {
             // Ensure album has proper artist field for AlbumCard component
             if (!album.artist) {
                 album.artist = this.getAlbumArtistsDisplay(album);
@@ -9294,15 +9298,13 @@ class AlbumCollectionApp {
 
             // Create AlbumCard component (same as main albums page)
             const albumCard = new AlbumCard(album);
-            return albumCard.render();
+            const cardElement = albumCard.render();
+            
+            // Append the actual DOM element (preserves event listeners)
+            albumsGrid.appendChild(cardElement);
         });
 
-        // Convert elements to HTML string for the grid
-        albumElements.forEach(element => albumCardsContainer.appendChild(element));
-        const albumsHtml = albumCardsContainer.innerHTML;
-
-        // Update the grid HTML
-        albumsGrid.innerHTML = albumsHtml;
+        console.log(`✅ Rendered ${albums.length} albums in artist albums grid with preserved event listeners`);
 
         // Update album count
         const resultsCount = document.getElementById('search-results-count');
