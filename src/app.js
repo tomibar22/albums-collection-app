@@ -2422,40 +2422,29 @@ class AlbumCollectionApp {
         }
         this.lastArtistRenderTime = now;
 
-        // 🔧 ENHANCED FIX: Always check if year filter is active and regenerate accordingly
+        // 🔧 CRITICAL FIX: Always ensure proper collection state for year filter
         if (this.yearFilter && this.yearFilter.enabled) {
-            console.log(`🎯 Year filter active during tab render - regenerating artists from filtered albums`);
-            console.log(`📊 DEBUG: Collection has ${this.collection.albums.length} albums, original has ${this.originalCollection.albums.length}`);
+            console.log(`🎯 Year filter active during tab render - ensuring filtered albums`);
             
-            // CRITICAL FIX: Ensure we're working with filtered albums
-            // If collection.albums has been reset to original, re-filter it
-            if (this.collection.albums.length === this.originalCollection.albums.length) {
-                console.log('⚠️ Collection appears to be reset - re-applying year filter');
-                const filteredAlbums = this.filterAlbumsByYearRange(
-                    this.originalCollection.albums, 
-                    this.yearFilter.selectedMin, 
-                    this.yearFilter.selectedMax
-                );
-                this.collection.albums = filteredAlbums;
-                console.log(`🔄 Re-filtered to ${filteredAlbums.length} albums`);
-            }
+            // ROBUST FIX: Always apply year filter from original collection (like sortAlbums does)
+            const filteredAlbums = this.filterAlbumsByYearRange(
+                this.originalCollection.albums, 
+                this.yearFilter.selectedMin, 
+                this.yearFilter.selectedMax
+            );
+            this.collection.albums = filteredAlbums;
+            console.log(`🔄 Applied year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax} (${filteredAlbums.length} albums)`);
             
-            // Store current sort state before regeneration
-            const currentSort = this.getCurrentSortState('artists');
-            
-            // Regenerate artists from current filtered album collection
-            this.generateArtistsFromAlbums(); // Uses this.collection.albums which should be filtered
-            
-            // Reapply sorting if it was active
-            if (currentSort && currentSort !== 'random') {
-                console.log(`🔄 Reapplying sort after artist regeneration: ${currentSort}`);
-                this.applySortingToArtists(currentSort); // Apply sorting without triggering full render
-            }
+            // Regenerate artists from filtered album collection
+            this.generateArtistsFromAlbums();
+            console.log(`✅ Regenerated artists from ${filteredAlbums.length} filtered albums`);
         } else {
             // Ensure we have artists even without year filter
             if (!this.musicalArtists || !this.technicalArtists || 
                 (this.musicalArtists.length === 0 && this.technicalArtists.length === 0)) {
                 console.log('🔄 No artists found, regenerating from full collection');
+                // Ensure we're using the full collection when no year filter
+                this.collection.albums = [...this.originalCollection.albums];
                 this.generateArtistsFromAlbums();
             }
         }
@@ -7423,10 +7412,22 @@ class AlbumCollectionApp {
 
     // Render the currently active roles tab with Lazy Loading
     renderActiveRolesTab() {
-        // 🔧 FIX: If year filter is active, regenerate roles from filtered albums to ensure accuracy
+        // 🔧 CRITICAL FIX: Always ensure proper collection state for year filter
         if (this.yearFilter && this.yearFilter.enabled) {
-            console.log('🎯 Year filter active during roles tab render - regenerating roles from filtered albums');
-            this.collection.roles = this.generateRolesFromAlbums(); // Uses this.collection.albums which should be filtered
+            console.log('🎯 Year filter active during roles tab render - ensuring filtered albums');
+            
+            // ROBUST FIX: Always apply year filter from original collection (like sortAlbums does)
+            const filteredAlbums = this.filterAlbumsByYearRange(
+                this.originalCollection.albums, 
+                this.yearFilter.selectedMin, 
+                this.yearFilter.selectedMax
+            );
+            this.collection.albums = filteredAlbums;
+            console.log(`🔄 Applied year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax} (${filteredAlbums.length} albums)`);
+            
+            // Regenerate roles from filtered album collection
+            this.collection.roles = this.generateRolesFromAlbums();
+            console.log(`✅ Regenerated roles from ${filteredAlbums.length} filtered albums`);
             
             // Separate the regenerated roles into musical and technical categories
             const { musicalRoles, technicalRoles } = this.separateRolesByCategory(this.collection.roles);
@@ -7436,6 +7437,24 @@ class AlbumCollectionApp {
             // Update tab counts to reflect filtered data
             document.getElementById('musical-roles-count').textContent = `(${musicalRoles.length})`;
             document.getElementById('technical-roles-count').textContent = `(${technicalRoles.length})`;
+        } else {
+            // Ensure we have roles even without year filter
+            if (!this.musicalRoles || !this.technicalRoles || 
+                (this.musicalRoles.length === 0 && this.technicalRoles.length === 0)) {
+                console.log('🔄 No roles found, regenerating from full collection');
+                // Ensure we're using the full collection when no year filter
+                this.collection.albums = [...this.originalCollection.albums];
+                this.collection.roles = this.generateRolesFromAlbums();
+                
+                // Separate roles into categories
+                const { musicalRoles, technicalRoles } = this.separateRolesByCategory(this.collection.roles);
+                this.musicalRoles = musicalRoles;
+                this.technicalRoles = technicalRoles;
+                
+                // Update tab counts
+                document.getElementById('musical-roles-count').textContent = `(${musicalRoles.length})`;
+                document.getElementById('technical-roles-count').textContent = `(${technicalRoles.length})`;
+            }
         }
 
         const activeTab = this.currentRolesTab || 'musical';
