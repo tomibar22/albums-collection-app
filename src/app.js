@@ -9116,13 +9116,25 @@ class AlbumCollectionApp {
         const albumCardsContainer = document.createElement('div');
 
         // Generate albums using AlbumCard component
-        const albumElements = albums.map(albumData => {
+        const albumElements = albums.map((albumData, index) => {
+            // 📀 DEBUG: Log album data before processing
+            console.log(`📀 TRACK MODAL Album ${index} BEFORE processing:`, albumData);
+            console.log(`📀 TRACK MODAL Album ${index} - title:`, albumData.title);
+            console.log(`📀 TRACK MODAL Album ${index} - artist field:`, albumData.artist);
+            console.log(`📀 TRACK MODAL Album ${index} - albumArtists:`, albumData.albumArtists);
+
             // Ensure album has proper artist field for AlbumCard component
             if (albumData.albumArtists && Array.isArray(albumData.albumArtists)) {
-                albumData.artist = albumData.albumArtists.map(artist => 
+                const processedArtist = albumData.albumArtists.map(artist => 
                     typeof artist === 'string' ? artist : artist.name
                 ).join(', ');
+                console.log(`📀 TRACK MODAL Album ${index} - processed artist:`, processedArtist);
+                albumData.artist = processedArtist;
             }
+
+            // 📀 DEBUG: Log album data after processing
+            console.log(`📀 TRACK MODAL Album ${index} AFTER processing:`, albumData);
+            console.log(`📀 TRACK MODAL Album ${index} - final artist field:`, albumData.artist);
 
             // Add track positions as additional info for track context
             if (albumData.trackPositions && albumData.trackPositions.length > 0) {
@@ -9290,11 +9302,23 @@ class AlbumCollectionApp {
         albumsGrid.innerHTML = '';
 
         // Generate albums using AlbumCard component and append directly to preserve event listeners
-        albums.forEach(album => {
+        albums.forEach((album, index) => {
+            // 📀 DEBUG: Log album data before processing
+            console.log(`📀 ARTIST MODAL Album ${index} BEFORE processing:`, album);
+            console.log(`📀 ARTIST MODAL Album ${index} - title:`, album.title);
+            console.log(`📀 ARTIST MODAL Album ${index} - artist field:`, album.artist);
+            console.log(`📀 ARTIST MODAL Album ${index} - artists array:`, album.artists);
+
             // Ensure album has proper artist field for AlbumCard component
             if (!album.artist) {
-                album.artist = this.getAlbumArtistsDisplay(album);
+                const displayArtist = this.getAlbumArtistsDisplay(album);
+                console.log(`📀 ARTIST MODAL Album ${index} - getAlbumArtistsDisplay result:`, displayArtist);
+                album.artist = displayArtist;
             }
+
+            // 📀 DEBUG: Log album data after processing
+            console.log(`📀 ARTIST MODAL Album ${index} AFTER processing:`, album);
+            console.log(`📀 ARTIST MODAL Album ${index} - final artist field:`, album.artist);
 
             // Create AlbumCard component (same as main albums page)
             const albumCard = new AlbumCard(album);
