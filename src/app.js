@@ -6807,10 +6807,23 @@ class AlbumCollectionApp {
 
     // Sorting methods
     sortAlbums(sortType) {
-        console.log(`Sorting albums by: ${sortType}`);
+        console.log(`🎯 sortAlbums called with sortType: ${sortType}`);
         
         // 🛡️ DEFENSIVE: Ensure yearFilter is initialized
         this.ensureYearFilterInitialized();
+
+        // 🔧 CRITICAL FIX: Validate and protect year filter state before sorting
+        if (this.yearFilter && (this.yearFilter.selectedMin !== 1932 || this.yearFilter.selectedMax !== 2025)) {
+            // User has applied a custom range, ensure it's enabled
+            if (!this.yearFilter.enabled) {
+                console.warn('🚨 FIXING YEAR FILTER STATE: Enabling filter for custom range', {
+                    selectedMin: this.yearFilter.selectedMin,
+                    selectedMax: this.yearFilter.selectedMax,
+                    wasEnabled: this.yearFilter.enabled
+                });
+                this.yearFilter.enabled = true;
+            }
+        }
 
         // 📸 SNAPSHOT: Store current year filter state before sorting
         const yearFilterSnapshot = {
@@ -6820,7 +6833,7 @@ class AlbumCollectionApp {
             minYear: this.yearFilter?.minYear,
             maxYear: this.yearFilter?.maxYear
         };
-        console.log('📸 Year filter snapshot before sort:', yearFilterSnapshot);
+        console.log('📸 Year filter snapshot taken:', yearFilterSnapshot);
 
         // 🔍 DEBUG: Year Filter State During Sort
         console.log('🔍 SORT DEBUG:', {
@@ -7764,6 +7777,8 @@ class AlbumCollectionApp {
 
     // Handle year range changes from the slider
     async onYearRangeChange(minYear, maxYear) {
+        console.log(`🔍 onYearRangeChange called with: ${minYear} - ${maxYear}`);
+        
         // 🔧 PARAMETER FIX: Handle object parameters for backward compatibility
         if (typeof minYear === 'object' && minYear !== null) {
             if (minYear.min !== undefined && minYear.max !== undefined) {
@@ -7789,10 +7804,29 @@ class AlbumCollectionApp {
         // 🛡️ DEFENSIVE: Ensure yearFilter is initialized
         this.ensureYearFilterInitialized();
         
+        // 🔍 Log state BEFORE changes
+        console.log('🔍 Year filter state BEFORE change:', {
+            enabled: this.yearFilter.enabled,
+            selectedMin: this.yearFilter.selectedMin,
+            selectedMax: this.yearFilter.selectedMax,
+            minYear: this.yearFilter.minYear,
+            maxYear: this.yearFilter.maxYear
+        });
+        
         // Update filter state
         this.yearFilter.selectedMin = minYear;
         this.yearFilter.selectedMax = maxYear;
         this.yearFilter.enabled = (minYear !== this.yearFilter.minYear || maxYear !== this.yearFilter.maxYear);
+        
+        // 🔍 Log state AFTER changes
+        console.log('🔧 Year filter state AFTER change:', {
+            enabled: this.yearFilter.enabled,
+            selectedMin: this.yearFilter.selectedMin,
+            selectedMax: this.yearFilter.selectedMax,
+            minYear: this.yearFilter.minYear,
+            maxYear: this.yearFilter.maxYear,
+            isCustomRange: (minYear !== this.yearFilter.minYear || maxYear !== this.yearFilter.maxYear)
+        });
         
         // Add loading class for visual feedback
         const container = document.getElementById('year-filter-container');
