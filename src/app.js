@@ -128,7 +128,7 @@ class AlbumCollectionApp {
         selectedMax: null
     };
     
-    // 🛡️ DEFENSIVE: Ensure yearFilter is never undefined
+    // 🛡️ DEFENSIVE: Ensure yearFilter is never undefined and properly initialized
     this.ensureYearFilterInitialized = () => {
         if (!this.yearFilter) {
             console.error('🚨 CRITICAL: yearFilter was undefined, reinitializing...');
@@ -139,6 +139,29 @@ class AlbumCollectionApp {
                 selectedMin: null,
                 selectedMax: null
             };
+        }
+        
+        // 🔧 FIX: If year boundaries are null but we have albums, calculate them
+        if ((this.yearFilter.minYear === null || this.yearFilter.maxYear === null) && 
+            this.collection.albums && this.collection.albums.length > 0) {
+            
+            console.log('🔧 Year boundaries are null, calculating from albums...');
+            
+            // Calculate min/max years from albums
+            const years = this.collection.albums
+                .map(album => parseInt(album.year))
+                .filter(year => !isNaN(year) && year > 0);
+            
+            if (years.length > 0) {
+                this.yearFilter.minYear = Math.min(...years);
+                this.yearFilter.maxYear = Math.max(...years);
+                this.yearFilter.selectedMin = this.yearFilter.minYear;
+                this.yearFilter.selectedMax = this.yearFilter.maxYear;
+                
+                console.log(`✅ Year boundaries set: ${this.yearFilter.minYear} - ${this.yearFilter.maxYear}`);
+            } else {
+                console.warn('⚠️ No valid years found in albums for year filter initialization');
+            }
         }
     };
     
