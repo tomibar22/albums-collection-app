@@ -9120,8 +9120,20 @@ class AlbumCollectionApp {
             // 📀 DEBUG: Log album data before processing
             console.log(`📀 TRACK MODAL Album ${index} BEFORE processing:`, albumData);
             console.log(`📀 TRACK MODAL Album ${index} - title:`, albumData.title);
+            console.log(`📀 TRACK MODAL Album ${index} - albumTitle:`, albumData.albumTitle);
             console.log(`📀 TRACK MODAL Album ${index} - artist field:`, albumData.artist);
             console.log(`📀 TRACK MODAL Album ${index} - albumArtists:`, albumData.albumArtists);
+
+            // 🔧 FIX: Map track album data structure to AlbumCard expected structure
+            const properAlbumData = {
+                id: albumData.albumId || albumData.id,
+                title: albumData.albumTitle || albumData.title,
+                year: albumData.albumYear || albumData.year,
+                images: albumData.albumImage ? [{ uri: albumData.albumImage }] : (albumData.images || []),
+                artist: null, // Will be set below
+                // Preserve other fields that might exist
+                ...albumData
+            };
 
             // Ensure album has proper artist field for AlbumCard component
             if (albumData.albumArtists && Array.isArray(albumData.albumArtists)) {
@@ -9129,29 +9141,34 @@ class AlbumCollectionApp {
                     typeof artist === 'string' ? artist : artist.name
                 ).join(', ');
                 console.log(`📀 TRACK MODAL Album ${index} - processed artist:`, processedArtist);
-                albumData.artist = processedArtist;
+                properAlbumData.artist = processedArtist;
+            } else if (albumData.artist) {
+                properAlbumData.artist = albumData.artist;
+            } else {
+                properAlbumData.artist = 'Unknown Artist';
             }
 
             // 📀 DEBUG: Log album data after processing
-            console.log(`📀 TRACK MODAL Album ${index} AFTER processing:`, albumData);
-            console.log(`📀 TRACK MODAL Album ${index} - final artist field:`, albumData.artist);
+            console.log(`📀 TRACK MODAL Album ${index} AFTER processing:`, properAlbumData);
+            console.log(`📀 TRACK MODAL Album ${index} - final title:`, properAlbumData.title);
+            console.log(`📀 TRACK MODAL Album ${index} - final artist field:`, properAlbumData.artist);
 
             // Add track positions as additional info for track context
             if (albumData.trackPositions && albumData.trackPositions.length > 0) {
-                albumData.trackPositionsDisplay = `Track positions: ${albumData.trackPositions.map(track => track.position).join(', ')}`;
+                properAlbumData.trackPositionsDisplay = `Track positions: ${albumData.trackPositions.map(track => track.position).join(', ')}`;
             }
 
-            // Create AlbumCard component (same as main albums page)
-            const albumCard = new AlbumCard(albumData);
+            // Create AlbumCard component with properly structured data
+            const albumCard = new AlbumCard(properAlbumData);
             const cardElement = albumCard.render();
 
             // Add track positions info if available
-            if (albumData.trackPositionsDisplay) {
+            if (properAlbumData.trackPositionsDisplay) {
                 const albumInfo = cardElement.querySelector('.album-info');
                 if (albumInfo) {
                     const trackPositionsDiv = document.createElement('div');
                     trackPositionsDiv.className = 'track-positions';
-                    trackPositionsDiv.textContent = albumData.trackPositionsDisplay;
+                    trackPositionsDiv.textContent = properAlbumData.trackPositionsDisplay;
                     albumInfo.appendChild(trackPositionsDiv);
                 }
             }
