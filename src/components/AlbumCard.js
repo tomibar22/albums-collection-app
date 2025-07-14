@@ -74,10 +74,10 @@ class AlbumCard {
                             <button class="overlay-circle-btn more-info-btn" title="More Info">
                                 ℹ️
                             </button>
-                            <button class="overlay-circle-btn spotify-btn" title="Spotify">
+                            <button class="overlay-circle-btn spotify-btn" title="Spotify" data-search-query="${this.getSearchQuery()}">
                                 🎵
                             </button>
-                            <button class="overlay-circle-btn youtube-btn" title="YouTube">
+                            <button class="overlay-circle-btn youtube-btn" title="YouTube" data-search-query="${this.getSearchQuery()}">
                                 📺
                             </button>
                         </div>
@@ -277,6 +277,27 @@ class AlbumCard {
         });
         
         this.element.dispatchEvent(event);
+    }
+
+    /**
+     * Generate search query for Spotify/YouTube buttons
+     * @returns {string} Search query string
+     */
+    getSearchQuery() {
+        if (!this.album || !this.album.title) {
+            console.error('🔍 getSearchQuery() - Missing album or title data');
+            return '';
+        }
+        
+        const primaryArtist = this.getPrimaryArtist();
+        if (!primaryArtist || primaryArtist === 'Unknown Artist') {
+            console.error('🔍 getSearchQuery() - Invalid primary artist:', primaryArtist);
+            return this.album.title; // Return just title if no valid artist
+        }
+        
+        const searchQuery = `${primaryArtist} ${this.album.title}`;
+        console.log('🔍 getSearchQuery() - Generated search query:', searchQuery);
+        return searchQuery;
     }
 
     /**
