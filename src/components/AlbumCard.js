@@ -162,8 +162,28 @@ class AlbumCard {
      * Handle "YouTube" button click - opens YouTube search
      */
     handleYouTubeClick() {
+        // 📺 DEBUG: Add comprehensive logging
+        console.log('📺 YOUTUBE DEBUG - Full album object:', this.album);
+        console.log('📺 YOUTUBE DEBUG - Album title:', this.album?.title);
+        console.log('📺 YOUTUBE DEBUG - Album artist field:', this.album?.artist);
+        console.log('📺 YOUTUBE DEBUG - Album artists array:', this.album?.artists);
+        
         const primaryArtist = this.getPrimaryArtist();
+        console.log('📺 YOUTUBE DEBUG - Primary artist result:', primaryArtist);
+        
+        if (!this.album || !this.album.title) {
+            console.error('📺 YOUTUBE ERROR - Missing album or title data');
+            return;
+        }
+        
+        if (!primaryArtist || primaryArtist === 'Unknown Artist') {
+            console.error('📺 YOUTUBE ERROR - getPrimaryArtist() returned null/undefined/Unknown Artist');
+            return;
+        }
+        
         const searchQuery = `${this.album.title} ${primaryArtist}`;
+        console.log('📺 YOUTUBE DEBUG - Final search query:', searchQuery);
+        
         const youtubeUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
         
         console.log('📺 Opening YouTube search for:', searchQuery);
@@ -214,8 +234,28 @@ class AlbumCard {
      * Handle "Spotify" button click - opens Spotify search
      */
     handleSpotifyClick() {
+        // 🎵 DEBUG: Add comprehensive logging
+        console.log('🎵 SPOTIFY DEBUG - Full album object:', this.album);
+        console.log('🎵 SPOTIFY DEBUG - Album title:', this.album?.title);
+        console.log('🎵 SPOTIFY DEBUG - Album artist field:', this.album?.artist);
+        console.log('🎵 SPOTIFY DEBUG - Album artists array:', this.album?.artists);
+        
         const primaryArtist = this.getPrimaryArtist();
+        console.log('🎵 SPOTIFY DEBUG - Primary artist result:', primaryArtist);
+        
+        if (!this.album || !this.album.title) {
+            console.error('🎵 SPOTIFY ERROR - Missing album or title data');
+            return;
+        }
+        
+        if (!primaryArtist || primaryArtist === 'Unknown Artist') {
+            console.error('🎵 SPOTIFY ERROR - getPrimaryArtist() returned null/undefined/Unknown Artist');
+            return;
+        }
+        
         const searchQuery = `${primaryArtist} ${this.album.title}`;
+        console.log('🎵 SPOTIFY DEBUG - Final search query:', searchQuery);
+        
         const spotifyUrl = this.getSpotifyUrl(searchQuery);
         
         console.log('🎵 Opening Spotify search for:', searchQuery);
@@ -244,18 +284,30 @@ class AlbumCard {
      * @returns {string} Primary artist name
      */
     getPrimaryArtist() {
+        // 🎯 DEBUG: Add comprehensive logging  
+        console.log('🎯 getPrimaryArtist() - Input album:', this.album);
+        
+        if (!this.album) {
+            console.error('🎯 getPrimaryArtist() - No album object');
+            return 'Unknown Artist';
+        }
+        
         // Handle both Supabase format (artist) and legacy format (artists array)
         if (this.album.artist) {
+            console.log('🎯 getPrimaryArtist() - Found artist field:', this.album.artist);
             return this.album.artist;
         }
         
         if (!this.album.artists || this.album.artists.length === 0) {
+            console.log('🎯 getPrimaryArtist() - No artists array, returning Unknown Artist');
             return 'Unknown Artist';
         }
         
         // Return the first artist from legacy format
         const firstArtist = this.album.artists[0];
-        return typeof firstArtist === 'string' ? firstArtist : firstArtist.name || 'Unknown Artist';
+        const result = typeof firstArtist === 'string' ? firstArtist : firstArtist.name || 'Unknown Artist';
+        console.log('🎯 getPrimaryArtist() - Found artists array, returning:', result);
+        return result;
     }
 
     /**
