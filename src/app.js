@@ -6812,6 +6812,16 @@ class AlbumCollectionApp {
         // 🛡️ DEFENSIVE: Ensure yearFilter is initialized
         this.ensureYearFilterInitialized();
 
+        // 📸 SNAPSHOT: Store current year filter state before sorting
+        const yearFilterSnapshot = {
+            enabled: this.yearFilter?.enabled || false,
+            selectedMin: this.yearFilter?.selectedMin,
+            selectedMax: this.yearFilter?.selectedMax,
+            minYear: this.yearFilter?.minYear,
+            maxYear: this.yearFilter?.maxYear
+        };
+        console.log('📸 Year filter snapshot before sort:', yearFilterSnapshot);
+
         // 🔍 DEBUG: Year Filter State During Sort
         console.log('🔍 SORT DEBUG:', {
             yearFilterEnabled: this.yearFilter.enabled,
@@ -6847,16 +6857,16 @@ class AlbumCollectionApp {
         const currentSearchQuery = this.currentSearchQueries.albums;
         let albumsToDisplay;
 
-        // FIX: Get the correct data source (filtered or full)
+        // FIX: Get the correct data source (filtered or full) - Use snapshot to prevent state loss
         let sourceAlbums;
-        if (this.yearFilter.enabled) {
-            // Use filtered albums from original collection
+        if (yearFilterSnapshot.enabled) {
+            // Use filtered albums from original collection - ALWAYS respect the snapshot
             sourceAlbums = this.filterAlbumsByYearRange(
                 this.originalCollection.albums,
-                this.yearFilter.selectedMin, 
-                this.yearFilter.selectedMax
+                yearFilterSnapshot.selectedMin, 
+                yearFilterSnapshot.selectedMax
             );
-            console.log(`🎯 Sorting with year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax} (${sourceAlbums.length} albums)`);
+            console.log(`🎯 Sorting with year filter: ${yearFilterSnapshot.selectedMin}-${yearFilterSnapshot.selectedMax} (${sourceAlbums.length} albums)`);
         } else {
             // Use full collection
             sourceAlbums = this.collection.albums;
@@ -6921,6 +6931,24 @@ class AlbumCollectionApp {
         // FIX Bug 1: Update collection.albums with sorted filtered results to maintain filter state
         this.collection.albums = albumsToDisplay;
         
+        // 🔧 CRITICAL: Restore year filter state if it was active before sorting
+        if (yearFilterSnapshot.enabled) {
+            console.log('🔧 Restoring year filter state after sort...');
+            this.yearFilter.enabled = true;
+            this.yearFilter.selectedMin = yearFilterSnapshot.selectedMin;
+            this.yearFilter.selectedMax = yearFilterSnapshot.selectedMax;
+            this.yearFilter.minYear = yearFilterSnapshot.minYear;
+            this.yearFilter.maxYear = yearFilterSnapshot.maxYear;
+            
+            // Ensure year filter UI remains active
+            const container = document.getElementById('year-filter-container');
+            if (container) {
+                container.classList.add('year-filter-active');
+            }
+            
+            console.log('✅ Year filter state restored:', this.yearFilter);
+        }
+        
         // SIMPLIFIED: Always use clean render for consistent behavior
         // This eliminates timing issues between updateGridItems and renderAlbumsGrid
         console.log('🔄 Using clean render for consistent lazy loading behavior');
@@ -6929,7 +6957,7 @@ class AlbumCollectionApp {
         // Update page counts to reflect filtered results
         this.updatePageTitleCounts();
 
-        console.log(`✅ Sorted and displayed ${albumsToDisplay.length} albums`);
+        console.log(`✅ Sorted and displayed ${albumsToDisplay.length} albums, year filter active: ${this.yearFilter.enabled}`);
     }
 
     sortArtists(sortType) {
