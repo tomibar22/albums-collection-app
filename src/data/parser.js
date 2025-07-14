@@ -832,8 +832,8 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
         'musical arrangements', 'additional arrangements', 'score',
         'transcription', 'transcribed by', 'adaptation', 'adapted by',
         
-        // Production roles
-        'producer', 'produced by', 'executive producer', 'co-producer', 
+        // Production roles (excluding producer roles for scraping)
+        'executive producer', 'co-producer', 
         'associate producer', 'reissue producer', 'executive-producer', 
         'product manager', 'production', 'production coordinator',
         'album producer', 'record producer', 'musical producer',
