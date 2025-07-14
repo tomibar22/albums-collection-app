@@ -2435,6 +2435,9 @@ class AlbumCollectionApp {
             this.collection.albums = filteredAlbums;
             console.log(`🔄 Applied year filter: ${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax} (${filteredAlbums.length} albums)`);
             
+            // 🚨 CRITICAL: Force artist regeneration by setting flag
+            this.artistsNeedRegeneration = true;
+            
             // Regenerate artists from filtered album collection
             this.generateArtistsFromAlbums();
             console.log(`✅ Regenerated artists from ${filteredAlbums.length} filtered albums`);
@@ -2445,6 +2448,10 @@ class AlbumCollectionApp {
                 console.log('🔄 No artists found, regenerating from full collection');
                 // Ensure we're using the full collection when no year filter
                 this.collection.albums = [...this.originalCollection.albums];
+                
+                // 🚨 CRITICAL: Force artist regeneration by setting flag
+                this.artistsNeedRegeneration = true;
+                
                 this.generateArtistsFromAlbums();
             }
         }
