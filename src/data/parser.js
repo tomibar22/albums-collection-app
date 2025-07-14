@@ -814,7 +814,12 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
         'musical director',
         
         // Production roles (allowed for scraping)
-        'producer', 'produced by'
+        'producer', 'produced by',
+        
+        // Visual Art & Design roles (allowed for scraping)
+        'cover', 'artwork', 'design', 'cover design', 'illustration', 'artwork by',
+        'painting', 'photography by', 'front cover', 'photographed by', 'designed by',
+        'illustrated by', 'sleeve design', 'album design', 'graphic design'
     ];
 
     // NON-PERFORMANCE roles to EXCLUDE (compositional, production, etc.)
@@ -849,10 +854,8 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
         'assistant engineer', 'recording', 'mixing', 'mastering',
         'digital editing', 'sound design', 'audio editing',
         
-        // Design & Documentation
-        'photography', 'photographed by', 'design', 'designed by', 'artwork', 
-        'illustration', 'illustrated by', 'graphic design', 'layout', 'typography',
-        'creative director', 'sleeve design', 'album design', 'cover design',
+        // Design & Documentation (kept production-related design roles)
+        'creative director', 'layout', 'typography',
         'liner notes', 'sleeve notes', 'notes', 'text by', 'booklet editor',
         'concept', 'art direction', 'creative concept',
         
