@@ -811,7 +811,10 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
         
         // Performance roles
         'performer', 'musician', 'soloist', 'bandleader', 'conductor',
-        'musical director'
+        'musical director',
+        
+        // Production roles (allowed for scraping)
+        'producer', 'produced by'
     ];
 
     // NON-PERFORMANCE roles to EXCLUDE (compositional, production, etc.)
