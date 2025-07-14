@@ -7526,8 +7526,11 @@ class AlbumCollectionApp {
             this.hideLoadingModal();
             
             if (modalContent) {
+                // Use reliable modal state tracking to determine if this is nested
+                const isModalCurrentlyOpen = this.isModalCurrentlyOpen;
+                
                 // Use the proper showModal method with isNestedModal flag to ensure proper stack management
-                this.showModal(modalTitle, modalContent, true);
+                this.showModal(modalTitle, modalContent, isModalCurrentlyOpen);
 
                 // Set up lazy loading and interactions after modal is displayed
                 const modalBody = document.getElementById('modal-body');
