@@ -6836,15 +6836,31 @@ class AlbumCollectionApp {
         this.ensureYearFilterInitialized();
 
         // 🔧 CRITICAL FIX: Validate and protect year filter state before sorting
-        if (this.yearFilter && (this.yearFilter.selectedMin !== 1932 || this.yearFilter.selectedMax !== 2025)) {
-            // User has applied a custom range, ensure it's enabled
-            if (!this.yearFilter.enabled) {
-                console.warn('🚨 FIXING YEAR FILTER STATE: Enabling filter for custom range', {
-                    selectedMin: this.yearFilter.selectedMin,
-                    selectedMax: this.yearFilter.selectedMax,
-                    wasEnabled: this.yearFilter.enabled
-                });
-                this.yearFilter.enabled = true;
+        if (this.yearFilter && this.yearFilter.minYear !== null && this.yearFilter.maxYear !== null) {
+            // Check if user has applied a custom range (different from full range)
+            const isCustomRange = (this.yearFilter.selectedMin !== this.yearFilter.minYear || 
+                                 this.yearFilter.selectedMax !== this.yearFilter.maxYear);
+            
+            if (isCustomRange) {
+                // User has applied a custom range, ensure it's enabled
+                if (!this.yearFilter.enabled) {
+                    console.warn('🚨 FIXING YEAR FILTER STATE: Enabling filter for custom range', {
+                        selectedMin: this.yearFilter.selectedMin,
+                        selectedMax: this.yearFilter.selectedMax,
+                        fullRange: `${this.yearFilter.minYear}-${this.yearFilter.maxYear}`,
+                        wasEnabled: this.yearFilter.enabled
+                    });
+                    this.yearFilter.enabled = true;
+                }
+            } else {
+                // Full range selected, disable filter to show all albums
+                if (this.yearFilter.enabled) {
+                    console.log('🔧 DISABLING year filter - full range selected', {
+                        selectedRange: `${this.yearFilter.selectedMin}-${this.yearFilter.selectedMax}`,
+                        fullRange: `${this.yearFilter.minYear}-${this.yearFilter.maxYear}`
+                    });
+                    this.yearFilter.enabled = false;
+                }
             }
         }
 
