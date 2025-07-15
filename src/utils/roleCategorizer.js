@@ -20,11 +20,13 @@ class RoleCategorizer {
             'mixed by', 'mastered by', 'recorded by', 'engineered by',
             'remastered by', 'remastering by', 're-record', 'transferred by', 'restoration', 'edited by',
             'digitally', 'digital remastering', 'digital editing', 'uncredited',
+            'mixdown', 'balance', 'transfers', 'tape transfers', 'disc transfers',
             
             // Design & Artwork
             'design', 'cover design', 'art direction', 'artwork', 'artwork by',
             'illustration', 'graphic design', 'layout', 'typography',
             'creative director', 'sleeve design', 'package design', 'painting',
+            'color', 'black & white',
             
             // Photography
             'photography', 'photography by', 'photographer', 'cover photography',
@@ -32,7 +34,8 @@ class RoleCategorizer {
             
             // Documentation
             'liner notes', 'sleeve notes', 'notes', 'text by', 'booklet editor',
-            'research', 'transcription by', 'annotation',
+            'research', 'transcription by', 'annotation', 'annotations',
+            'comments', 'quotes', 'english',
             
             // Management & Coordination
             'management', 'coordinator', 'project manager', 'supervisor',
@@ -40,6 +43,7 @@ class RoleCategorizer {
             'a&r', 'a&r coordinator', 'presenter', 'hosted by',
             'consultant', 'advisor', 'advisement',
             'original session', 'original sessions', 'session',
+            'assembled by', 'cooperation', 'assembly', 'assemblage',
             
             // Compilation & Release Coordination
             'for release', 'compiled by', 'sequenced by', 'supervision', 'supervision by',
@@ -47,6 +51,7 @@ class RoleCategorizer {
             // Technical Production
             'technician', 'lacquer cut by', 'cutting engineer',
             'post production', 'digital editing', 'remix', 'remixed by',
+            'remixing', 're-mixing', 're-mix', 're-mixed by', 'remix by',
             
             // Legal & Business
             'legal', 'copyright', 'rights', 'licensing', 'clearance',
@@ -57,7 +62,21 @@ class RoleCategorizer {
             'adapted by', 'promotion', 'assisting', 'stylist', 'hair',
             'public relations', 'assistants', 'french translation',
             'additional assistant', 'translation', 'assistance', 'assistent',
-            'technical support'
+            'technical support', 'assst. to assocate',
+            
+            // Physical Album Elements & Layout
+            'outside', 'inside', 'back', 'front', 'interior', 'exterior',
+            'inner', 'outer', 'album', 'cd', 'vinyl', 'jacket',
+            'poster', 'inside gatefold', 'inner gatefold', 'gatefold',
+            'page', 'series',
+            
+            // Media Production & Content
+            'originals', 'entire album', 'other', 'narrator',
+            'announcement by', 'introducer', 'interviewer', 'interviewee',
+            'interview', 'france', 'produit par',
+            
+            // Technical Markings & Transfers
+            'handsign in runouts'
         ]);
 
         // Musical/Performance roles (to be shown prominently)
