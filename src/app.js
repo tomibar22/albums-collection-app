@@ -7035,7 +7035,6 @@ class AlbumCollectionApp {
                 </div>
             `;
         }
-        }
     }
 
     // Retry tracks loading (for error recovery)
