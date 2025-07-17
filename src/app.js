@@ -3541,6 +3541,13 @@ class AlbumCollectionApp {
 
     // Group credits by artist and separate into musical/technical
     groupAndSeparateCredits(credits) {
+        // Define compositional roles to filter out from album modals
+        const compositionalRoles = new Set([
+            'lyrics by', 'words by', 'music by', 'written by', 'composed by',
+            'songwriter', 'lyrics', 'words', 'music', 'composition',
+            'composer', 'lyricist', 'written-by', 'composed-by'
+        ]);
+
         const artistGroups = new Map(); // artist name -> { musicalRoles: [], technicalRoles: [], id: ... }
 
         credits.forEach(credit => {
@@ -3550,6 +3557,17 @@ class AlbumCollectionApp {
 
             // Use smart splitting that respects bracket boundaries
             const roles = this.smartSplitRoles(credit.role);
+
+            // Filter out compositional roles completely from album modal display
+            const filteredRoles = roles.filter(role => {
+                const normalizedRole = role.toLowerCase().trim();
+                return !compositionalRoles.has(normalizedRole);
+            });
+
+            // Skip this credit if all roles were compositional
+            if (filteredRoles.length === 0) {
+                return;
+            }
 
             // Get or create artist group
             if (!artistGroups.has(credit.name)) {
@@ -3565,7 +3583,7 @@ class AlbumCollectionApp {
 
             const artistGroup = artistGroups.get(credit.name);
 
-            roles.forEach(role => {
+            filteredRoles.forEach(role => {
                 const category = window.roleCategorizer.categorizeRole(role);
 
                 if (category === 'technical') {
