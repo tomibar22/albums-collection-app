@@ -6593,14 +6593,22 @@ class AlbumCollectionApp {
                 break;
 
             case 'tracks':
-                // MOBILE FIX: Check if tracks need to be generated first
-                if (!this.collection.tracks || this.collection.tracks.length === 0) {
-                    console.log(`📱 Mobile: Generating tracks data before rendering...`);
+                // 🚀 OPTIMIZATION 3: Smart tracks caching to prevent unnecessary regeneration
+                const albumsHash = this.collection.albums?.length || 0;
+                const needsTracksRegeneration = !this.collection.tracks || 
+                                              this.collection.tracks.length === 0 || 
+                                              this.lastTracksAlbumsHash !== albumsHash;
+
+                if (needsTracksRegeneration) {
+                    console.log(`🎵 Regenerating tracks (albums changed: ${this.lastTracksAlbumsHash || 0} → ${albumsHash})`);
                     if (isMobile) {
                         this.collection.tracks = await this.generateTracksFromAlbumsAsync();
                     } else {
                         this.collection.tracks = this.generateTracksFromAlbums();
                     }
+                    this.lastTracksAlbumsHash = albumsHash;
+                } else {
+                    console.log(`✅ Using cached tracks (${this.collection.tracks.length} tracks)`);
                 }
 
                 // Don't call renderTracksGrid() here - sortTracks() will handle it
@@ -6976,15 +6984,16 @@ class AlbumCollectionApp {
                 }
             };
 
-            // Mobile-optimized batch sizes to prevent memory issues
+            // 🚀 OPTIMIZATION 1: Fixed batch size calculation for performance
             let itemsPerPage;
             if (isMobile) {
-                // For mobile (especially iPhone), use much smaller initial batch
-                itemsPerPage = Math.min(24, Math.ceil(tracksToDisplay.length / 10)); // Max 24 items initially
+                // For mobile: Conservative batch size for memory constraints
+                itemsPerPage = 18; // Fixed small batch for mobile
                 console.log('📱 Using mobile-optimized batch size:', itemsPerPage);
             } else {
-                // For desktop, can load more initially
-                itemsPerPage = Math.max(50, Math.ceil(tracksToDisplay.length / 5));
+                // For desktop: Reasonable batch size regardless of collection size
+                itemsPerPage = 60; // Fixed reasonable batch for desktop
+                console.log('🖥️ Using desktop-optimized batch size:', itemsPerPage);
             }
 
             this.lazyLoadingManager.initializeLazyGrid('tracks-grid', tracksToDisplay, trackRenderFunction, {

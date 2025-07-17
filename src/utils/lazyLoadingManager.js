@@ -158,10 +158,14 @@ class LazyLoadingManager {
                     // Generate a unique ID for the item, prioritizing item.id
                     const itemId = item.id || `lazy-item-${gridId}-${startIndex + index}`;
                     
-                    // Comprehensive duplicate prevention:
+                    // 🚀 OPTIMIZATION 4: Efficient duplicate detection with minimal logging
                     // 1. Check if already processed in this batch
                     if (renderedIdsInBatch.has(itemId)) {
-                        console.warn(`⚠️ LazyLoadingManager: Skipping duplicate item ID '${itemId}' within the current batch for grid '${gridId}'.`);
+                        // Track duplicates but only log occasionally to avoid console spam
+                        state.duplicatesSkipped = (state.duplicatesSkipped || 0) + 1;
+                        if (state.duplicatesSkipped % 100 === 1) {
+                            console.warn(`⚠️ LazyLoadingManager: Skipped ${state.duplicatesSkipped} duplicates in '${gridId}' (${itemId}...)`);
+                        }
                         return;
                     }
                     renderedIdsInBatch.add(itemId);
@@ -169,7 +173,11 @@ class LazyLoadingManager {
                     // 2. Check if an element with this data-item-id already exists in the DOM
                     const existingElement = gridElement.querySelector(`[data-item-id="${itemId}"]`);
                     if (existingElement) {
-                        console.warn(`⚠️ LazyLoadingManager: Element with data-item-id='${itemId}' already exists in grid '${gridId}', skipping rendering.`);
+                        // Only log DOM duplicates occasionally as well
+                        state.domDuplicatesSkipped = (state.domDuplicatesSkipped || 0) + 1;
+                        if (state.domDuplicatesSkipped % 50 === 1) {
+                            console.warn(`⚠️ LazyLoadingManager: ${state.domDuplicatesSkipped} DOM duplicates skipped in '${gridId}' (${itemId}...)`);
+                        }
                         return;
                     }
                     
