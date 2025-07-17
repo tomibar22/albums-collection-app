@@ -11,6 +11,13 @@ class AlbumCollectionApp {
 
     this.savingInProgress = false; // Flag to prevent modal opening during save
 
+    // UI Cache flags for performance optimization
+    this.uiCache = {
+        tracksGridRendered: false,
+        rolesGridRendered: false,
+        tracksLastDataHash: null
+    };
+
     this.collection = {
 
     albums: [],
@@ -5481,6 +5488,11 @@ class AlbumCollectionApp {
             // Flag that artists need regeneration for next Artists page visit
             this.artistsNeedRegeneration = true;
 
+            // Clear UI caches since data is changing
+            this.uiCache.tracksGridRendered = false;
+            this.uiCache.tracksLastDataHash = null;
+            this.uiCache.rolesGridRendered = false;
+
             // Generate artists from albums
             this.collection.artists = this.generateArtistsFromAlbums();
 
@@ -6866,6 +6878,26 @@ class AlbumCollectionApp {
         this.renderActiveArtistsTab();
     }
 
+    // Utility method to clear UI caches (useful for debugging or forced refresh)
+    clearUICache() {
+        console.log('🗑️ Clearing UI cache...');
+        this.uiCache.tracksGridRendered = false;
+        this.uiCache.tracksLastDataHash = null;
+        this.uiCache.rolesGridRendered = false;
+    }
+
+    // Helper method to generate a simple hash of tracks data for cache validation
+    generateTracksDataHash(tracks) {
+        if (!tracks || tracks.length === 0) return '';
+        
+        // Create a simple hash based on track count and first/last track names
+        const firstTrack = tracks[0]?.title || '';
+        const lastTrack = tracks[tracks.length - 1]?.title || '';
+        const count = tracks.length;
+        
+        return `${count}-${firstTrack}-${lastTrack}`;
+    }
+
     // Tracks View Implementation
     async renderTracksGrid(tracksToRender = null) {
         console.log('🎵 Starting renderTracksGrid...');
@@ -6881,10 +6913,9 @@ class AlbumCollectionApp {
         try {
             // Show loading state immediately if we need to generate tracks
             if (!tracksToDisplay) {
-                tracksGrid.innerHTML = '<div class="loading-placeholder">🎵 Generating tracks data...</div>';
-
                 // Only generate tracks if they don't exist or are empty
                 if (!this.collection.tracks || this.collection.tracks.length === 0) {
+                    tracksGrid.innerHTML = '<div class="loading-placeholder">🎵 Generating tracks data...</div>';
                     console.log('🔄 Generating tracks from albums (async for mobile compatibility)...');
 
                     // Use async generation to prevent blocking the main thread
@@ -6903,6 +6934,23 @@ class AlbumCollectionApp {
                 this.displayEmptyState('tracks');
                 return;
             }
+
+            // 🎯 SMART CACHING: Check if we can reuse the existing rendered grid
+            const currentDataHash = this.generateTracksDataHash(tracksToDisplay);
+            const isDataUnchanged = currentDataHash === this.uiCache.tracksLastDataHash;
+            const isGridAlreadyRendered = this.uiCache.tracksGridRendered && tracksGrid.children.length > 1;
+
+            if (isDataUnchanged && isGridAlreadyRendered && !tracksToRender) {
+                console.log('✅ Using cached tracks grid - no regeneration needed');
+                
+                // Just reinitialize lazy loading to ensure scrolling works
+                if (this.lazyLoadingManager) {
+                    this.lazyLoadingManager.refreshObserver('tracks-grid');
+                }
+                return;
+            }
+
+            console.log('🔄 Rendering tracks grid (data changed or first render)...');
 
             // AGGRESSIVE CLEARING: Reset the grid completely
             tracksGrid.innerHTML = '';
@@ -6968,6 +7016,11 @@ class AlbumCollectionApp {
             // Add manual load more button as backup
             this.addManualLoadMoreButton('tracks-grid');
 
+            // 🎯 UPDATE CACHE: Mark grid as rendered and store data hash
+            this.uiCache.tracksGridRendered = true;
+            this.uiCache.tracksLastDataHash = currentDataHash;
+            console.log('💾 Tracks grid cache updated');
+
         } catch (error) {
             console.error('❌ Critical error in renderTracksGrid:', error);
 
@@ -6982,6 +7035,7 @@ class AlbumCollectionApp {
                 </div>
             `;
         }
+        }
     }
 
     // Retry tracks loading (for error recovery)
@@ -6992,6 +7046,10 @@ class AlbumCollectionApp {
 
         // Clear tracks data to force regeneration
         this.collection.tracks = [];
+        
+        // Clear UI cache to force re-render
+        this.uiCache.tracksGridRendered = false;
+        this.uiCache.tracksLastDataHash = null;
 
         // Wait a moment to let memory clear
         await new Promise(resolve => setTimeout(resolve, 500));
