@@ -8107,95 +8107,91 @@ class AlbumCollectionApp {
 
     // Observe new cards for image lazy loading (OPTIMIZED)
     observeNewRoleCards(cardElements, modalBody) {
-        if (!window.ImageService || !this.imageObserver) {
+        // Check if the ImageService is available globally. If not, lazy loading cannot proceed.
+        if (!window.ImageService) {
             console.log('🎭 Image service not available, skipping image lazy loading');
-            return;
+            return; // Exit if ImageService is missing.
         }
 
-        // Batch process images for better performance
-        const imagesToObserve = [];
-        
-        cardElements.forEach(card => {
-            const img = card.querySelector('.artist-photo');
-            if (img && !img.dataset.observed) {
-                img.dataset.observed = 'true';
-                imagesToObserve.push(img);
-            }
-        });
-
-        // Use requestAnimationFrame for better performance
-        if (imagesToObserve.length > 0) {
-            requestAnimationFrame(() => {
-                imagesToObserve.forEach(img => {
-                    this.imageObserver.observe(img);
-                });
-                console.log(`🎭 Added ${imagesToObserve.length} new images to lazy loading observer`);
-            });
-        }
-    }
-
-    // Optimized batch DOM update method
-    updateRoleModalStats(loaded, total) {
-        const loadedElement = document.getElementById('role-artists-loaded');
-        const totalElement = document.getElementById('role-artists-total');
-        
-        if (loadedElement && totalElement) {
-            // Use requestAnimationFrame for smooth updates
-            requestAnimationFrame(() => {
-                loadedElement.textContent = loaded;
-                totalElement.textContent = total;
-            });
-        }
-    }
-            // Create image observer if not exists
+        // Initialize the IntersectionObserver for lazy loading if it hasn't been created yet.
+        // The 'this.imageObserver' property holds the observer instance.
+        if (!this.imageObserver) {
             this.initializeRoleModalLazyLoading(modalBody);
         }
 
-        // Observe new cards for image loading
+        // Observe each new card element. The IntersectionObserver, once initialized,
+        // will detect when these cards enter the viewport and trigger image loading.
         cardElements.forEach(card => {
             if (this.imageObserver) {
                 this.imageObserver.observe(card);
             }
         });
+
+        // Optional: Log the number of new cards added to the observer for debugging.
+        // console.log(`🎭 Added ${cardElements.length} new cards to lazy loading observer`);
     }
 
-    // Initialize lazy loading for role modal artist images
+    // This method updates the displayed statistics (loaded/total) for role artists in the modal.
+    // It uses requestAnimationFrame for smoother DOM updates, preventing layout thrashing.
+    updateRoleModalStats(loaded, total) {
+        const loadedElement = document.getElementById('role-artists-loaded');
+        const totalElement = document.getElementById('role-artists-total');
+
+        // Ensure both elements exist before attempting to update their content.
+        if (loadedElement && totalElement) {
+            // Schedule the DOM update for the next animation frame.
+            requestAnimationFrame(() => {
+                loadedElement.textContent = loaded; // Update the 'loaded' count.
+                totalElement.textContent = total;   // Update the 'total' count.
+            });
+        }
+    }
+
+    // This method initializes the IntersectionObserver specifically for lazy loading
+    // artist images within the role modal. It sets up the observer to watch
+    // all existing artist items.
     initializeRoleModalLazyLoading(modalBody) {
+        // Verify that the global ImageService is available.
         if (!window.ImageService) {
             console.warn('🖼️ ImageService not available for role modal lazy loading');
-            return;
+            return; // Exit if ImageService is missing.
         }
 
         console.log(`🖼️ Initializing image lazy loading for role modal`);
 
-        // Find all artist items
+        // Find all elements that represent individual artist items within the modal body.
         const artistItems = modalBody.querySelectorAll('.role-artist-item');
 
+        // If no artist items are found, there's nothing to observe.
         if (artistItems.length === 0) {
             return;
         }
 
-        // Create IntersectionObserver for lazy loading images and store it
+        // Create a new IntersectionObserver instance.
+        // This observer will be responsible for detecting when artist items enter the viewport.
         this.imageObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
+                // If an artist item is intersecting (i.e., visible or near the viewport).
                 if (entry.isIntersecting) {
-                    const artistItem = entry.target;
-                    const artistName = artistItem.dataset.artistName;
+                    const artistItem = entry.target; // The DOM element that intersected.
+                    const artistName = artistItem.dataset.artistName; // Get artist name from data attribute.
 
-                    // Load images as they come into view (silent processing)
+                    // Load the image associated with this artist item.
+                    // The actual image loading logic is handled by 'loadRoleArtistImage'.
                     this.loadRoleArtistImage(artistItem, artistName);
 
-                    // Stop observing this item after loading
+                    // Stop observing this specific item once its image has been triggered for loading.
+                    // This prevents unnecessary re-observations.
                     this.imageObserver.unobserve(artistItem);
                 }
             });
         }, {
-            root: modalBody,
-            rootMargin: '100px', // Start loading when 100px away from viewport
-            threshold: 0.1
+            root: modalBody, // The root element (viewport) to check intersections against.
+            rootMargin: '100px', // Load images when they are within 100px of the root's viewport.
+            threshold: 0.1 // Trigger when at least 10% of the target is visible.
         });
 
-        // Observe all artist items
+        // Start observing all initial artist items found in the modal body.
         artistItems.forEach((item) => {
             this.imageObserver.observe(item);
         });
