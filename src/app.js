@@ -6906,6 +6906,14 @@ class AlbumCollectionApp {
         return `${count}-${firstTrack}-${lastTrack}`;
     }
 
+    // Helper method to normalize role names for comparison
+    normalizeRole(role) {
+        if (!role || typeof role !== 'string') return '';
+        return role.toLowerCase().trim()
+            .replace(/\s+/g, ' ')  // Normalize whitespace
+            .replace(/[^\w\s]/g, ''); // Remove special characters
+    }
+
     // Tracks View Implementation
     async renderTracksGrid(tracksToRender = null) {
         console.log('🎵 Starting renderTracksGrid...');
@@ -7731,9 +7739,9 @@ class AlbumCollectionApp {
         }
     }
 
-    // Generate modal content for role artists with progress tracking
+    // Generate modal content for role artists with progress tracking (OPTIMIZED)
     async generateRoleArtistsModalContentWithProgress(roleData) {
-        console.log('🎭 Generating modal content for role with progress:', roleData);
+        // console.log('🎭 Generating modal content for role with progress:', roleData);
 
         // Determine category for appropriate terminology
         const category = window.roleCategorizer.categorizeRole(roleData.name);
@@ -7750,70 +7758,105 @@ class AlbumCollectionApp {
         }
 
         try {
+            // Performance optimization: Initialize cache if not exists
+            if (!this.roleAlbumCountCache) {
+                this.roleAlbumCountCache = new Map();
+            }
+
+            const startTime = performance.now();
+            
             // Update progress: Starting processing
             this.updateLoadingProgress(
                 `🎭 Loading ${PersonTerm}...`,
-                `Processing ${roleData.artists.length} ${personTerm} for role-specific album counts`,
+                `Optimizing ${roleData.artists.length} ${personTerm} with smart caching`,
                 10
             );
 
-            // Small delay to allow UI to update
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            console.log(`🎭 Processing ${roleData.artists.length} artists for role: ${roleData.name}`);
-
-            // Process artists in batches to show progress
-            const batchSize = Math.max(1, Math.floor(roleData.artists.length / 10)); // 10 progress updates max
-            const artistsWithCounts = [];
+            // Check cache for this role's processed data
+            const cacheKey = `${roleData.name}:${this.collection.albums.length}`;
+            let artistsWithCounts = this.roleAlbumCountCache.get(cacheKey);
             
-            for (let i = 0; i < roleData.artists.length; i += batchSize) {
-                const batch = roleData.artists.slice(i, i + batchSize);
-                
-                // Process this batch with validation
-                const batchResults = batch.map(artistInfo => {
-                    // Validate artistInfo before processing
-                    if (!artistInfo || typeof artistInfo !== 'object' || !artistInfo.name || typeof artistInfo.name !== 'string') {
-                        console.warn('⚠️ Invalid artist data found, skipping:', artistInfo);
-                        return null; // Skip invalid entries
-                    }
-
-                    // Count albums where this artist performed this SPECIFIC role (silent processing)
-                    let roleSpecificAlbumCount = 0;
-                    const roleSpecificAlbums = new Set(); // Use Set to avoid duplicates
-
-                    // Look through all albums in the collection for this artist in this role
-                    this.collection.albums.forEach(album => {
-                        if (album.credits && Array.isArray(album.credits)) {
-                            // Use the same sophisticated role checking as the filtering logic
-                            const hasRoleInAlbum = this.artistHasRoleOnAlbum(artistInfo.name, roleData.name, album);
-                            if (hasRoleInAlbum) {
-                                roleSpecificAlbums.add(album.id);
-                            }
-                        }
-                    });
-
-                    roleSpecificAlbumCount = roleSpecificAlbums.size;
-
-                    return {
-                        ...artistInfo,
-                        roleSpecificAlbumCount
-                    };
-                });
-
-                artistsWithCounts.push(...batchResults.filter(result => result !== null));
-
-                // Update progress
-                const progress = 10 + Math.round((i + batch.length) / roleData.artists.length * 70); // 10-80%
+            if (artistsWithCounts) {
+                // console.log(`⚡ Using cached data for role: ${roleData.name}`);
                 this.updateLoadingProgress(
                     `🎭 Loading ${PersonTerm}...`,
-                    `Processed ${Math.min(i + batch.length, roleData.artists.length)} of ${roleData.artists.length} ${personTerm}`,
-                    progress
+                    'Using cached optimization data',
+                    90
+                );
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } else {
+
+                // console.log(`🎭 Processing ${roleData.artists.length} artists for role: ${roleData.name}`);
+
+                // Pre-filter valid artists and build album index for faster lookups
+                const validArtists = roleData.artists.filter(artistInfo => 
+                    artistInfo && typeof artistInfo === 'object' && 
+                    artistInfo.name && typeof artistInfo.name === 'string'
                 );
 
-                // Small delay for UI responsiveness
-                if (i + batchSize < roleData.artists.length) {
-                    await new Promise(resolve => setTimeout(resolve, 20));
+                // Build optimized album lookup index
+                const albumsByArtist = new Map();
+                this.collection.albums.forEach(album => {
+                    if (album.credits && Array.isArray(album.credits)) {
+                        album.credits.forEach(credit => {
+                            if (credit.name) {
+                                if (!albumsByArtist.has(credit.name)) {
+                                    albumsByArtist.set(credit.name, []);
+                                }
+                                albumsByArtist.get(credit.name).push({
+                                    album,
+                                    role: credit.role
+                                });
+                            }
+                        });
+                    }
+                });
+
+                // Process artists in optimized batches with parallel computation
+                const optimalBatchSize = Math.min(50, Math.max(5, Math.floor(validArtists.length / 8)));
+                artistsWithCounts = [];
+                
+                for (let i = 0; i < validArtists.length; i += optimalBatchSize) {
+                    const batch = validArtists.slice(i, i + optimalBatchSize);
+                    
+                    // Process batch in parallel for better performance
+                    const batchPromises = batch.map(async (artistInfo) => {
+                        // Use optimized lookup instead of iterating all albums
+                        const artistAlbums = albumsByArtist.get(artistInfo.name) || [];
+                        const roleSpecificAlbums = new Set();
+
+                        artistAlbums.forEach(({ album, role }) => {
+                            if (this.normalizeRole(role) === this.normalizeRole(roleData.name)) {
+                                roleSpecificAlbums.add(album.id);
+                            }
+                        });
+
+                        return {
+                            ...artistInfo,
+                            roleSpecificAlbumCount: roleSpecificAlbums.size
+                        };
+                    });
+
+                    const batchResults = await Promise.all(batchPromises);
+                    artistsWithCounts.push(...batchResults);
+
+                    // Update progress with better feedback
+                    const progress = 10 + Math.round((i + batch.length) / validArtists.length * 70);
+                    this.updateLoadingProgress(
+                        `🎭 Loading ${PersonTerm}...`,
+                        `Processed ${Math.min(i + batch.length, validArtists.length)} of ${validArtists.length} ${personTerm} (${Math.round(performance.now() - startTime)}ms)`,
+                        progress
+                    );
+
+                    // Smaller delay for better performance
+                    if (i + optimalBatchSize < validArtists.length) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
                 }
+
+                // Cache the results for future use
+                this.roleAlbumCountCache.set(cacheKey, artistsWithCounts);
+                // console.log(`💾 Cached results for role: ${roleData.name}`);
             }
 
             // Update progress: Sorting
@@ -7837,11 +7880,27 @@ class AlbumCollectionApp {
 
             await new Promise(resolve => setTimeout(resolve, 30));
 
-            // Generate the initial content (first 24 artists for quick display)
+            // Generate the initial content (first 24 artists for quick display) - OPTIMIZED
             const initialCount = Math.min(24, sortedArtists.length);
             const initialArtists = sortedArtists.slice(0, initialCount);
 
-            const initialArtistsHtml = this.generateRoleArtistCards(initialArtists, 0);
+            // Create initial content container with DocumentFragment
+            const contentContainer = document.createElement('div');
+            contentContainer.className = 'role-modal-content';
+            
+            // Add hidden tracking elements
+            contentContainer.innerHTML = `
+                <div class="role-artists-stats" style="display: none;">
+                    <span id="role-artists-loaded">${initialCount}</span>
+                    <span id="role-artists-total">${sortedArtists.length}</span>
+                </div>
+                <div class="role-artists-list" id="role-artists-list"></div>
+                <div class="role-loading-sentinel" style="height: 20px; background: transparent; margin: 10px 0;"></div>
+            `;
+
+            // Use optimized card generation for initial content
+            const roleList = contentContainer.querySelector('#role-artists-list');
+            this.appendRoleArtistCards(roleList, initialArtists, 0);
 
             // Store sorted artists for lazy loading (FIX: Variables needed by setupRoleArtistCardLazyLoading)
             this.currentRoleArtists = sortedArtists;
@@ -7849,20 +7908,8 @@ class AlbumCollectionApp {
             this.roleCardsInitialLoad = initialCount; // Use actual initial count (24)
             this.roleCardsLoadIncrement = 20; // Load 20 more at a time
 
-            const result = `
-                <div class="role-modal-content">
-                    <!-- Hidden tracking elements for lazy loading -->
-                    <div class="role-artists-stats" style="display: none;">
-                        <span id="role-artists-loaded">${initialArtists.length}</span>
-                        <span id="role-artists-total">${sortedArtists.length}</span>
-                    </div>
-                    <div class="role-artists-list" id="role-artists-list">
-                        ${initialArtistsHtml}
-                    </div>
-                    <!-- More visible sentinel for lazy loading -->
-                    <div class="role-loading-sentinel" style="height: 20px; background: transparent; margin: 10px 0;"></div>
-                </div>
-            `;
+            // Return the container's innerHTML for modal display
+            const result = contentContainer.outerHTML;
 
             console.log(`🎭 Generated modal with ${initialArtists.length}/${sortedArtists.length} artists initially loaded`);
             return result;
@@ -7873,60 +7920,71 @@ class AlbumCollectionApp {
         }
     }
 
-    // Generate HTML for a batch of role artist cards
+    // Generate HTML for a batch of role artist cards (OPTIMIZED FOR DOM PERFORMANCE)
     generateRoleArtistCards(artists, startIndex) {
-        return artists.map((artistInfo, relativeIndex) => {
+        // Create DocumentFragment for efficient DOM operations
+        const fragment = document.createDocumentFragment();
+        
+        artists.forEach((artistInfo, relativeIndex) => {
             // Validate artistInfo before processing
             if (!artistInfo || typeof artistInfo !== 'object' || !artistInfo.name || typeof artistInfo.name !== 'string') {
                 console.warn('⚠️ Invalid artist data in generateRoleArtistCards, skipping:', artistInfo);
-                return ''; // Return empty string for invalid entries
+                return;
             }
 
             const absoluteIndex = startIndex + relativeIndex;
             const albumCount = artistInfo.roleSpecificAlbumCount || 0;
             const albumText = albumCount === 1 ? '1 album' : `${albumCount} albums`;
             
-            // Safe initials generation with fallback
-            let initials = 'AA'; // Default fallback
+            // Safe initials generation with fallback (optimized)
+            let initials = 'AA';
             try {
-                initials = artistInfo.name.split(' ')
-                    .map(word => word && word.length > 0 ? word[0] : '')
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase() || 'AA';
+                const nameParts = artistInfo.name.split(' ');
+                initials = nameParts.map(word => word[0] || '').join('').slice(0, 2).toUpperCase() || 'AA';
             } catch (error) {
                 console.warn('⚠️ Error generating initials for artist:', artistInfo.name, error);
             }
 
-            return `
-                <div class="role-artist-item clickable-artist-item"
-                     data-artist-name="${this.escapeHtmlAttribute(artistInfo.name)}"
-                     data-artist-index="${absoluteIndex}">
-                    <div class="role-artist-image">
-                        <img
-                            src=""
-                            alt="Photo of ${this.escapeHtmlAttribute(artistInfo.name)}"
-                            class="artist-photo role-artist-photo"
-                            loading="lazy"
-                            style="display: none;"
-                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                        />
-                        <div class="placeholder-artist-image" style="display: flex;">
-                            ${initials}
-                        </div>
-                    </div>
-                    <div class="role-artist-details">
-                        <div class="role-artist-name" title="${this.escapeHtmlAttribute(artistInfo.name)}">${artistInfo.name}</div>
-                        <div class="role-artist-count">${albumText}</div>
-                    </div>
-                    <div class="role-artist-actions">
-                        <button class="view-artist-albums-btn" data-artist-name="${this.escapeHtmlAttribute(artistInfo.name)}">
-                            View Albums
-                        </button>
-                    </div>
+            // Create DOM elements directly for better performance
+            const artistItem = document.createElement('div');
+            artistItem.className = 'role-artist-item clickable-artist-item';
+            artistItem.setAttribute('data-artist-name', artistInfo.name);
+            artistItem.setAttribute('data-artist-index', absoluteIndex);
+
+            // Optimized HTML structure using fewer DOM operations
+            artistItem.innerHTML = `
+                <div class="role-artist-image">
+                    <img class="artist-photo role-artist-photo" loading="lazy" style="display: none;" alt="Photo of ${this.escapeHtmlAttribute(artistInfo.name)}">
+                    <div class="placeholder-artist-image" style="display: flex;">${initials}</div>
+                </div>
+                <div class="role-artist-details">
+                    <div class="role-artist-name" title="${this.escapeHtmlAttribute(artistInfo.name)}">${artistInfo.name}</div>
+                    <div class="role-artist-count">${albumText}</div>
+                </div>
+                <div class="role-artist-actions">
+                    <button class="view-artist-albums-btn" data-artist-name="${this.escapeHtmlAttribute(artistInfo.name)}">View Albums</button>
                 </div>
             `;
-        }).filter(html => html !== '').join(''); // Filter out empty strings from invalid entries
+
+            // Pre-configure image error handling for better performance
+            const img = artistItem.querySelector('.artist-photo');
+            const placeholder = artistItem.querySelector('.placeholder-artist-image');
+            img.onerror = () => {
+                img.style.display = 'none';
+                placeholder.style.display = 'flex';
+            };
+
+            fragment.appendChild(artistItem);
+        });
+
+        return fragment;
+    }
+
+    // Helper method to append DocumentFragment to container (OPTIMIZED)
+    appendRoleArtistCards(container, artists, startIndex) {
+        const fragment = this.generateRoleArtistCards(artists, startIndex);
+        container.appendChild(fragment);
+        return fragment.children.length;
     }
 
     // Setup event handlers for role artist interactions
@@ -7976,7 +8034,7 @@ class AlbumCollectionApp {
         }
     }
 
-    // Initialize lazy loading for more artist cards
+    // Initialize lazy loading for more artist cards (OPTIMIZED)
     initializeRoleCardLazyLoading(modalBody) {
         if (!this.currentRoleArtists || this.currentRoleArtists.length <= this.roleCardsInitialLoad) {
             console.log(`🎭 Lazy loading not needed: ${this.currentRoleArtists?.length || 0} artists, initial load: ${this.roleCardsInitialLoad}`);
@@ -7994,6 +8052,8 @@ class AlbumCollectionApp {
         console.log('🎭 Found sentinel element, setting up intersection observer');
 
         let currentlyLoaded = this.roleCardsInitialLoad;
+        const roleList = modalBody.querySelector('#role-artists-list');
+        const loadedCounter = modalBody.querySelector('#role-artists-loaded');
 
         // Clean up existing observer if any
         if (this.cardObserver) {
@@ -8013,32 +8073,25 @@ class AlbumCollectionApp {
                         Math.min(currentlyLoaded + this.roleCardsLoadIncrement, this.currentRoleArtists.length)
                     );
 
-                    const nextCardsHtml = this.generateRoleArtistCards(nextBatch, currentlyLoaded);
+                    // Use optimized DOM operations
+                    const addedCount = this.appendRoleArtistCards(roleList, nextBatch, currentlyLoaded);
 
-                    // Append to the list
-                    const roleList = modalBody.querySelector('#role-artists-list');
-                    if (roleList) {
-                        roleList.insertAdjacentHTML('beforeend', nextCardsHtml);
+                    // Update counter efficiently
+                    currentlyLoaded += addedCount;
+                    if (loadedCounter) {
+                        loadedCounter.textContent = currentlyLoaded;
+                    }
 
-                        // Update counter
-                        currentlyLoaded += nextBatch.length;
-                        const loadedCounter = modalBody.querySelector('#role-artists-loaded');
-                        if (loadedCounter) {
-                            loadedCounter.textContent = currentlyLoaded;
-                        }
+                    console.log(`🎭 Loaded +${addedCount} cards (${currentlyLoaded}/${this.currentRoleArtists.length})`);
 
-                        console.log(`🎭 Loaded +${nextBatch.length} cards (${currentlyLoaded}/${this.currentRoleArtists.length})`);
+                    // Initialize image lazy loading for new cards (optimized)
+                    const newCards = Array.from(roleList.children).slice(-addedCount);
+                    this.observeNewRoleCards(newCards, modalBody);
 
-                        // Initialize image lazy loading for new cards
-                        const newCards = roleList.querySelectorAll('.role-artist-item');
-                        const newCardElements = Array.from(newCards).slice(-nextBatch.length);
-                        this.observeNewRoleCards(newCardElements, modalBody);
-
-                        // If all cards loaded, stop observing
-                        if (currentlyLoaded >= this.currentRoleArtists.length) {
-                            this.cardObserver.unobserve(sentinel);
-                            console.log('🎭 All cards loaded, stopping observer');
-                        }
+                    // If all cards loaded, stop observing
+                    if (currentlyLoaded >= this.currentRoleArtists.length) {
+                        this.cardObserver.unobserve(sentinel);
+                        console.log('🎭 All cards loaded, stopping observer');
                     }
                 }
             });
@@ -8052,9 +8105,48 @@ class AlbumCollectionApp {
         console.log('🎭 Observer set up and observing sentinel');
     }
 
-    // Observe new cards for image lazy loading
+    // Observe new cards for image lazy loading (OPTIMIZED)
     observeNewRoleCards(cardElements, modalBody) {
         if (!window.ImageService || !this.imageObserver) {
+            console.log('🎭 Image service not available, skipping image lazy loading');
+            return;
+        }
+
+        // Batch process images for better performance
+        const imagesToObserve = [];
+        
+        cardElements.forEach(card => {
+            const img = card.querySelector('.artist-photo');
+            if (img && !img.dataset.observed) {
+                img.dataset.observed = 'true';
+                imagesToObserve.push(img);
+            }
+        });
+
+        // Use requestAnimationFrame for better performance
+        if (imagesToObserve.length > 0) {
+            requestAnimationFrame(() => {
+                imagesToObserve.forEach(img => {
+                    this.imageObserver.observe(img);
+                });
+                console.log(`🎭 Added ${imagesToObserve.length} new images to lazy loading observer`);
+            });
+        }
+    }
+
+    // Optimized batch DOM update method
+    updateRoleModalStats(loaded, total) {
+        const loadedElement = document.getElementById('role-artists-loaded');
+        const totalElement = document.getElementById('role-artists-total');
+        
+        if (loadedElement && totalElement) {
+            // Use requestAnimationFrame for smooth updates
+            requestAnimationFrame(() => {
+                loadedElement.textContent = loaded;
+                totalElement.textContent = total;
+            });
+        }
+    }
             // Create image observer if not exists
             this.initializeRoleModalLazyLoading(modalBody);
         }
@@ -8109,7 +8201,7 @@ class AlbumCollectionApp {
         });
     }
 
-    // Load individual artist image for role modal
+    // Load individual artist image for role modal (OPTIMIZED)
     async loadRoleArtistImage(artistItem, artistName) {
         if (!artistName || !artistItem) {
             return;
@@ -8124,34 +8216,62 @@ class AlbumCollectionApp {
                 return;
             }
 
-            // Add a small delay to prevent overwhelming the API
+            // Optimized delay calculation - prioritize visible items
             const artistIndex = parseInt(artistItem.dataset.artistIndex, 10) || 0;
-            const delay = Math.min(artistIndex * 200, 2000); // Max 2 second delay
+            
+            // Reduce delays for better perceived performance
+            const baseDelay = 50; // Much smaller base delay
+            const incrementalDelay = artistIndex < 12 ? 25 : 100; // Faster for first 12 items
+            const maxDelay = 1000; // Reduced max delay
+            const delay = Math.min(baseDelay + (artistIndex * incrementalDelay), maxDelay);
 
             if (delay > 0) {
                 await new Promise(resolve => setTimeout(resolve, delay));
+            }
+
+            // Check if element is still in DOM before proceeding
+            if (!artistItem.parentNode) {
+                return;
             }
 
             const imageService = new window.ImageService();
             const imageUrl = await imageService.fetchArtistImage(artistName);
 
             if (imageUrl && artistItem.parentNode) {
-                // Create a new image element to test loading
+                // Optimized image loading with better error handling
                 const testImg = new Image();
+                
+                // Set loading attribute for better browser optimization
+                testImg.loading = 'lazy';
+                
                 testImg.onload = () => {
-                    // Set the actual image source
-                    imgElement.src = imageUrl;
-                    imgElement.style.display = 'block';
-                    placeholderElement.style.display = 'none';
+                    // Double-check element is still in DOM
+                    if (artistItem.parentNode && imgElement.parentNode) {
+                        imgElement.src = imageUrl;
+                        imgElement.style.display = 'block';
+                        placeholderElement.style.display = 'none';
+                        
+                        // Add loaded class for potential CSS transitions
+                        artistItem.classList.add('image-loaded');
+                    }
                 };
+                
                 testImg.onerror = () => {
                     // Keep placeholder on error (silent)
+                    if (artistItem.parentNode) {
+                        artistItem.classList.add('image-failed');
+                    }
                 };
+                
                 // Start loading
                 testImg.src = imageUrl;
             }
         } catch (error) {
-            // Silent error handling - keep placeholder
+            // Enhanced error handling with context
+            // console.warn(`🖼️ Image loading failed for ${artistName}:`, error);
+            if (artistItem.parentNode) {
+                artistItem.classList.add('image-failed');
+            }
         }
     }
 
