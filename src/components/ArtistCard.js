@@ -77,14 +77,21 @@ class ArtistCard {
             `;
         }
 
-        // Format genre display (show only the most frequent genre/style)
+        // Format genres display (show top 3 most frequent genres/styles)
         let genreDisplay = '';
-        if (this.artist.mostFrequentGenre) {
-            genreDisplay = `
-                <p class="artist-genre">
-                    ${this.artist.mostFrequentGenre}
-                </p>
-            `;
+        if (this.artist.topGenres && this.artist.topGenres.length > 0) {
+            const genrePills = this.artist.topGenres
+                .filter(genre => genre && genre.trim()) // Remove empty genres
+                .map(genre => `<span class="artist-genre-pill">${genre}</span>`)
+                .join('');
+            
+            if (genrePills) {
+                genreDisplay = `
+                    <div class="artist-genres">
+                        ${genrePills}
+                    </div>
+                `;
+            }
         }
 
         // Check if we should show image based on tab context and position

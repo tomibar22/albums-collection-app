@@ -3508,7 +3508,8 @@ class AlbumCollectionApp {
                             .map(entry => entry[0]); // Extract genre names
 
                         existingArtist.genres = sortedGenres;
-                        existingArtist.mostFrequentGenre = sortedGenres[0] || null;
+                        existingArtist.topGenres = sortedGenres.slice(0, 3); // Top 3 most frequent genres
+                        existingArtist.mostFrequentGenre = sortedGenres[0] || null; // Keep for backward compatibility
 
                         // console.log(`     🎭 Roles by frequency: ${sortedRoles.slice(0, 3).join(', ')}${sortedRoles.length > 3 ? ` (+${sortedRoles.length - 3} more)` : ''}`);
                     } else {
@@ -3552,7 +3553,8 @@ class AlbumCollectionApp {
                             roleFrequency: roleFrequency, // Track frequency for sorting
                             genres: allGenres, // Track genres/styles
                             genreFrequency: genreFrequency, // Track genre frequency for sorting
-                            mostFrequentGenre: allGenres[0] || null, // Most frequent genre/style
+                            topGenres: allGenres.slice(0, 3), // Top 3 most frequent genres
+                            mostFrequentGenre: allGenres[0] || null, // Most frequent genre/style (backward compatibility)
                             image: null,
                             discogsId: credit.id || null
                         };
