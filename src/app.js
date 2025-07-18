@@ -10747,9 +10747,14 @@ class AlbumCollectionApp {
             this.collection.artists = this.generateArtistsFromAlbums();
         }
 
-        // Find the artist in the main collection (which includes both musical and technical artists)
-        let artist = this.collection.artists.find(a => a.name === artistName);
-        console.log(`🔍 Artist found in main collection:`, !!artist);
+        // Find the artist in the active (filtered) collection first, then fallback to main collection
+        let artist = this.activeCollection.artists.find(a => a.name === artistName);
+        if (!artist) {
+            artist = this.collection.artists.find(a => a.name === artistName);
+            console.log(`🔍 Artist found in main collection (fallback):`, !!artist);
+        } else {
+            console.log(`🔍 Artist found in filtered collection:`, !!artist);
+        }
 
         // Check if the found artist has albums - if not, we need to recreate from credits
         if (artist && (!artist.albums || artist.albums.length === 0)) {
@@ -10798,16 +10803,19 @@ class AlbumCollectionApp {
 
     createArtistFromCreditsModern(artistName) {
         console.log(`🏗️ Creating artist from credits (modern): ${artistName}`);
-        console.log(`📚 Total albums to check: ${this.collection.albums.length}`);
+        
+        // Use filtered albums when available for consistency with current filter state
+        const albumsToProcess = this.activeCollection.albums || this.collection.albums;
+        console.log(`📚 Total albums to check: ${albumsToProcess.length} (filtered: ${this.activeCollection.albums ? 'yes' : 'no'})`);
 
         const artistAlbums = [];
         const roleFrequency = new Map();
 
         // Use the same credit processing logic as generateArtistsFromAlbums
-        this.collection.albums.forEach((album, albumIndex) => {
+        albumsToProcess.forEach((album, albumIndex) => {
             let creditsToProcess = [];
 
-            console.log(`🔍 Checking album ${albumIndex + 1}/${this.collection.albums.length}: "${album.title}"`);
+            console.log(`🔍 Checking album ${albumIndex + 1}/${albumsToProcess.length}: "${album.title}"`);
 
             if (album.credits && Array.isArray(album.credits)) {
                 console.log(`  📝 Album has ${album.credits.length} credits`);
