@@ -398,6 +398,11 @@ class AlbumCollectionApp {
         // Update filter UIs
         this.updateGenreFilterUI();
         
+        // Clear role album count cache when filters change
+        if (this.roleAlbumCountCache) {
+            this.roleAlbumCountCache.clear();
+        }
+        
         // Refresh current view without delay
         this.refreshCurrentView();
         
@@ -8424,8 +8429,8 @@ class AlbumCollectionApp {
                 let roleSpecificAlbumCount = 0;
                 const roleSpecificAlbums = new Set(); // Use Set to avoid duplicates
 
-                // Look through all albums in the collection for this artist in this role
-                this.collection.albums.forEach(album => {
+                // Look through filtered albums for this artist in this role
+                this.activeCollection.albums.forEach(album => {
                     if (album.credits && Array.isArray(album.credits)) {
                         // Use the same sophisticated role checking as the filtering logic
                         const hasRoleInAlbum = this.artistHasRoleOnAlbum(artistInfo.name, roleData.name, album);
@@ -8512,8 +8517,9 @@ class AlbumCollectionApp {
                 10
             );
 
-            // Check cache for this role's processed data
-            const cacheKey = `${roleData.name}:${this.collection.albums.length}`;
+            // Check cache for this role's processed data (include filter state in cache key)
+            const filterState = `${this.yearFilterManager.isFilterActive() ? 'Y' : 'N'}:${this.genreFilterManager.isFilterActive() ? 'G' : 'N'}:${this.activeCollection.albums.length}`;
+            const cacheKey = `${roleData.name}:${filterState}`;
             let artistsWithCounts = this.roleAlbumCountCache.get(cacheKey);
             
             if (artistsWithCounts) {
@@ -8534,9 +8540,9 @@ class AlbumCollectionApp {
                     artistInfo.name && typeof artistInfo.name === 'string'
                 );
 
-                // Build optimized album lookup index
+                // Build optimized album lookup index using filtered albums
                 const albumsByArtist = new Map();
-                this.collection.albums.forEach(album => {
+                this.activeCollection.albums.forEach(album => {
                     if (album.credits && Array.isArray(album.credits)) {
                         album.credits.forEach(credit => {
                             if (credit.name) {
