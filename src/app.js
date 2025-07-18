@@ -1533,7 +1533,8 @@ class AlbumCollectionApp {
 
     if (albumsCountEl) {
 
-    albumsCountEl.textContent = `(${this.collection.albums.length})`;
+    const albumsCount = this.activeCollection?.albums?.length || this.collection.albums.length;
+    albumsCountEl.textContent = `(${albumsCount})`;
 
     }
 
@@ -1545,7 +1546,8 @@ class AlbumCollectionApp {
 
     if (artistsCountEl) {
 
-    artistsCountEl.textContent = `(${this.collection.artists.length})`;
+    const artistsCount = this.activeCollection?.artists?.length || this.collection.artists.length;
+    artistsCountEl.textContent = `(${artistsCount})`;
 
     }
 
@@ -1557,7 +1559,8 @@ class AlbumCollectionApp {
 
     if (tracksCountEl) {
 
-    tracksCountEl.textContent = `(${this.collection.tracks.length})`;
+    const tracksCount = this.activeCollection?.tracks?.length || this.collection.tracks.length;
+    tracksCountEl.textContent = `(${tracksCount})`;
 
     }
 
@@ -1569,7 +1572,8 @@ class AlbumCollectionApp {
 
     if (rolesCountEl) {
 
-    rolesCountEl.textContent = `(${this.collection.roles.length})`;
+    const rolesCount = this.activeCollection?.roles?.length || this.collection.roles.length;
+    rolesCountEl.textContent = `(${rolesCount})`;
 
     }
 
@@ -1951,6 +1955,10 @@ class AlbumCollectionApp {
         yearRangeMax.addEventListener('mouseup', applyYearFilter);
         yearRangeMin.addEventListener('touchend', applyYearFilter);
         yearRangeMax.addEventListener('touchend', applyYearFilter);
+        
+        // Handle case where mouse leaves slider area during dragging
+        yearRangeMin.addEventListener('mouseleave', applyYearFilter);
+        yearRangeMax.addEventListener('mouseleave', applyYearFilter);
         
         // Input field event listeners
         yearInputMin.addEventListener('input', updateSlidersFromInputs);
