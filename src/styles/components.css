@@ -6223,3 +6223,72 @@
     font-weight: inherit;
     font-size: inherit;
 }
+
+/* Year Filter Controls */
+.year-filter-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    background: var(--secondary-bg);
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.year-range-slider {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    position: relative;
+}
+
+.year-slider {
+    flex: 1;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.year-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.year-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.year-filter-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.clear-filter-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.clear-filter-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}

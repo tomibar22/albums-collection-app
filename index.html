@@ -44,6 +44,17 @@
                             <input type="text" id="albums-search" placeholder="🔍 Search albums by title, artist, year..." class="search-input">
                             <button class="select-mode-btn" id="select-mode-toggle">📋 Select</button>
                         </div>
+                        <div class="year-filter-controls">
+                            <label>Year Filter:</label>
+                            <div class="year-range-slider">
+                                <input type="range" id="year-range-start" min="1950" max="2025" value="1950" class="year-slider">
+                                <input type="range" id="year-range-end" min="1950" max="2025" value="2025" class="year-slider">
+                            </div>
+                            <div class="year-filter-display">
+                                <span id="year-filter-summary">All 6,643 albums</span>
+                                <button class="clear-filter-btn" id="clear-year-filter">Clear Filter</button>
+                            </div>
+                        </div>
                         <div class="sort-controls">
                             <label>Sort by:</label>
                             <select id="albums-sort">
@@ -426,6 +437,7 @@
     <script src="src/api/discogs.js"></script>
     <script src="src/data/parser.js"></script>
     <script src="src/utils/roleCategorizer.js"></script>
+    <script src="src/utils/yearFilterManager.js"></script>
     <script src="src/utils/lazyLoadingManager.js"></script>
     <script src="src/utils/tabVisibilityHelper.js"></script>
     <script src="src/utils/googleSheetsSetup.js"></script>

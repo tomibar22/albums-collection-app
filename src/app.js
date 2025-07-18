@@ -18,6 +18,7 @@ class AlbumCollectionApp {
         tracksLastDataHash: null
     };
 
+    // Original collection (full dataset - immutable)
     this.collection = {
 
     albums: [],
@@ -29,6 +30,17 @@ class AlbumCollectionApp {
     roles: []
 
     };
+
+    // Active collection (filtered dataset - all operations use this)
+    this.activeCollection = {
+        albums: [],
+        artists: [],
+        tracks: [],
+        roles: []
+    };
+
+    // Year filter manager for global filtering
+    this.yearFilterManager = new YearFilterManager();
 
 
 
@@ -136,6 +148,130 @@ class AlbumCollectionApp {
 
     }
 
+    /**
+     * Initialize the year filter manager and set up collection state
+     */
+    initializeYearFilter() {
+        // Initialize year filter manager with current albums
+        this.yearFilterManager.initialize(this.collection.albums);
+        
+        // Set up active collection to point to filtered data
+        this.activeCollection.albums = this.yearFilterManager.getActiveAlbums();
+        
+        // Add listener for filter changes
+        this.yearFilterManager.addListener((filterData) => {
+            console.log('🎯 Year filter changed, regenerating collection data...');
+            this.onYearFilterChange(filterData);
+        });
+        
+        console.log('🎯 Year filter initialized');
+    }
+
+    /**
+     * Handle year filter changes - regenerate all derived data
+     */
+    async onYearFilterChange(filterData) {
+        try {
+            console.log(`🎯 Filter changed: ${filterData.isActive ? 'Active' : 'Inactive'}`);
+            
+            // Update active collection with filtered albums
+            this.activeCollection.albums = filterData.filteredAlbums;
+            
+            // Regenerate all derived data from filtered albums
+            await this.regenerateCollectionData();
+            
+            // Refresh current view
+            this.refreshCurrentView();
+            
+            // Update UI counters and stats
+            this.updateGlobalStats();
+            
+            console.log(`🎯 Filter applied: ${filterData.stats.filteredAlbums}/${filterData.stats.totalAlbums} albums`);
+            
+        } catch (error) {
+            console.error('❌ Error handling year filter change:', error);
+        }
+    }
+
+    /**
+     * Regenerate all derived data (artists, tracks, roles) from active albums
+     */
+    async regenerateCollectionData() {
+        console.log('🔄 Regenerating collection data from filtered albums...');
+        
+        // Generate artists from filtered albums
+        this.activeCollection.artists = this.generateArtistsFromAlbums();
+        
+        // Generate tracks from filtered albums
+        this.activeCollection.tracks = this.generateTracksFromAlbums();
+        
+        // Generate roles from filtered albums
+        this.activeCollection.roles = this.generateRolesFromAlbums();
+        
+        // Reset UI cache flags to force re-rendering
+        this.uiCache.tracksGridRendered = false;
+        this.uiCache.rolesGridRendered = false;
+        this.uiCache.tracksLastDataHash = null;
+        
+        // Force artist regeneration flag
+        this.artistsNeedRegeneration = true;
+        
+        console.log(`🔄 Collection data regenerated: ${this.activeCollection.albums.length} albums, ${this.activeCollection.artists.length} artists`);
+    }
+
+    /**
+     * Refresh the current view after filter changes
+     */
+    refreshCurrentView() {
+        console.log(`🔄 Refreshing current view: ${this.currentView}`);
+        
+        switch (this.currentView) {
+            case 'albums':
+                this.renderAlbumsGrid();
+                break;
+            case 'artists':
+                this.renderArtistsGrid();
+                break;
+            case 'tracks':
+                this.renderTracksGrid();
+                break;
+            case 'roles':
+                this.renderRolesGrid();
+                break;
+        }
+    }
+
+    /**
+     * Update global stats and UI counters
+     */
+    updateGlobalStats() {
+        const stats = this.yearFilterManager.getStats();
+        
+        // Update tab counts
+        const albumsCountEl = document.getElementById('albums-count');
+        const artistsCountEl = document.getElementById('artists-count');
+        const tracksCountEl = document.getElementById('tracks-count');
+        const rolesCountEl = document.getElementById('roles-count');
+        
+        if (albumsCountEl) albumsCountEl.textContent = `(${stats.filteredAlbums})`;
+        if (artistsCountEl) artistsCountEl.textContent = `(${this.activeCollection.artists.length})`;
+        if (tracksCountEl) tracksCountEl.textContent = `(${this.activeCollection.tracks.length})`;
+        if (rolesCountEl) rolesCountEl.textContent = `(${this.activeCollection.roles.length})`;
+        
+        // Update filter summary in UI (if filter summary element exists)
+        const filterSummaryEl = document.getElementById('year-filter-summary');
+        if (filterSummaryEl) {
+            filterSummaryEl.textContent = this.yearFilterManager.getFilterSummary();
+        }
+    }
+
+    /**
+     * Get the active albums array (filtered or full dataset)
+     */
+    getActiveAlbums() {
+        return this.activeCollection.albums;
+    }
+
 
 
     async init() {
@@ -191,6 +327,9 @@ class AlbumCollectionApp {
 
 
     this.updateLoadingProgress('🎉 Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
+    
+    // Initialize year filter manager after data is loaded
+    this.initializeYearFilter();
     
     // Collection state verified - debug log commented for performance
     // console.log('🎯 POST-LOADING COLLECTION CHECK:', {
@@ -1528,6 +1667,41 @@ class AlbumCollectionApp {
 
 
 
+    // Year filter event listeners
+    const yearRangeStart = document.getElementById('year-range-start');
+    const yearRangeEnd = document.getElementById('year-range-end');
+    const clearYearFilter = document.getElementById('clear-year-filter');
+    
+    if (yearRangeStart && yearRangeEnd) {
+        const updateYearFilter = () => {
+            const startYear = parseInt(yearRangeStart.value);
+            const endYear = parseInt(yearRangeEnd.value);
+            
+            // Ensure start is always less than or equal to end
+            if (startYear > endYear) {
+                yearRangeStart.value = endYear;
+                return;
+            }
+            
+            console.log(`🎯 Year filter changed: ${startYear}-${endYear}`);
+            this.yearFilterManager.setYearRange(startYear, endYear);
+        };
+        
+        yearRangeStart.addEventListener('input', updateYearFilter);
+        yearRangeEnd.addEventListener('input', updateYearFilter);
+    }
+    
+    if (clearYearFilter) {
+        clearYearFilter.addEventListener('click', () => {
+            console.log('🎯 Clearing year filter');
+            this.yearFilterManager.clearFilter();
+            if (yearRangeStart && yearRangeEnd) {
+                yearRangeStart.value = this.yearFilterManager.getAvailableYearRange().min || 1950;
+                yearRangeEnd.value = this.yearFilterManager.getAvailableYearRange().max || 2025;
+            }
+        });
+    }
+
     // Search event listeners
 
     this.setupSearchEventListeners();
@@ -1637,9 +1811,9 @@ class AlbumCollectionApp {
 
 
 
-    // Use provided albums or default to collection albums
+    // Use provided albums or default to active collection albums
 
-    let albumsToDisplay = albumsToRender || this.collection.albums;
+    let albumsToDisplay = albumsToRender || this.activeCollection.albums;
 
 
 
@@ -2659,10 +2833,11 @@ class AlbumCollectionApp {
     generateArtistsFromAlbums() {
         const artistMap = new Map();
 
-        console.log(`🎭 Extracting artists from credits of ${this.collection.albums.length} albums...`);
+        const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
+        console.log(`🎭 Extracting artists from credits of ${albumsToProcess.length} albums...`);
 
         // Extract artists from album credits
-        this.collection.albums.forEach(album => {
+        albumsToProcess.forEach(album => {
             // Use comprehensive processed credits instead of raw album-level only credits
             let creditsToProcess = [];
 
@@ -6722,12 +6897,12 @@ class AlbumCollectionApp {
         }
 
         // Ensure albums collection is initialized
-        if (!this.collection.albums || !Array.isArray(this.collection.albums)) {
-            this.collection.albums = [];
+        if (!this.activeCollection.albums || !Array.isArray(this.activeCollection.albums)) {
+            this.activeCollection.albums = [];
         }
 
         // Only sort if we have albums
-        if (this.collection.albums.length === 0) {
+        if (this.activeCollection.albums.length === 0) {
             console.log('No albums to sort');
             return;
         }
@@ -6739,7 +6914,7 @@ class AlbumCollectionApp {
         if (currentSearchQuery && currentSearchQuery.trim()) {
             // There's an active search - get filtered results and sort them
             console.log(`🔍 Sorting with active search filter: "${currentSearchQuery}"`);
-            albumsToDisplay = this.collection.albums.filter(album => {
+            albumsToDisplay = this.activeCollection.albums.filter(album => {
                 const searchText = currentSearchQuery.toLowerCase();
                 return (
                     album.title.toLowerCase().includes(searchText) ||
@@ -6751,7 +6926,7 @@ class AlbumCollectionApp {
             });
         } else {
             // No active search - sort the full collection
-            albumsToDisplay = [...this.collection.albums]; // Create a copy to sort
+            albumsToDisplay = [...this.activeCollection.albums]; // Create a copy to sort
         }
 
         // Sort the data to display
@@ -7295,12 +7470,13 @@ class AlbumCollectionApp {
 
     // Generate track data from current album collection
     generateTracksFromAlbums() {
-        console.log('🎵 Generating tracks from albums...', this.collection.albums?.length || 0, 'albums');
+        const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
+        console.log('🎵 Generating tracks from albums...', albumsToProcess?.length || 0, 'albums');
         const trackMap = new Map();
 
         try {
             // Extract tracks from all albums
-            this.collection.albums.forEach(album => {
+            albumsToProcess.forEach(album => {
                 try {
                     if (album.tracklist && Array.isArray(album.tracklist)) {
                         album.tracklist.forEach(track => {
@@ -7374,7 +7550,8 @@ class AlbumCollectionApp {
     // Async version with progress updates - optimized for mobile performance
     async generateTracksFromAlbumsAsync() {
         const trackMap = new Map();
-        const totalAlbums = this.collection.albums?.length || 0;
+        const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
+        const totalAlbums = albumsToProcess?.length || 0;
         let processedAlbums = 0;
 
         // Use existing mobile detection for batch size optimization
@@ -7386,7 +7563,7 @@ class AlbumCollectionApp {
         try {
             // Process albums in batches to avoid blocking the UI and reduce memory pressure
             for (let i = 0; i < totalAlbums; i += batchSize) {
-                const albumBatch = this.collection.albums.slice(i, i + batchSize);
+                const albumBatch = albumsToProcess.slice(i, i + batchSize);
 
                 // Process batch synchronously for performance
                 albumBatch.forEach(album => {
@@ -8638,11 +8815,12 @@ class AlbumCollectionApp {
         console.log('🎭 Starting generateRolesFromAlbums...');
         const roleMap = new Map();
 
-        console.log('📊 Albums to process:', this.collection.albums?.length || 0);
+        const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
+        console.log('📊 Albums to process:', albumsToProcess?.length || 0);
 
         try {
             // Extract roles from all albums' credits
-            this.collection.albums.forEach((album, albumIndex) => {
+            albumsToProcess.forEach((album, albumIndex) => {
                 try {
                     if (album.credits && Array.isArray(album.credits)) {
                         album.credits.forEach((credit, creditIndex) => {
@@ -8773,14 +8951,15 @@ class AlbumCollectionApp {
     // Async version with progress updates - optimized for performance (removed excessive logging)
     async generateRolesFromAlbumsAsync() {
         const roleMap = new Map();
-        const totalAlbums = this.collection.albums?.length || 0;
+        const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
+        const totalAlbums = albumsToProcess?.length || 0;
         let processedAlbums = 0;
 
         try {
             // Process albums in batches to avoid blocking the UI
             const batchSize = 50; // Smaller batches for credit processing
             for (let i = 0; i < totalAlbums; i += batchSize) {
-                const albumBatch = this.collection.albums.slice(i, i + batchSize);
+                const albumBatch = albumsToProcess.slice(i, i + batchSize);
 
                 // Process batch synchronously for performance
                 albumBatch.forEach((album, albumIndex) => {
@@ -9054,7 +9233,7 @@ class AlbumCollectionApp {
         if (currentSearchQuery && currentSearchQuery.trim()) {
             // There's an active search - get filtered results and shuffle them
             console.log(`🔍 Shuffling albums with active search filter: "${currentSearchQuery}"`);
-            albumsToShuffle = this.collection.albums.filter(album => {
+            albumsToShuffle = this.activeCollection.albums.filter(album => {
                 const searchText = currentSearchQuery.toLowerCase();
                 return (
                     album.title.toLowerCase().includes(searchText) ||
@@ -9066,7 +9245,7 @@ class AlbumCollectionApp {
             });
         } else {
             // No active search - shuffle the full collection
-            albumsToShuffle = [...this.collection.albums]; // Create a copy to shuffle
+            albumsToShuffle = [...this.activeCollection.albums]; // Create a copy to shuffle
         }
 
         this.shuffleArray(albumsToShuffle);
