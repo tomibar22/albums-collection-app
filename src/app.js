@@ -177,6 +177,9 @@ class AlbumCollectionApp {
      */
     async onYearFilterChange(filterData) {
         try {
+            // Show loading indicator
+            this.showFilterLoading();
+            
             // Update active collection with filtered albums immediately
             this.activeCollection.albums = filterData.filteredAlbums;
             
@@ -195,8 +198,12 @@ class AlbumCollectionApp {
             // Refresh current view
             this.refreshCurrentView();
             
+            // Hide loading indicator
+            this.hideFilterLoading();
+            
         } catch (error) {
             console.error('❌ Error handling year filter change:', error);
+            this.hideFilterLoading();
         }
     }
 
@@ -269,6 +276,36 @@ class AlbumCollectionApp {
         const filterSummaryEl = document.getElementById('year-filter-summary');
         if (filterSummaryEl) {
             filterSummaryEl.textContent = this.yearFilterManager.getFilterSummary();
+        }
+    }
+
+    /**
+     * Show filter loading indicator
+     */
+    showFilterLoading() {
+        const filterLoading = document.getElementById('filter-loading');
+        const filterSummary = document.getElementById('year-filter-summary');
+        
+        if (filterLoading) {
+            filterLoading.classList.add('active');
+        }
+        if (filterSummary) {
+            filterSummary.style.display = 'none';
+        }
+    }
+
+    /**
+     * Hide filter loading indicator
+     */
+    hideFilterLoading() {
+        const filterLoading = document.getElementById('filter-loading');
+        const filterSummary = document.getElementById('year-filter-summary');
+        
+        if (filterLoading) {
+            filterLoading.classList.remove('active');
+        }
+        if (filterSummary) {
+            filterSummary.style.display = 'block';
         }
     }
 

@@ -6228,8 +6228,8 @@
 .global-year-filter {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px;
+    gap: 6px;
+    padding: 8px 12px;
     background: var(--bg-secondary);
     border-radius: 8px;
     margin: 0 16px;
@@ -6258,7 +6258,7 @@
 /* Dual Range Slider */
 .dual-range-slider {
     position: relative;
-    height: 40px;
+    height: 24px;
     display: flex;
     align-items: center;
 }
@@ -6326,14 +6326,14 @@
 
 .year-inputs {
     display: flex;
-    gap: 12px;
-    margin-top: 8px;
+    gap: 8px;
+    margin-top: 4px;
 }
 
 .year-input-group {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     flex: 1;
 }
 
@@ -6344,12 +6344,12 @@
 }
 
 .year-input {
-    padding: 6px 8px;
+    padding: 4px 6px;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     color: var(--text-primary);
-    font-size: 0.8em;
+    font-size: 0.75em;
     width: 100%;
     transition: border-color 0.2s ease;
 }
@@ -6387,21 +6387,58 @@
     color: var(--text-primary);
 }
 
+.filter-loading {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75em;
+    color: var(--accent-color);
+}
+
+.filter-loading.active {
+    display: flex;
+}
+
+.filter-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(59, 130, 246, 0.2);
+    border-top: 2px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .global-year-filter {
         min-width: 250px;
         margin: 0 8px;
+        padding: 6px 10px;
+        gap: 4px;
     }
     
     .year-filter-header {
         flex-direction: column;
-        gap: 4px;
+        gap: 2px;
         align-items: flex-start;
     }
     
+    .dual-range-slider {
+        height: 20px;
+    }
+    
     .year-inputs {
-        gap: 8px;
+        gap: 6px;
+        margin-top: 2px;
+    }
+    
+    .year-input-group {
+        gap: 1px;
     }
     
     .year-input-group label {
@@ -6409,7 +6446,11 @@
     }
     
     .year-input {
-        padding: 4px 6px;
-        font-size: 0.75em;
+        padding: 3px 5px;
+        font-size: 0.7em;
+    }
+    
+    .year-filter-actions {
+        font-size: 0.7em;
     }
 }
