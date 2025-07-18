@@ -26,6 +26,24 @@
                     <button class="nav-btn" data-view="roles">Roles</button>
                     <button class="nav-btn" data-view="scraper">Scraper</button>
                 </nav>
+                <!-- Global Year Filter -->
+                <div class="global-year-filter" id="global-year-filter">
+                    <div class="year-filter-header">
+                        <span class="filter-label">🎯 Year Filter</span>
+                        <span class="year-range-display" id="year-range-display">All Years</span>
+                    </div>
+                    <div class="dual-range-slider" id="dual-range-slider">
+                        <input type="range" id="year-range-min" min="1950" max="2025" value="1950" class="range-slider range-min">
+                        <input type="range" id="year-range-max" min="1950" max="2025" value="2025" class="range-slider range-max">
+                        <div class="slider-track">
+                            <div class="slider-range" id="slider-range"></div>
+                        </div>
+                    </div>
+                    <div class="year-filter-actions">
+                        <span class="filter-summary" id="year-filter-summary">All albums</span>
+                        <button class="clear-filter-btn" id="clear-year-filter">Clear</button>
+                    </div>
+                </div>
                 <!-- User Menu (will be populated by auth middleware) -->
                 <div class="user-menu-container" id="userMenuContainer">
                     <!-- User menu will be inserted here by authMiddleware -->
@@ -43,17 +61,6 @@
                         <div class="search-controls">
                             <input type="text" id="albums-search" placeholder="🔍 Search albums by title, artist, year..." class="search-input">
                             <button class="select-mode-btn" id="select-mode-toggle">📋 Select</button>
-                        </div>
-                        <div class="year-filter-controls">
-                            <label>Year Filter:</label>
-                            <div class="year-range-slider">
-                                <input type="range" id="year-range-start" min="1950" max="2025" value="1950" class="year-slider">
-                                <input type="range" id="year-range-end" min="1950" max="2025" value="2025" class="year-slider">
-                            </div>
-                            <div class="year-filter-display">
-                                <span id="year-filter-summary">All 6,643 albums</span>
-                                <button class="clear-filter-btn" id="clear-year-filter">Clear Filter</button>
-                            </div>
                         </div>
                         <div class="sort-controls">
                             <label>Sort by:</label>

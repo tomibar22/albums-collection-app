@@ -155,8 +155,13 @@ class AlbumCollectionApp {
         // Initialize year filter manager with current albums
         this.yearFilterManager.initialize(this.collection.albums);
         
-        // Set up active collection to point to filtered data
+        // Set up active collection to point to filtered data (initially all albums)
         this.activeCollection.albums = this.yearFilterManager.getActiveAlbums();
+        
+        // Generate initial derived data from active collection
+        this.activeCollection.artists = this.generateArtistsFromAlbums();
+        this.activeCollection.tracks = this.generateTracksFromAlbums();
+        this.activeCollection.roles = this.generateRolesFromAlbums();
         
         // Add listener for filter changes
         this.yearFilterManager.addListener((filterData) => {
@@ -164,7 +169,7 @@ class AlbumCollectionApp {
             this.onYearFilterChange(filterData);
         });
         
-        console.log('🎯 Year filter initialized');
+        console.log('🎯 Year filter initialized with full collection');
     }
 
     /**
@@ -1667,44 +1672,88 @@ class AlbumCollectionApp {
 
 
 
-    // Year filter event listeners
-    const yearRangeStart = document.getElementById('year-range-start');
-    const yearRangeEnd = document.getElementById('year-range-end');
-    const clearYearFilter = document.getElementById('clear-year-filter');
-    
-    if (yearRangeStart && yearRangeEnd) {
-        const updateYearFilter = () => {
-            const startYear = parseInt(yearRangeStart.value);
-            const endYear = parseInt(yearRangeEnd.value);
-            
-            // Ensure start is always less than or equal to end
-            if (startYear > endYear) {
-                yearRangeStart.value = endYear;
-                return;
-            }
-            
-            console.log(`🎯 Year filter changed: ${startYear}-${endYear}`);
-            this.yearFilterManager.setYearRange(startYear, endYear);
-        };
-        
-        yearRangeStart.addEventListener('input', updateYearFilter);
-        yearRangeEnd.addEventListener('input', updateYearFilter);
-    }
-    
-    if (clearYearFilter) {
-        clearYearFilter.addEventListener('click', () => {
-            console.log('🎯 Clearing year filter');
-            this.yearFilterManager.clearFilter();
-            if (yearRangeStart && yearRangeEnd) {
-                yearRangeStart.value = this.yearFilterManager.getAvailableYearRange().min || 1950;
-                yearRangeEnd.value = this.yearFilterManager.getAvailableYearRange().max || 2025;
-            }
-        });
-    }
+    // Year filter event listeners (dual-handle slider)
+    this.setupYearFilterEventListeners();
 
     // Search event listeners
 
     this.setupSearchEventListeners();
+
+    }
+
+    /**
+     * Setup Year Filter Event Listeners with dual-handle slider
+     */
+    setupYearFilterEventListeners() {
+        const yearRangeMin = document.getElementById('year-range-min');
+        const yearRangeMax = document.getElementById('year-range-max');
+        const yearRangeDisplay = document.getElementById('year-range-display');
+        const sliderRange = document.getElementById('slider-range');
+        const clearYearFilter = document.getElementById('clear-year-filter');
+        
+        if (!yearRangeMin || !yearRangeMax || !yearRangeDisplay || !sliderRange) {
+            console.warn('⚠️ Year filter elements not found');
+            return;
+        }
+        
+        // Update the visual range track
+        const updateSliderRange = () => {
+            const min = parseInt(yearRangeMin.value);
+            const max = parseInt(yearRangeMax.value);
+            const minPercent = ((min - 1950) / (2025 - 1950)) * 100;
+            const maxPercent = ((max - 1950) / (2025 - 1950)) * 100;
+            
+            sliderRange.style.left = minPercent + '%';
+            sliderRange.style.right = (100 - maxPercent) + '%';
+        };
+        
+        // Update year display and filter
+        const updateYearFilter = () => {
+            const minYear = parseInt(yearRangeMin.value);
+            const maxYear = parseInt(yearRangeMax.value);
+            
+            // Ensure min is always less than or equal to max
+            if (minYear > maxYear) {
+                yearRangeMin.value = maxYear;
+                return;
+            }
+            
+            // Update visual display
+            if (minYear === 1950 && maxYear === 2025) {
+                yearRangeDisplay.textContent = 'All Years';
+            } else {
+                yearRangeDisplay.textContent = `${minYear} - ${maxYear}`;
+            }
+            
+            updateSliderRange();
+            
+            // Apply filter
+            console.log(`🎯 Year filter changed: ${minYear}-${maxYear}`);
+            this.yearFilterManager.setYearRange(minYear, maxYear);
+        };
+        
+        // Set initial range display
+        updateSliderRange();
+        
+        // Event listeners
+        yearRangeMin.addEventListener('input', updateYearFilter);
+        yearRangeMax.addEventListener('input', updateYearFilter);
+        
+        // Clear filter button
+        if (clearYearFilter) {
+            clearYearFilter.addEventListener('click', () => {
+                console.log('🎯 Clearing year filter');
+                this.yearFilterManager.clearFilter();
+                
+                const availableRange = this.yearFilterManager.getAvailableYearRange();
+                yearRangeMin.value = availableRange.min || 1950;
+                yearRangeMax.value = availableRange.max || 2025;
+                yearRangeDisplay.textContent = 'All Years';
+                updateSliderRange();
+            });
+        }
+        
+        console.log('✅ Year filter event listeners set up');
 
 
 
