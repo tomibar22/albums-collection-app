@@ -6283,12 +6283,18 @@
     box-shadow: var(--shadow-lg);
     min-width: 320px;
     z-index: 1000;
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.2s ease-out;
+    pointer-events: none;
 }
 
 .year-filter-panel.active {
-    display: block;
-    animation: slideDown 0.2s ease-out;
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 .year-filter-content {
@@ -6298,16 +6304,7 @@
     gap: 12px;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+/* Removed slideDown animation - using CSS transitions instead */
 
 /* Dual Range Slider */
 .dual-range-slider {

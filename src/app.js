@@ -1809,7 +1809,18 @@ class AlbumCollectionApp {
         const yearFilterPanel = document.getElementById('year-filter-panel');
         const filterStatus = document.getElementById('year-filter-status');
         
-        if (!yearRangeMin || !yearRangeMax || !yearInputMin || !yearInputMax || !sliderRange || !yearFilterToggle) {
+        console.log('🎯 Year filter elements found:', {
+            yearRangeMin: !!yearRangeMin,
+            yearRangeMax: !!yearRangeMax,
+            yearInputMin: !!yearInputMin,
+            yearInputMax: !!yearInputMax,
+            sliderRange: !!sliderRange,
+            yearFilterToggle: !!yearFilterToggle,
+            yearFilterPanel: !!yearFilterPanel,
+            filterStatus: !!filterStatus
+        });
+        
+        if (!yearRangeMin || !yearRangeMax || !yearInputMin || !yearInputMax || !sliderRange || !yearFilterToggle || !yearFilterPanel) {
             console.warn('⚠️ Year filter elements not found');
             return;
         }
@@ -1819,12 +1830,16 @@ class AlbumCollectionApp {
             e.stopPropagation();
             const isActive = yearFilterPanel.classList.contains('active');
             
+            console.log('🎯 Year filter toggle clicked, current state:', isActive);
+            
             if (isActive) {
                 yearFilterPanel.classList.remove('active');
                 yearFilterToggle.classList.remove('active');
+                console.log('🎯 Year filter panel closed');
             } else {
                 yearFilterPanel.classList.add('active');
                 yearFilterToggle.classList.add('active');
+                console.log('🎯 Year filter panel opened');
             }
         });
         
@@ -1971,8 +1986,26 @@ class AlbumCollectionApp {
         }
         
         console.log('✅ Year filter event listeners set up');
-
-
+        
+        // Global toggle function for backup
+        window.toggleYearFilter = () => {
+            const toggle = document.getElementById('year-filter-toggle');
+            const panel = document.getElementById('year-filter-panel');
+            
+            if (panel && toggle) {
+                const isActive = panel.classList.contains('active');
+                
+                if (isActive) {
+                    panel.classList.remove('active');
+                    toggle.classList.remove('active');
+                    console.log('🎯 Year filter panel closed (global function)');
+                } else {
+                    panel.classList.add('active');
+                    toggle.classList.add('active');
+                    console.log('🎯 Year filter panel opened (global function)');
+                }
+            }
+        };
 
     // Selection mode event listeners
 
