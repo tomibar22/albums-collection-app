@@ -2013,26 +2013,6 @@ class AlbumCollectionApp {
         }
         
         console.log('✅ Year filter event listeners set up');
-        
-        // Global toggle function for backup
-        window.toggleYearFilter = () => {
-            const toggle = document.getElementById('year-filter-toggle');
-            const panel = document.getElementById('year-filter-panel');
-            
-            if (panel && toggle) {
-                const isActive = panel.classList.contains('active');
-                
-                if (isActive) {
-                    panel.classList.remove('active');
-                    toggle.classList.remove('active');
-                    console.log('🎯 Year filter panel closed (global function)');
-                } else {
-                    panel.classList.add('active');
-                    toggle.classList.add('active');
-                    console.log('🎯 Year filter panel opened (global function)');
-                }
-            }
-        };
 
     // Selection mode event listeners
 
