@@ -6224,35 +6224,89 @@
     font-size: inherit;
 }
 
-/* Global Year Filter in Header */
-.global-year-filter {
+/* Compact Year Filter Toggle */
+.year-filter-toggle-container {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px 12px;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    margin: 0 16px;
-    min-width: 300px;
-    max-width: 400px;
+    align-items: center;
 }
 
-.year-filter-header {
+.year-filter-toggle {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+    min-width: 120px;
+}
+
+.year-filter-toggle:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-color);
+}
+
+.filter-icon {
     font-size: 0.9em;
 }
 
-.filter-label {
+.filter-status {
     font-weight: 500;
     color: var(--text-primary);
 }
 
-.year-range-display {
-    font-size: 0.8em;
-    color: var(--accent-color);
-    font-weight: 500;
+.toggle-arrow {
+    font-size: 0.7em;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease;
+}
+
+.year-filter-toggle.active .toggle-arrow {
+    transform: rotate(180deg);
+}
+
+/* Collapsible Year Filter Panel */
+.year-filter-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    min-width: 320px;
+    z-index: 1000;
+    display: none;
+}
+
+.year-filter-panel.active {
+    display: block;
+    animation: slideDown 0.2s ease-out;
+}
+
+.year-filter-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Dual Range Slider */
@@ -6415,17 +6469,21 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .global-year-filter {
-        min-width: 250px;
-        margin: 0 8px;
-        padding: 6px 10px;
-        gap: 4px;
+    .year-filter-toggle {
+        padding: 4px 8px;
+        font-size: 0.8em;
+        min-width: 100px;
     }
     
-    .year-filter-header {
-        flex-direction: column;
-        gap: 2px;
-        align-items: flex-start;
+    .year-filter-panel {
+        min-width: 280px;
+        left: 0;
+        right: auto;
+    }
+    
+    .year-filter-content {
+        padding: 12px;
+        gap: 8px;
     }
     
     .dual-range-slider {

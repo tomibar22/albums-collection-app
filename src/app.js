@@ -213,10 +213,10 @@ class AlbumCollectionApp {
             yearInputMax.value = maxYear;
         }
         
-        // Update display
-        const yearRangeDisplay = document.getElementById('year-range-display');
-        if (yearRangeDisplay) {
-            yearRangeDisplay.textContent = 'All Years';
+        // Update toggle button status
+        const filterStatus = document.getElementById('year-filter-status');
+        if (filterStatus) {
+            filterStatus.textContent = 'All Years';
         }
         
         // Update slider visual range
@@ -1801,14 +1801,40 @@ class AlbumCollectionApp {
         const yearRangeMax = document.getElementById('year-range-max');
         const yearInputMin = document.getElementById('year-input-min');
         const yearInputMax = document.getElementById('year-input-max');
-        const yearRangeDisplay = document.getElementById('year-range-display');
         const sliderRange = document.getElementById('slider-range');
         const clearYearFilter = document.getElementById('clear-year-filter');
         
-        if (!yearRangeMin || !yearRangeMax || !yearInputMin || !yearInputMax || !yearRangeDisplay || !sliderRange) {
+        // New toggle elements
+        const yearFilterToggle = document.getElementById('year-filter-toggle');
+        const yearFilterPanel = document.getElementById('year-filter-panel');
+        const filterStatus = document.getElementById('year-filter-status');
+        
+        if (!yearRangeMin || !yearRangeMax || !yearInputMin || !yearInputMax || !sliderRange || !yearFilterToggle) {
             console.warn('⚠️ Year filter elements not found');
             return;
         }
+        
+        // Toggle panel visibility
+        yearFilterToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isActive = yearFilterPanel.classList.contains('active');
+            
+            if (isActive) {
+                yearFilterPanel.classList.remove('active');
+                yearFilterToggle.classList.remove('active');
+            } else {
+                yearFilterPanel.classList.add('active');
+                yearFilterToggle.classList.add('active');
+            }
+        });
+        
+        // Close panel when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!yearFilterToggle.contains(e.target) && !yearFilterPanel.contains(e.target)) {
+                yearFilterPanel.classList.remove('active');
+                yearFilterToggle.classList.remove('active');
+            }
+        });
         
         // Update the visual range track
         const updateSliderRange = () => {
@@ -1843,10 +1869,11 @@ class AlbumCollectionApp {
             yearInputMax.value = maxYear;
             
             // Update visual display immediately for smooth UX
-            if (minYear === rangeMin && maxYear === rangeMax) {
-                yearRangeDisplay.textContent = 'All Years';
-            } else {
-                yearRangeDisplay.textContent = `${minYear} - ${maxYear}`;
+            const displayText = (minYear === rangeMin && maxYear === rangeMax) ? 'All Years' : `${minYear} - ${maxYear}`;
+            
+            // Update toggle button status
+            if (filterStatus) {
+                filterStatus.textContent = displayText;
             }
             
             updateSliderRange();
@@ -1870,11 +1897,13 @@ class AlbumCollectionApp {
             
             // Update visual display immediately
             requestAnimationFrame(() => {
-                if (minYear === rangeMin && maxYear === rangeMax) {
-                    yearRangeDisplay.textContent = 'All Years';
-                } else {
-                    yearRangeDisplay.textContent = `${minYear} - ${maxYear}`;
+                const displayText = (minYear === rangeMin && maxYear === rangeMax) ? 'All Years' : `${minYear} - ${maxYear}`;
+                
+                // Update toggle button status
+                if (filterStatus) {
+                    filterStatus.textContent = displayText;
                 }
+                
                 updateSliderRange();
             });
         };
@@ -1932,8 +1961,11 @@ class AlbumCollectionApp {
                 yearInputMin.value = minYear;
                 yearInputMax.value = maxYear;
                 
-                // Update display
-                yearRangeDisplay.textContent = 'All Years';
+                // Update toggle button status
+                if (filterStatus) {
+                    filterStatus.textContent = 'All Years';
+                }
+                
                 updateSliderRange();
             });
         }

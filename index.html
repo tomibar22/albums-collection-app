@@ -26,36 +26,43 @@
                     <button class="nav-btn" data-view="roles">Roles</button>
                     <button class="nav-btn" data-view="scraper">Scraper</button>
                 </nav>
-                <!-- Global Year Filter -->
-                <div class="global-year-filter" id="global-year-filter">
-                    <div class="year-filter-header">
-                        <span class="filter-label">🎯 Year Filter</span>
-                        <span class="year-range-display" id="year-range-display">All Years</span>
-                    </div>
-                    <div class="dual-range-slider" id="dual-range-slider">
-                        <input type="range" id="year-range-min" min="1950" max="2025" value="1950" class="range-slider range-min">
-                        <input type="range" id="year-range-max" min="1950" max="2025" value="2025" class="range-slider range-max">
-                        <div class="slider-track">
-                            <div class="slider-range" id="slider-range"></div>
+                <!-- Compact Year Filter Toggle -->
+                <div class="year-filter-toggle-container">
+                    <button class="year-filter-toggle" id="year-filter-toggle">
+                        <span class="filter-icon">🎯</span>
+                        <span class="filter-status" id="year-filter-status">All Years</span>
+                        <span class="toggle-arrow" id="toggle-arrow">▼</span>
+                    </button>
+                    
+                    <!-- Collapsible Year Filter Panel -->
+                    <div class="year-filter-panel" id="year-filter-panel">
+                        <div class="year-filter-content">
+                            <div class="dual-range-slider" id="dual-range-slider">
+                                <input type="range" id="year-range-min" min="1950" max="2025" value="1950" class="range-slider range-min">
+                                <input type="range" id="year-range-max" min="1950" max="2025" value="2025" class="range-slider range-max">
+                                <div class="slider-track">
+                                    <div class="slider-range" id="slider-range"></div>
+                                </div>
+                            </div>
+                            <div class="year-inputs">
+                                <div class="year-input-group">
+                                    <label for="year-input-min">From:</label>
+                                    <input type="number" id="year-input-min" min="1950" max="2025" value="1950" class="year-input">
+                                </div>
+                                <div class="year-input-group">
+                                    <label for="year-input-max">To:</label>
+                                    <input type="number" id="year-input-max" min="1950" max="2025" value="2025" class="year-input">
+                                </div>
+                            </div>
+                            <div class="year-filter-actions">
+                                <span class="filter-summary" id="year-filter-summary">All albums</span>
+                                <div class="filter-loading" id="filter-loading">
+                                    <div class="filter-spinner"></div>
+                                    <span>Filtering...</span>
+                                </div>
+                                <button class="clear-filter-btn" id="clear-year-filter">Clear</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="year-inputs">
-                        <div class="year-input-group">
-                            <label for="year-input-min">From:</label>
-                            <input type="number" id="year-input-min" min="1950" max="2025" value="1950" class="year-input">
-                        </div>
-                        <div class="year-input-group">
-                            <label for="year-input-max">To:</label>
-                            <input type="number" id="year-input-max" min="1950" max="2025" value="2025" class="year-input">
-                        </div>
-                    </div>
-                    <div class="year-filter-actions">
-                        <span class="filter-summary" id="year-filter-summary">All albums</span>
-                        <div class="filter-loading" id="filter-loading">
-                            <div class="filter-spinner"></div>
-                            <span>Filtering...</span>
-                        </div>
-                        <button class="clear-filter-btn" id="clear-year-filter">Clear</button>
                     </div>
                 </div>
                 <!-- User Menu (will be populated by auth middleware) -->
