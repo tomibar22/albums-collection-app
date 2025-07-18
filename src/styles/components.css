@@ -6324,6 +6324,42 @@
     z-index: 1;
 }
 
+.year-inputs {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.year-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.year-input-group label {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.year-input {
+    padding: 6px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.8em;
+    width: 100%;
+    transition: border-color 0.2s ease;
+}
+
+.year-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
 .year-filter-actions {
     display: flex;
     justify-content: space-between;
@@ -6362,5 +6398,18 @@
         flex-direction: column;
         gap: 4px;
         align-items: flex-start;
+    }
+    
+    .year-inputs {
+        gap: 8px;
+    }
+    
+    .year-input-group label {
+        font-size: 0.7em;
+    }
+    
+    .year-input {
+        padding: 4px 6px;
+        font-size: 0.75em;
     }
 }

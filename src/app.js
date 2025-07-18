@@ -1692,11 +1692,13 @@ class AlbumCollectionApp {
     setupYearFilterEventListeners() {
         const yearRangeMin = document.getElementById('year-range-min');
         const yearRangeMax = document.getElementById('year-range-max');
+        const yearInputMin = document.getElementById('year-input-min');
+        const yearInputMax = document.getElementById('year-input-max');
         const yearRangeDisplay = document.getElementById('year-range-display');
         const sliderRange = document.getElementById('slider-range');
         const clearYearFilter = document.getElementById('clear-year-filter');
         
-        if (!yearRangeMin || !yearRangeMax || !yearRangeDisplay || !sliderRange) {
+        if (!yearRangeMin || !yearRangeMax || !yearInputMin || !yearInputMax || !yearRangeDisplay || !sliderRange) {
             console.warn('⚠️ Year filter elements not found');
             return;
         }
@@ -1712,8 +1714,8 @@ class AlbumCollectionApp {
             sliderRange.style.right = (100 - maxPercent) + '%';
         };
         
-        // Update year display and filter
-        const updateYearFilter = () => {
+        // Update visual display only (no filter update)
+        const updateVisualDisplay = () => {
             const minYear = parseInt(yearRangeMin.value);
             const maxYear = parseInt(yearRangeMax.value);
             
@@ -1723,6 +1725,10 @@ class AlbumCollectionApp {
                 return;
             }
             
+            // Sync sliders with inputs
+            yearInputMin.value = minYear;
+            yearInputMax.value = maxYear;
+            
             // Update visual display immediately for smooth UX
             if (minYear === 1950 && maxYear === 2025) {
                 yearRangeDisplay.textContent = 'All Years';
@@ -1731,17 +1737,66 @@ class AlbumCollectionApp {
             }
             
             updateSliderRange();
+        };
+        
+        // Update sliders when inputs change
+        const updateSlidersFromInputs = () => {
+            const minYear = parseInt(yearInputMin.value);
+            const maxYear = parseInt(yearInputMax.value);
             
-            // Apply filter (debounced internally)
+            // Validate input values
+            if (isNaN(minYear) || isNaN(maxYear)) return;
+            if (minYear < 1950 || maxYear > 2025) return;
+            if (minYear > maxYear) return;
+            
+            // Update sliders
+            yearRangeMin.value = minYear;
+            yearRangeMax.value = maxYear;
+            
+            // Update visual display
+            if (minYear === 1950 && maxYear === 2025) {
+                yearRangeDisplay.textContent = 'All Years';
+            } else {
+                yearRangeDisplay.textContent = `${minYear} - ${maxYear}`;
+            }
+            
+            updateSliderRange();
+        };
+        
+        // Apply filter after dragging is complete
+        const applyYearFilter = () => {
+            const minYear = parseInt(yearRangeMin.value);
+            const maxYear = parseInt(yearRangeMax.value);
+            
+            // Ensure min is always less than or equal to max
+            if (minYear > maxYear) {
+                yearRangeMin.value = maxYear;
+                return;
+            }
+            
+            // Apply filter
+            console.log(`🎯 Year filter applied: ${minYear}-${maxYear}`);
             this.yearFilterManager.setYearRange(minYear, maxYear);
         };
         
         // Set initial range display
         updateSliderRange();
         
-        // Event listeners
-        yearRangeMin.addEventListener('input', updateYearFilter);
-        yearRangeMax.addEventListener('input', updateYearFilter);
+        // Event listeners - separate visual updates from filter updates
+        yearRangeMin.addEventListener('input', updateVisualDisplay);
+        yearRangeMax.addEventListener('input', updateVisualDisplay);
+        
+        // Apply filter only when dragging is complete
+        yearRangeMin.addEventListener('mouseup', applyYearFilter);
+        yearRangeMax.addEventListener('mouseup', applyYearFilter);
+        yearRangeMin.addEventListener('touchend', applyYearFilter);
+        yearRangeMax.addEventListener('touchend', applyYearFilter);
+        
+        // Input field event listeners
+        yearInputMin.addEventListener('input', updateSlidersFromInputs);
+        yearInputMax.addEventListener('input', updateSlidersFromInputs);
+        yearInputMin.addEventListener('change', applyYearFilter);
+        yearInputMax.addEventListener('change', applyYearFilter);
         
         // Clear filter button
         if (clearYearFilter) {
@@ -1750,8 +1805,18 @@ class AlbumCollectionApp {
                 this.yearFilterManager.clearFilter();
                 
                 const availableRange = this.yearFilterManager.getAvailableYearRange();
-                yearRangeMin.value = availableRange.min || 1950;
-                yearRangeMax.value = availableRange.max || 2025;
+                const minYear = availableRange.min || 1950;
+                const maxYear = availableRange.max || 2025;
+                
+                // Reset sliders
+                yearRangeMin.value = minYear;
+                yearRangeMax.value = maxYear;
+                
+                // Reset inputs
+                yearInputMin.value = minYear;
+                yearInputMax.value = maxYear;
+                
+                // Update display
                 yearRangeDisplay.textContent = 'All Years';
                 updateSliderRange();
             });
