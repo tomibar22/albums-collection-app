@@ -8572,7 +8572,31 @@ class AlbumCollectionApp {
                         const roleSpecificAlbums = new Set();
 
                         artistAlbums.forEach(({ album, role }) => {
-                            if (this.normalizeRole(role) === this.normalizeRole(roleData.name)) {
+                            // Use the same sophisticated role checking as artistHasRoleOnAlbum
+                            const individualRoles = this.smartSplitRoles(role);
+                            const hasRole = individualRoles.some(individualRole => {
+                                // EXACT match first
+                                if (individualRole === roleData.name) return true;
+                                
+                                // Clean both roles and compare exactly
+                                const cleanedCreditRole = this.cleanRoleName(individualRole);
+                                const cleanedSearchRole = this.cleanRoleName(roleData.name);
+                                
+                                // Skip if either role was filtered out
+                                if (cleanedCreditRole === null || cleanedSearchRole === null) {
+                                    return false;
+                                }
+                                
+                                // Exact match after cleaning
+                                if (cleanedCreditRole === cleanedSearchRole) return true;
+                                
+                                // Case-insensitive exact match after cleaning
+                                if (cleanedCreditRole.toLowerCase() === cleanedSearchRole.toLowerCase()) return true;
+                                
+                                return false;
+                            });
+                            
+                            if (hasRole) {
                                 roleSpecificAlbums.add(album.id);
                             }
                         });
