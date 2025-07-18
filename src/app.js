@@ -163,6 +163,9 @@ class AlbumCollectionApp {
         this.activeCollection.tracks = this.generateTracksFromAlbums();
         this.activeCollection.roles = this.generateRolesFromAlbums();
         
+        // Update UI elements with actual data range
+        this.updateYearFilterUI();
+        
         // Add listener for filter changes
         this.yearFilterManager.addListener((filterData) => {
             console.log('🎯 Year filter changed, regenerating collection data...');
@@ -170,6 +173,60 @@ class AlbumCollectionApp {
         });
         
         console.log('🎯 Year filter initialized with full collection');
+    }
+
+    /**
+     * Update year filter UI elements with actual data ranges
+     */
+    updateYearFilterUI() {
+        const availableRange = this.yearFilterManager.getAvailableYearRange();
+        const minYear = availableRange.min || 1950;
+        const maxYear = availableRange.max || 2025;
+        
+        // Update slider elements
+        const yearRangeMin = document.getElementById('year-range-min');
+        const yearRangeMax = document.getElementById('year-range-max');
+        const yearInputMin = document.getElementById('year-input-min');
+        const yearInputMax = document.getElementById('year-input-max');
+        
+        if (yearRangeMin) {
+            yearRangeMin.min = minYear;
+            yearRangeMin.max = maxYear;
+            yearRangeMin.value = minYear;
+        }
+        
+        if (yearRangeMax) {
+            yearRangeMax.min = minYear;
+            yearRangeMax.max = maxYear;
+            yearRangeMax.value = maxYear;
+        }
+        
+        if (yearInputMin) {
+            yearInputMin.min = minYear;
+            yearInputMin.max = maxYear;
+            yearInputMin.value = minYear;
+        }
+        
+        if (yearInputMax) {
+            yearInputMax.min = minYear;
+            yearInputMax.max = maxYear;
+            yearInputMax.value = maxYear;
+        }
+        
+        // Update display
+        const yearRangeDisplay = document.getElementById('year-range-display');
+        if (yearRangeDisplay) {
+            yearRangeDisplay.textContent = 'All Years';
+        }
+        
+        // Update slider visual range
+        const sliderRange = document.getElementById('slider-range');
+        if (sliderRange) {
+            sliderRange.style.left = '0%';
+            sliderRange.style.right = '0%';
+        }
+        
+        console.log(`🎯 Year filter UI updated with range: ${minYear}-${maxYear}`);
     }
 
     /**
@@ -241,30 +298,16 @@ class AlbumCollectionApp {
     async regenerateCollectionDataOptimized() {
         const startTime = performance.now();
         
-        // Only regenerate data that's currently visible or needed
-        const currentView = this.currentView;
-        
-        // Always regenerate artists as they're used in multiple views
+        // Always regenerate all data to ensure filter works on all pages
+        // The performance gain from selective regeneration is minimal compared to filtering consistency
         this.activeCollection.artists = this.generateArtistsFromAlbums();
+        this.activeCollection.tracks = this.generateTracksFromAlbums();
+        this.activeCollection.roles = this.generateRolesFromAlbums();
         
-        // Only regenerate tracks and roles if we're on those views or if they're small datasets
-        if (currentView === 'tracks' || this.activeCollection.albums.length < 1000) {
-            this.activeCollection.tracks = this.generateTracksFromAlbums();
-        }
-        
-        if (currentView === 'roles' || this.activeCollection.albums.length < 1000) {
-            this.activeCollection.roles = this.generateRolesFromAlbums();
-        }
-        
-        // Reset UI cache flags only for current view
-        if (currentView === 'tracks') {
-            this.uiCache.tracksGridRendered = false;
-            this.uiCache.tracksLastDataHash = null;
-        }
-        
-        if (currentView === 'roles') {
-            this.uiCache.rolesGridRendered = false;
-        }
+        // Reset UI cache flags to force re-rendering
+        this.uiCache.tracksGridRendered = false;
+        this.uiCache.rolesGridRendered = false;
+        this.uiCache.tracksLastDataHash = null;
         
         // Force artist regeneration flag
         this.artistsNeedRegeneration = true;
@@ -1784,8 +1827,12 @@ class AlbumCollectionApp {
         const updateSliderRange = () => {
             const min = parseInt(yearRangeMin.value);
             const max = parseInt(yearRangeMax.value);
-            const minPercent = ((min - 1950) / (2025 - 1950)) * 100;
-            const maxPercent = ((max - 1950) / (2025 - 1950)) * 100;
+            const rangeMin = parseInt(yearRangeMin.min);
+            const rangeMax = parseInt(yearRangeMax.max);
+            const totalRange = rangeMax - rangeMin;
+            
+            const minPercent = ((min - rangeMin) / totalRange) * 100;
+            const maxPercent = ((max - rangeMin) / totalRange) * 100;
             
             sliderRange.style.left = minPercent + '%';
             sliderRange.style.right = (100 - maxPercent) + '%';
@@ -1795,6 +1842,8 @@ class AlbumCollectionApp {
         const updateVisualDisplay = () => {
             const minYear = parseInt(yearRangeMin.value);
             const maxYear = parseInt(yearRangeMax.value);
+            const rangeMin = parseInt(yearRangeMin.min);
+            const rangeMax = parseInt(yearRangeMax.max);
             
             // Ensure min is always less than or equal to max
             if (minYear > maxYear) {
@@ -1807,7 +1856,7 @@ class AlbumCollectionApp {
             yearInputMax.value = maxYear;
             
             // Update visual display immediately for smooth UX
-            if (minYear === 1950 && maxYear === 2025) {
+            if (minYear === rangeMin && maxYear === rangeMax) {
                 yearRangeDisplay.textContent = 'All Years';
             } else {
                 yearRangeDisplay.textContent = `${minYear} - ${maxYear}`;
@@ -1820,10 +1869,12 @@ class AlbumCollectionApp {
         const updateSlidersFromInputs = () => {
             const minYear = parseInt(yearInputMin.value);
             const maxYear = parseInt(yearInputMax.value);
+            const rangeMin = parseInt(yearInputMin.min);
+            const rangeMax = parseInt(yearInputMax.max);
             
             // Validate input values
             if (isNaN(minYear) || isNaN(maxYear)) return;
-            if (minYear < 1950 || maxYear > 2025) return;
+            if (minYear < rangeMin || maxYear > rangeMax) return;
             if (minYear > maxYear) return;
             
             // Update sliders
@@ -1832,7 +1883,7 @@ class AlbumCollectionApp {
             
             // Update visual display immediately
             requestAnimationFrame(() => {
-                if (minYear === 1950 && maxYear === 2025) {
+                if (minYear === rangeMin && maxYear === rangeMax) {
                     yearRangeDisplay.textContent = 'All Years';
                 } else {
                     yearRangeDisplay.textContent = `${minYear} - ${maxYear}`;
