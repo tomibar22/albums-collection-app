@@ -1510,6 +1510,23 @@
     line-height: 1.2;
 }
 
+.artist-genre {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin: 0.2rem 0 0 0;
+    font-weight: 500;
+    opacity: 0.8;
+    line-height: 1.2;
+    background: var(--bg-tertiary);
+    padding: 0.15rem 0.4rem;
+    border-radius: 8px;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Artist card loading state */
 .artist-card.loading::after {
     content: '';

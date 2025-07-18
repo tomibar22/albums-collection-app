@@ -3470,6 +3470,31 @@ class AlbumCollectionApp {
                             }
                         });
 
+                        // Track genre/style frequency for sorting
+                        if (!existingArtist.genreFrequency) {
+                            existingArtist.genreFrequency = new Map();
+                        }
+                        
+                        // Combine genres and styles from this album
+                        const allGenres = [];
+                        if (album.genres && Array.isArray(album.genres)) {
+                            allGenres.push(...album.genres);
+                        }
+                        if (album.styles && Array.isArray(album.styles)) {
+                            allGenres.push(...album.styles);
+                        }
+                        
+                        // Track frequency of each genre/style
+                        allGenres.forEach(genre => {
+                            if (genre && genre.trim()) {
+                                if (existingArtist.genreFrequency.has(genre)) {
+                                    existingArtist.genreFrequency.set(genre, existingArtist.genreFrequency.get(genre) + 1);
+                                } else {
+                                    existingArtist.genreFrequency.set(genre, 1);
+                                }
+                            }
+                        });
+
                         // Rebuild sorted roles array based on frequency
                         const sortedRoles = Array.from(existingArtist.roleFrequency.entries())
                             .sort((a, b) => b[1] - a[1]) // Sort by frequency (descending)
@@ -3477,12 +3502,36 @@ class AlbumCollectionApp {
 
                         existingArtist.roles = sortedRoles;
 
+                        // Rebuild sorted genres array based on frequency
+                        const sortedGenres = Array.from(existingArtist.genreFrequency.entries())
+                            .sort((a, b) => b[1] - a[1]) // Sort by frequency (descending)
+                            .map(entry => entry[0]); // Extract genre names
+
+                        existingArtist.genres = sortedGenres;
+                        existingArtist.mostFrequentGenre = sortedGenres[0] || null;
+
                         // console.log(`     🎭 Roles by frequency: ${sortedRoles.slice(0, 3).join(', ')}${sortedRoles.length > 3 ? ` (+${sortedRoles.length - 3} more)` : ''}`);
                     } else {
                         // Create new artist entry with role frequency tracking and separate album counts
                         const roleFrequency = new Map();
                         allRoles.forEach(role => {
                             roleFrequency.set(role, 1);
+                        });
+
+                        // Create genre frequency tracking for new artist
+                        const genreFrequency = new Map();
+                        const allGenres = [];
+                        if (album.genres && Array.isArray(album.genres)) {
+                            allGenres.push(...album.genres);
+                        }
+                        if (album.styles && Array.isArray(album.styles)) {
+                            allGenres.push(...album.styles);
+                        }
+                        
+                        allGenres.forEach(genre => {
+                            if (genre && genre.trim()) {
+                                genreFrequency.set(genre, 1);
+                            }
                         });
 
                         // Categorize roles for separate counting
@@ -3501,6 +3550,9 @@ class AlbumCollectionApp {
                             technicalAlbums: technicalRolesOnAlbum.length > 0 ? [album] : [],
                             roles: allRoles, // Use all roles (cleaned + specific instruments)
                             roleFrequency: roleFrequency, // Track frequency for sorting
+                            genres: allGenres, // Track genres/styles
+                            genreFrequency: genreFrequency, // Track genre frequency for sorting
+                            mostFrequentGenre: allGenres[0] || null, // Most frequent genre/style
                             image: null,
                             discogsId: credit.id || null
                         };

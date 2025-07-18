@@ -77,6 +77,16 @@ class ArtistCard {
             `;
         }
 
+        // Format genre display (show only the most frequent genre/style)
+        let genreDisplay = '';
+        if (this.artist.mostFrequentGenre) {
+            genreDisplay = `
+                <p class="artist-genre">
+                    ${this.artist.mostFrequentGenre}
+                </p>
+            `;
+        }
+
         // Check if we should show image based on tab context and position
         const shouldShowImage = this.shouldShowImage();
         
@@ -106,6 +116,7 @@ class ArtistCard {
                     <h3 class="artist-name" title="${this.escapeHtmlAttribute(this.artist.name)}">${this.artist.name}</h3>
                     <p class="artist-album-count">${albumCount} ${albumText}</p>
                     ${rolesDisplay}
+                    ${genreDisplay}
                 </div>
             </div>
         `;
