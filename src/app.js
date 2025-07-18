@@ -18,6 +18,13 @@ class AlbumCollectionApp {
         tracksLastDataHash: null
     };
 
+    // Data generation cache for performance optimization
+    this.dataGenerationCache = {
+        artists: { data: null, hash: null },
+        tracks: { data: null, hash: null },
+        roles: { data: null, hash: null }
+    };
+
     // Original collection (full dataset - immutable)
     this.collection = {
 
@@ -326,6 +333,29 @@ class AlbumCollectionApp {
     }
 
     /**
+     * Generate a hash for the current albums collection for caching
+     */
+    generateAlbumsHash() {
+        const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
+        // Create a simple hash based on album count, first and last album IDs
+        if (albumsToProcess.length === 0) return 'empty';
+        
+        const firstId = albumsToProcess[0]?.id || '';
+        const lastId = albumsToProcess[albumsToProcess.length - 1]?.id || '';
+        return `${albumsToProcess.length}_${firstId}_${lastId}`;
+    }
+
+    /**
+     * Clear data generation cache (call when albums data changes)
+     */
+    clearDataGenerationCache() {
+        console.log('🧹 Clearing data generation cache');
+        this.dataGenerationCache.artists = { data: null, hash: null };
+        this.dataGenerationCache.tracks = { data: null, hash: null };
+        this.dataGenerationCache.roles = { data: null, hash: null };
+    }
+
+    /**
      * Update global stats and UI counters
      */
     updateGlobalStats() {
@@ -458,13 +488,8 @@ class AlbumCollectionApp {
 
 
 
-    // Hide loading modal with faster delay for improved UX
-
-    setTimeout(() => {
-
+    // Hide loading modal immediately after everything is ready
     this.hideLoadingModal();
-
-    }, 400); // Optimized from 800ms
 
 
 
@@ -488,15 +513,9 @@ class AlbumCollectionApp {
 
 
 
-    // Hide loading modal
-
-    setTimeout(() => {
-
+    // Hide loading modal immediately and show offline notification
     this.hideLoadingModal();
-
     this.showOfflineNotification();
-
-    }, 1000);
 
     }
 
@@ -3138,6 +3157,14 @@ class AlbumCollectionApp {
 
     // Generate artist data from album credits instead of basic artist field
     generateArtistsFromAlbums() {
+        // Check cache first
+        const currentHash = this.generateAlbumsHash();
+        if (this.dataGenerationCache.artists.hash === currentHash && this.dataGenerationCache.artists.data) {
+            console.log('🎭 Using cached artists data (performance optimization)');
+            return this.dataGenerationCache.artists.data;
+        }
+
+        console.log('🎭 Generating artists from albums (cache miss)');
         const artistMap = new Map();
 
         const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
@@ -3308,6 +3335,12 @@ class AlbumCollectionApp {
         // Create backup arrays for search functionality
         this.originalMusicalArtists = [...musicalArtists];
         this.originalTechnicalArtists = [...technicalArtists];
+
+        // Cache the generated data for performance optimization
+        this.dataGenerationCache.artists = {
+            data: artists,
+            hash: currentHash
+        };
 
         // Return all artists for backward compatibility
         return artists;
@@ -7782,8 +7815,16 @@ class AlbumCollectionApp {
 
     // Generate track data from current album collection
     generateTracksFromAlbums() {
+        // Check cache first
+        const currentHash = this.generateAlbumsHash();
+        if (this.dataGenerationCache.tracks.hash === currentHash && this.dataGenerationCache.tracks.data) {
+            console.log('🎵 Using cached tracks data (performance optimization)');
+            return this.dataGenerationCache.tracks.data;
+        }
+
+        console.log('🎵 Generating tracks from albums (cache miss)');
         const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
-        console.log('🎵 Generating tracks from albums...', albumsToProcess?.length || 0, 'albums');
+        console.log('🎵 Processing', albumsToProcess?.length || 0, 'albums');
         const trackMap = new Map();
 
         try {
@@ -7848,13 +7889,19 @@ class AlbumCollectionApp {
 
         // Convert map to array
         const tracksArray = Array.from(trackMap.values());
-        console.log(`🎵 Generated ${tracksArray.length} tracks from ${this.collection.albums.length} albums`);
+        console.log(`🎵 Generated ${tracksArray.length} tracks from ${albumsToProcess.length} albums`);
 
         // Log sample track for debugging
         if (tracksArray.length > 0) {
             const sampleTrack = tracksArray[0];
             console.log(`🎵 Sample track: "${sampleTrack.title}" (frequency: ${sampleTrack.frequency}, albums: ${sampleTrack.albums.length})`);
         }
+
+        // Cache the generated data for performance optimization
+        this.dataGenerationCache.tracks = {
+            data: tracksArray,
+            hash: currentHash
+        };
 
         return tracksArray;
     }
@@ -9124,7 +9171,14 @@ class AlbumCollectionApp {
 
     // Generate role data from current album collection
     generateRolesFromAlbums() {
-        console.log('🎭 Starting generateRolesFromAlbums...');
+        // Check cache first
+        const currentHash = this.generateAlbumsHash();
+        if (this.dataGenerationCache.roles.hash === currentHash && this.dataGenerationCache.roles.data) {
+            console.log('🎭 Using cached roles data (performance optimization)');
+            return this.dataGenerationCache.roles.data;
+        }
+
+        console.log('🎭 Starting generateRolesFromAlbums (cache miss)');
         const roleMap = new Map();
 
         const albumsToProcess = this.activeCollection.albums.length > 0 ? this.activeCollection.albums : this.collection.albums;
@@ -9255,7 +9309,13 @@ class AlbumCollectionApp {
 
         // Convert map to array and sort by frequency
         const rolesArray = Array.from(roleMap.values()).sort((a, b) => b.frequency - a.frequency);
-        console.log(`🎭 Generated ${rolesArray.length} roles from ${this.collection.albums.length} albums`);
+        console.log(`🎭 Generated ${rolesArray.length} roles from ${albumsToProcess.length} albums`);
+
+        // Cache the generated data for performance optimization
+        this.dataGenerationCache.roles = {
+            data: rolesArray,
+            hash: currentHash
+        };
 
         return rolesArray;
     }
@@ -13496,61 +13556,26 @@ function showCredentialsSetupScreen() {
         console.log('=============================================================');
     };
 
-// Initialize the app when the DOM is loaded AND authentication is complete
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 DOM loaded, waiting for authentication...');
-    
+// Debug functions - moved outside of DOMContentLoaded to avoid duplication
+window.clearGhostAlbums = async () => {
     try {
-        // Wait for authentication to complete before initializing app
-        if (window.authPromise) {
-            const authSuccess = await window.authPromise;
-            console.log('🔐 Authentication result:', authSuccess);
-            
-            if (authSuccess) {
-                console.log('✅ Authentication successful, user credentials applied');
-                console.log('🔑 Current Discogs API key:', window.CONFIG?.DISCOGS?.API_KEY ? 
-                    window.CONFIG.DISCOGS.API_KEY.substring(0, 10) + '...' : 'NOT SET');
-            } else {
-                console.log('⚠️ Authentication failed or user not logged in');
-            }
-        } else {
-            console.log('⚠️ No authentication promise found, proceeding without auth');
-        }
-
-        // NOW initialize the app with proper credentials
-        window.albumApp = new AlbumCollectionApp();
-        await window.albumApp.init();
-        
-        // Add emergency debug functions after app initialization
-        window.clearGhostAlbums = async () => {
-            try {
-                const realCount = await window.albumApp.clearGhostAlbums();
-                console.log(`🎉 SUCCESS: Ghost albums cleared! Collection now has ${realCount} real albums from database.`);
-                alert(`Ghost albums cleared!\n\nCollection now shows ${realCount} real albums from database.\n\nYou can now re-scrape Kenny Drew safely.`);
-                return realCount;
-            } catch (error) {
-                console.error('❌ Failed to clear ghost albums:', error);
-                alert(`Failed to clear ghost albums: ${error.message}`);
-            }
-        };
-        
-        window.debugCollectionState = () => {
-            const memoryCount = window.albumApp.collection.albums.length;
-            console.log(`📊 COLLECTION DEBUG STATE:`, {
-                albumsInMemory: memoryCount,
-                sampleAlbums: window.albumApp.collection.albums.slice(0, 3).map(a => `${a.title} (${a.year})`),
-                lastAdded: window.albumApp.collection.albums[memoryCount - 1]?.title || 'None'
-            });
-            return memoryCount;
-        };
-        
+        const realCount = await window.albumApp.clearGhostAlbums();
+        console.log(`🎉 SUCCESS: Ghost albums cleared! Collection now has ${realCount} real albums from database.`);
+        alert(`Ghost albums cleared!\n\nCollection now shows ${realCount} real albums from database.\n\nYou can now re-scrape Kenny Drew safely.`);
+        return realCount;
     } catch (error) {
-        console.error('❌ App initialization failed:', error);
-        
-        // Fallback: initialize anyway for offline mode
-        console.log('🔄 Falling back to offline mode...');
-        window.albumApp = new AlbumCollectionApp();
-        await window.albumApp.init();
+        console.error('❌ Failed to clear ghost albums:', error);
+        alert(`Failed to clear ghost albums: ${error.message}`);
     }
-});
+};
+
+window.debugCollectionState = () => {
+    const memoryCount = window.albumApp.collection.albums.length;
+    console.log(`📊 COLLECTION DEBUG STATE:`, {
+        albumsInMemory: memoryCount,
+        sampleAlbums: window.albumApp.collection.albums.slice(0, 3).map(a => `${a.title} (${a.year})`),
+        lastAdded: window.albumApp.collection.albums[memoryCount - 1]?.title || 'None'
+    });
+    return memoryCount;
+};
 
