@@ -12,7 +12,7 @@ class YearFilterManager {
         this.isActive = false;
         this.listeners = new Set();        // Components that need to be notified of changes
         this.debounceTimer = null;          // Debounce filter updates
-        this.debounceDelay = 150;           // 150ms debounce delay (faster response)
+        this.debounceDelay = 50;            // 50ms debounce delay (much faster response)
         
         // Statistics
         this.stats = {
@@ -99,25 +99,44 @@ class YearFilterManager {
      * Apply the current year filter to the dataset
      */
     applyFilter() {
+        const startTime = performance.now();
+        
         if (!this.yearRange.start || !this.yearRange.end) {
-            // No filter set, use full dataset
-            this.filteredAlbums = [...this.originalAlbums];
+            // No filter set, use full dataset (avoid copying if possible)
+            if (this.filteredAlbums !== this.originalAlbums) {
+                this.filteredAlbums = this.originalAlbums;
+            }
             this.isActive = false;
-            console.log('🎯 YearFilterManager: No filter applied, using full dataset');
         } else {
-            // Apply year range filter
-            this.filteredAlbums = this.originalAlbums.filter(album => {
+            // Apply year range filter with optimized algorithm
+            const startYear = this.yearRange.start;
+            const endYear = this.yearRange.end;
+            
+            // Use a more efficient filtering approach
+            const filtered = [];
+            const original = this.originalAlbums;
+            
+            for (let i = 0; i < original.length; i++) {
+                const album = original[i];
                 const year = album.year;
-                return year && year >= this.yearRange.start && year <= this.yearRange.end;
-            });
+                if (year && year >= startYear && year <= endYear) {
+                    filtered.push(album);
+                }
+            }
+            
+            this.filteredAlbums = filtered;
             this.isActive = true;
-            console.log(`🎯 YearFilterManager: Applied filter ${this.yearRange.start}-${this.yearRange.end}, ${this.filteredAlbums.length}/${this.originalAlbums.length} albums`);
         }
         
         // Update statistics
         this.stats.filteredAlbums = this.filteredAlbums.length;
         this.stats.filterRange.start = this.yearRange.start;
         this.stats.filterRange.end = this.yearRange.end;
+        
+        const endTime = performance.now();
+        if (endTime - startTime > 10) {
+            console.log(`🎯 YearFilterManager: Filter applied in ${(endTime - startTime).toFixed(2)}ms, ${this.filteredAlbums.length}/${this.originalAlbums.length} albums`);
+        }
         
         // Notify all listeners
         this.notifyListeners();

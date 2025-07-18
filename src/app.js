@@ -177,29 +177,31 @@ class AlbumCollectionApp {
      */
     async onYearFilterChange(filterData) {
         try {
-            // Show loading indicator
-            this.showFilterLoading();
-            
             // Update active collection with filtered albums immediately
             this.activeCollection.albums = filterData.filteredAlbums;
             
-            // Update UI counters first for immediate feedback
+            // Update UI counters and summary immediately (no await needed)
             this.updateGlobalStats();
             
-            // Update filter summary
-            const filterSummary = document.getElementById('year-filter-summary');
-            if (filterSummary) {
-                filterSummary.textContent = this.yearFilterManager.getFilterSummary();
-            }
-            
-            // Regenerate derived data in background
-            await this.regenerateCollectionData();
-            
-            // Refresh current view
-            this.refreshCurrentView();
-            
-            // Hide loading indicator
-            this.hideFilterLoading();
+            // Use requestAnimationFrame for smoother updates
+            requestAnimationFrame(() => {
+                // Show loading indicator only for longer operations
+                this.showFilterLoading();
+                
+                // Regenerate derived data efficiently
+                this.regenerateCollectionDataOptimized()
+                    .then(() => {
+                        // Refresh current view
+                        this.refreshCurrentView();
+                        
+                        // Hide loading indicator
+                        this.hideFilterLoading();
+                    })
+                    .catch(error => {
+                        console.error('❌ Error in background data regeneration:', error);
+                        this.hideFilterLoading();
+                    });
+            });
             
         } catch (error) {
             console.error('❌ Error handling year filter change:', error);
@@ -231,6 +233,44 @@ class AlbumCollectionApp {
         this.artistsNeedRegeneration = true;
         
         console.log(`🔄 Collection data regenerated: ${this.activeCollection.albums.length} albums, ${this.activeCollection.artists.length} artists`);
+    }
+
+    /**
+     * Optimized version of regenerateCollectionData for better performance
+     */
+    async regenerateCollectionDataOptimized() {
+        const startTime = performance.now();
+        
+        // Only regenerate data that's currently visible or needed
+        const currentView = this.currentView;
+        
+        // Always regenerate artists as they're used in multiple views
+        this.activeCollection.artists = this.generateArtistsFromAlbums();
+        
+        // Only regenerate tracks and roles if we're on those views or if they're small datasets
+        if (currentView === 'tracks' || this.activeCollection.albums.length < 1000) {
+            this.activeCollection.tracks = this.generateTracksFromAlbums();
+        }
+        
+        if (currentView === 'roles' || this.activeCollection.albums.length < 1000) {
+            this.activeCollection.roles = this.generateRolesFromAlbums();
+        }
+        
+        // Reset UI cache flags only for current view
+        if (currentView === 'tracks') {
+            this.uiCache.tracksGridRendered = false;
+            this.uiCache.tracksLastDataHash = null;
+        }
+        
+        if (currentView === 'roles') {
+            this.uiCache.rolesGridRendered = false;
+        }
+        
+        // Force artist regeneration flag
+        this.artistsNeedRegeneration = true;
+        
+        const endTime = performance.now();
+        console.log(`✅ Collection data regenerated (optimized) in ${(endTime - startTime).toFixed(2)}ms`);
     }
 
     /**
@@ -286,10 +326,10 @@ class AlbumCollectionApp {
         const filterLoading = document.getElementById('filter-loading');
         const filterSummary = document.getElementById('year-filter-summary');
         
-        if (filterLoading) {
+        if (filterLoading && !filterLoading.classList.contains('active')) {
             filterLoading.classList.add('active');
         }
-        if (filterSummary) {
+        if (filterSummary && filterSummary.style.display !== 'none') {
             filterSummary.style.display = 'none';
         }
     }
@@ -301,10 +341,10 @@ class AlbumCollectionApp {
         const filterLoading = document.getElementById('filter-loading');
         const filterSummary = document.getElementById('year-filter-summary');
         
-        if (filterLoading) {
+        if (filterLoading && filterLoading.classList.contains('active')) {
             filterLoading.classList.remove('active');
         }
-        if (filterSummary) {
+        if (filterSummary && filterSummary.style.display !== 'block') {
             filterSummary.style.display = 'block';
         }
     }
@@ -1790,14 +1830,15 @@ class AlbumCollectionApp {
             yearRangeMin.value = minYear;
             yearRangeMax.value = maxYear;
             
-            // Update visual display
-            if (minYear === 1950 && maxYear === 2025) {
-                yearRangeDisplay.textContent = 'All Years';
-            } else {
-                yearRangeDisplay.textContent = `${minYear} - ${maxYear}`;
-            }
-            
-            updateSliderRange();
+            // Update visual display immediately
+            requestAnimationFrame(() => {
+                if (minYear === 1950 && maxYear === 2025) {
+                    yearRangeDisplay.textContent = 'All Years';
+                } else {
+                    yearRangeDisplay.textContent = `${minYear} - ${maxYear}`;
+                }
+                updateSliderRange();
+            });
         };
         
         // Apply filter after dragging is complete
