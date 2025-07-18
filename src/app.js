@@ -237,32 +237,19 @@ class AlbumCollectionApp {
             // Update active collection with filtered albums immediately
             this.activeCollection.albums = filterData.filteredAlbums;
             
-            // Update UI counters and summary immediately (no await needed)
+            // Regenerate derived data immediately without loading indicator
+            this.activeCollection.artists = this.generateArtistsFromAlbums();
+            this.activeCollection.tracks = this.generateTracksFromAlbums();
+            this.activeCollection.roles = this.generateRolesFromAlbums();
+            
+            // Update UI counters and summary immediately
             this.updateGlobalStats();
             
-            // Use requestAnimationFrame for smoother updates
-            requestAnimationFrame(() => {
-                // Show loading indicator only for longer operations
-                this.showFilterLoading();
-                
-                // Regenerate derived data efficiently
-                this.regenerateCollectionDataOptimized()
-                    .then(() => {
-                        // Refresh current view
-                        this.refreshCurrentView();
-                        
-                        // Hide loading indicator
-                        this.hideFilterLoading();
-                    })
-                    .catch(error => {
-                        console.error('❌ Error in background data regeneration:', error);
-                        this.hideFilterLoading();
-                    });
-            });
+            // Refresh current view without delay
+            this.refreshCurrentView();
             
         } catch (error) {
             console.error('❌ Error handling year filter change:', error);
-            this.hideFilterLoading();
         }
     }
 
@@ -7365,7 +7352,12 @@ class AlbumCollectionApp {
                         this.collection.tracks = this.generateTracksFromAlbums();
                     }
                 }
-                tracksToDisplay = this.collection.tracks;
+                // Use filtered tracks if available, otherwise fall back to collection tracks
+                if (this.activeCollection.tracks && this.activeCollection.tracks.length > 0) {
+                    tracksToDisplay = this.activeCollection.tracks;
+                } else {
+                    tracksToDisplay = this.collection.tracks;
+                }
             }
 
             if (!tracksToDisplay || tracksToDisplay.length === 0) {
@@ -7542,11 +7534,11 @@ class AlbumCollectionApp {
 
         // Force regeneration of roles to ensure we have latest data with improved logic
         console.log('🔄 Forcing regeneration of roles data...');
-        this.collection.roles = this.generateRolesFromAlbums();
+        this.activeCollection.roles = this.generateRolesFromAlbums();
 
-        console.log('🎭 Total roles found:', this.collection.roles?.length || 0);
+        console.log('🎭 Total roles found:', this.activeCollection.roles?.length || 0);
 
-        if (this.collection.roles.length === 0) {
+        if (this.activeCollection.roles.length === 0) {
             console.log('⚠️ No roles found, displaying empty state');
             this.displayEmptyState('roles');
             return;
@@ -9349,14 +9341,21 @@ class AlbumCollectionApp {
     sortTracks(sortType) {
         console.log(`🎵 Sorting tracks by: ${sortType}`);
 
+        // Use activeCollection.tracks when available (filtered by year), otherwise fall back to collection.tracks
+        const tracksSource = this.activeCollection.tracks && this.activeCollection.tracks.length > 0 
+            ? this.activeCollection.tracks 
+            : this.collection.tracks;
+
         // Ensure tracks collection is initialized
-        if (!this.collection.tracks || !Array.isArray(this.collection.tracks)) {
+        if (!tracksSource || !Array.isArray(tracksSource)) {
             console.log('⚠️ No tracks to sort - generating tracks first');
             this.collection.tracks = this.generateTracksFromAlbums();
+            // Update activeCollection as well
+            this.activeCollection.tracks = this.generateTracksFromAlbums();
         }
 
         // Only sort if we have tracks
-        if (this.collection.tracks.length === 0) {
+        if (tracksSource.length === 0) {
             console.log('⚠️ No tracks available to sort');
             return;
         }
@@ -9368,12 +9367,12 @@ class AlbumCollectionApp {
         if (currentSearchQuery && currentSearchQuery.trim()) {
             // There's an active search - get filtered results and sort them
             console.log(`🔍 Sorting tracks with active search filter: "${currentSearchQuery}"`);
-            tracksToDisplay = this.collection.tracks.filter(track => {
+            tracksToDisplay = tracksSource.filter(track => {
                 return track.title.toLowerCase().includes(currentSearchQuery.toLowerCase());
             });
         } else {
             // No active search - sort the full collection
-            tracksToDisplay = [...this.collection.tracks]; // Create a copy to sort
+            tracksToDisplay = [...tracksSource]; // Create a copy to sort
         }
 
         console.log(`🎵 Sorting ${tracksToDisplay.length} tracks...`);
@@ -9410,7 +9409,12 @@ class AlbumCollectionApp {
     sortRoles(sortType) {
         console.log(`Sorting roles by: ${sortType}`);
 
-        if (!this.collection.roles || !Array.isArray(this.collection.roles)) {
+        // Use activeCollection.roles when available (filtered by year), otherwise fall back to collection.roles
+        const rolesSource = this.activeCollection.roles && this.activeCollection.roles.length > 0 
+            ? this.activeCollection.roles 
+            : this.collection.roles;
+
+        if (!rolesSource || !Array.isArray(rolesSource)) {
             console.warn('⚠️ No roles to sort');
             return;
         }
@@ -9423,12 +9427,12 @@ class AlbumCollectionApp {
             // There's an active search - get filtered results
             console.log(`🔍 Sorting roles with active search filter: "${currentSearchQuery}"`);
             const searchText = currentSearchQuery.toLowerCase();
-            rolesToSort = this.collection.roles.filter(role => {
+            rolesToSort = rolesSource.filter(role => {
                 return role.name.toLowerCase().includes(searchText);
             });
         } else {
             // No active search - use full collection
-            rolesToSort = [...this.collection.roles]; // Create a copy to sort
+            rolesToSort = [...rolesSource]; // Create a copy to sort
         }
 
         // Sort the data
