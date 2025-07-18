@@ -6509,3 +6509,202 @@
         font-size: 0.7em;
     }
 }
+
+/* Genre Filter Component */
+.genre-filter-toggle-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.genre-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+    min-width: 120px;
+}
+
+.genre-filter-toggle:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-color);
+}
+
+.genre-filter-toggle.active .toggle-arrow {
+    transform: rotate(180deg);
+}
+
+/* Collapsible Genre Filter Panel */
+.genre-filter-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    min-width: 320px;
+    max-width: 400px;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.2s ease-out;
+    pointer-events: none;
+}
+
+.genre-filter-panel.active {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.genre-filter-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Genre Capsules Container */
+.genre-capsules-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.genre-capsules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 2px;
+}
+
+.genre-capsule {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 0.75em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.genre-capsule:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-color);
+}
+
+.genre-capsule.selected {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.genre-capsule.selected:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+.genre-capsule-name {
+    font-weight: 500;
+}
+
+.genre-capsule-count {
+    font-size: 0.9em;
+    opacity: 0.8;
+    font-weight: 400;
+}
+
+.genre-capsule.selected .genre-capsule-count {
+    opacity: 0.9;
+}
+
+/* Show More Button */
+.show-more-genres-btn {
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.2s ease;
+    align-self: flex-start;
+}
+
+.show-more-genres-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+}
+
+/* Genre Filter Actions */
+.genre-filter-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8em;
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+    margin-top: 4px;
+}
+
+/* Responsive adjustments for genre filter */
+@media (max-width: 768px) {
+    .genre-filter-toggle {
+        padding: 4px 8px;
+        font-size: 0.8em;
+        min-width: 100px;
+    }
+    
+    .genre-filter-panel {
+        min-width: 280px;
+        max-width: 320px;
+        left: 0;
+        right: auto;
+    }
+    
+    .genre-filter-content {
+        padding: 12px;
+        gap: 8px;
+    }
+    
+    .genre-capsules {
+        gap: 4px;
+        max-height: 150px;
+    }
+    
+    .genre-capsule {
+        padding: 3px 6px;
+        font-size: 0.7em;
+    }
+    
+    .show-more-genres-btn {
+        padding: 4px 8px;
+        font-size: 0.7em;
+    }
+    
+    .genre-filter-actions {
+        font-size: 0.7em;
+    }
+}

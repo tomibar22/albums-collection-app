@@ -65,6 +65,36 @@
                         </div>
                     </div>
                 </div>
+                <!-- Compact Genre Filter Toggle -->
+                <div class="genre-filter-toggle-container">
+                    <button class="genre-filter-toggle" id="genre-filter-toggle">
+                        <span class="filter-icon">🎨</span>
+                        <span class="filter-status" id="genre-filter-status">All Genres</span>
+                        <span class="toggle-arrow" id="genre-toggle-arrow">▼</span>
+                    </button>
+                    
+                    <!-- Collapsible Genre Filter Panel -->
+                    <div class="genre-filter-panel" id="genre-filter-panel">
+                        <div class="genre-filter-content">
+                            <div class="genre-capsules-container">
+                                <div class="genre-capsules" id="genre-capsules">
+                                    <!-- Genre capsules will be populated by JavaScript -->
+                                </div>
+                                <button class="show-more-genres-btn" id="show-more-genres" style="display: none;">
+                                    Show More...
+                                </button>
+                            </div>
+                            <div class="genre-filter-actions">
+                                <span class="filter-summary" id="genre-filter-summary">All genres</span>
+                                <div class="filter-loading" id="genre-filter-loading">
+                                    <div class="filter-spinner"></div>
+                                    <span>Filtering...</span>
+                                </div>
+                                <button class="clear-filter-btn" id="clear-genre-filter">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- User Menu (will be populated by auth middleware) -->
                 <div class="user-menu-container" id="userMenuContainer">
                     <!-- User menu will be inserted here by authMiddleware -->
@@ -466,6 +496,7 @@
     <script src="src/data/parser.js"></script>
     <script src="src/utils/roleCategorizer.js"></script>
     <script src="src/utils/yearFilterManager.js"></script>
+    <script src="src/utils/genreFilterManager.js"></script>
     <script src="src/utils/lazyLoadingManager.js"></script>
     <script src="src/utils/tabVisibilityHelper.js"></script>
     <script src="src/utils/googleSheetsSetup.js"></script>

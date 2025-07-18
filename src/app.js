@@ -46,8 +46,9 @@ class AlbumCollectionApp {
         roles: []
     };
 
-    // Year filter manager for global filtering
+    // Filter managers for global filtering
     this.yearFilterManager = new YearFilterManager();
+    this.genreFilterManager = new GenreFilterManager();
 
 
 
@@ -183,6 +184,27 @@ class AlbumCollectionApp {
     }
 
     /**
+     * Initialize the genre filter manager and set up collection state
+     */
+    initializeGenreFilter() {
+        // Initialize genre filter manager with current albums
+        this.genreFilterManager.initialize(this.collection.albums);
+        
+        // Update initial UI with genre data
+        this.updateGenreFilterUI();
+        
+        // Add listener for filter changes
+        this.genreFilterManager.addListener((filterData) => {
+            console.log('🎨 Genre filter changed, regenerating collection data...');
+            this.onGenreFilterChange(filterData);
+        });
+        
+        // Combined filtering is handled by applyCombinedFilters method
+        
+        console.log('🎨 Genre filter initialized with full collection');
+    }
+
+    /**
      * Update year filter UI elements with actual data ranges
      */
     updateYearFilterUI() {
@@ -237,27 +259,149 @@ class AlbumCollectionApp {
     }
 
     /**
+     * Update genre filter UI elements
+     */
+    updateGenreFilterUI() {
+        const INITIAL_GENRE_LIMIT = 12; // Number of genres to show initially
+        
+        // Get genre data sorted by frequency
+        const genresByFrequency = this.genreFilterManager.getGenresByFrequency();
+        const selectedGenres = this.genreFilterManager.getSelectedGenres();
+        
+        // Update toggle button status
+        const filterStatus = document.getElementById('genre-filter-status');
+        if (filterStatus) {
+            filterStatus.textContent = this.genreFilterManager.getFilterSummary();
+        }
+        
+        // Update filter summary
+        const filterSummary = document.getElementById('genre-filter-summary');
+        if (filterSummary) {
+            filterSummary.textContent = this.genreFilterManager.getFilterSummary();
+        }
+        
+        // Update genre capsules
+        const genreCapsules = document.getElementById('genre-capsules');
+        const showMoreBtn = document.getElementById('show-more-genres');
+        
+        if (genreCapsules) {
+            genreCapsules.innerHTML = '';
+            
+            // Determine how many genres to show
+            const isExpanded = showMoreBtn && showMoreBtn.textContent.includes('Show Less');
+            const genresToShow = isExpanded ? genresByFrequency : genresByFrequency.slice(0, INITIAL_GENRE_LIMIT);
+            
+            // Create genre capsules
+            genresToShow.forEach(({ genre, count }) => {
+                const capsule = document.createElement('div');
+                capsule.className = `genre-capsule ${selectedGenres.has(genre) ? 'selected' : ''}`;
+                capsule.innerHTML = `
+                    <span class="genre-capsule-name">${genre}</span>
+                    <span class="genre-capsule-count">${count}</span>
+                `;
+                
+                // Add click event listener
+                capsule.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.genreFilterManager.toggleGenre(genre);
+                });
+                
+                genreCapsules.appendChild(capsule);
+            });
+            
+            // Show/hide "Show More" button
+            if (showMoreBtn) {
+                if (genresByFrequency.length > INITIAL_GENRE_LIMIT) {
+                    showMoreBtn.style.display = 'block';
+                    showMoreBtn.textContent = isExpanded ? 'Show Less...' : 'Show More...';
+                } else {
+                    showMoreBtn.style.display = 'none';
+                }
+            }
+        }
+        
+        console.log(`🎨 Genre filter UI updated with ${genresByFrequency.length} genres`);
+    }
+
+    /**
      * Handle year filter changes - regenerate all derived data
      */
     async onYearFilterChange(filterData) {
         try {
-            // Update active collection with filtered albums immediately
-            this.activeCollection.albums = filterData.filteredAlbums;
-            
-            // Regenerate derived data immediately without loading indicator
-            this.activeCollection.artists = this.generateArtistsFromAlbums();
-            this.activeCollection.tracks = this.generateTracksFromAlbums();
-            this.activeCollection.roles = this.generateRolesFromAlbums();
-            
-            // Update UI counters and summary immediately
-            this.updateGlobalStats();
-            
-            // Refresh current view without delay
-            this.refreshCurrentView();
+            // Apply combined filtering: year filter first, then genre filter
+            this.applyCombinedFilters();
             
         } catch (error) {
             console.error('❌ Error handling year filter change:', error);
         }
+    }
+
+    /**
+     * Handle genre filter changes
+     * @param {Object} filterData - Filter data from GenreFilterManager
+     */
+    async onGenreFilterChange(filterData) {
+        try {
+            // Apply combined filtering: year filter first, then genre filter
+            this.applyCombinedFilters();
+            
+        } catch (error) {
+            console.error('❌ Error handling genre filter change:', error);
+        }
+    }
+
+    /**
+     * Apply combined filtering from both year and genre filters
+     */
+    applyCombinedFilters() {
+        // Start with year-filtered albums
+        const yearFilteredAlbums = this.yearFilterManager.getActiveAlbums();
+        
+        // Apply genre filter to the year-filtered albums
+        const selectedGenres = this.genreFilterManager.getSelectedGenres();
+        
+        let finalFilteredAlbums;
+        if (selectedGenres.size === 0) {
+            // No genre filter, use year-filtered albums
+            finalFilteredAlbums = yearFilteredAlbums;
+        } else {
+            // Apply genre filter to year-filtered albums
+            const selectedGenresArray = Array.from(selectedGenres);
+            finalFilteredAlbums = yearFilteredAlbums.filter(album => {
+                // Combine genres and styles into a single array
+                const allGenres = [];
+                if (album.genres && Array.isArray(album.genres)) {
+                    allGenres.push(...album.genres);
+                }
+                if (album.styles && Array.isArray(album.styles)) {
+                    allGenres.push(...album.styles);
+                }
+                
+                // Check if any of the album's genres match the selected genres
+                return selectedGenresArray.some(selectedGenre => 
+                    allGenres.includes(selectedGenre)
+                );
+            });
+        }
+        
+        // Update active collection with final filtered albums
+        this.activeCollection.albums = finalFilteredAlbums;
+        
+        // Regenerate derived data immediately without loading indicator
+        this.activeCollection.artists = this.generateArtistsFromAlbums();
+        this.activeCollection.tracks = this.generateTracksFromAlbums();
+        this.activeCollection.roles = this.generateRolesFromAlbums();
+        
+        // Update UI counters and summary immediately
+        this.updateGlobalStats();
+        
+        // Update filter UIs
+        this.updateGenreFilterUI();
+        
+        // Refresh current view without delay
+        this.refreshCurrentView();
+        
+        console.log(`🎯🎨 Combined filters applied: ${finalFilteredAlbums.length} albums (${this.yearFilterManager.isFilterActive() ? 'Year' : 'No Year'} + ${selectedGenres.size} genres)`);
     }
 
     /**
@@ -472,8 +616,9 @@ class AlbumCollectionApp {
 
     this.updateLoadingProgress('🎉 Collection loaded successfully', 'Welcome to your Albums Collection!', 100);
     
-    // Initialize year filter manager after data is loaded
+    // Initialize filter managers after data is loaded
     this.initializeYearFilter();
+    this.initializeGenreFilter();
     
     // Load initial view to display albums
     this.loadInitialView();
@@ -1809,6 +1954,7 @@ class AlbumCollectionApp {
 
     // Year filter event listeners (dual-handle slider)
     this.setupYearFilterEventListeners();
+    this.setupGenreFilterEventListeners();
 
     // Search event listeners
 
@@ -2020,7 +2166,85 @@ class AlbumCollectionApp {
 
     }
 
-
+    /**
+     * Set up genre filter event listeners
+     */
+    setupGenreFilterEventListeners() {
+        // Genre filter toggle elements
+        const genreFilterToggle = document.getElementById('genre-filter-toggle');
+        const genreFilterPanel = document.getElementById('genre-filter-panel');
+        const showMoreBtn = document.getElementById('show-more-genres');
+        const clearGenreFilter = document.getElementById('clear-genre-filter');
+        
+        console.log('🎨 Genre filter elements found:', {
+            genreFilterToggle: !!genreFilterToggle,
+            genreFilterPanel: !!genreFilterPanel,
+            showMoreBtn: !!showMoreBtn,
+            clearGenreFilter: !!clearGenreFilter
+        });
+        
+        if (!genreFilterToggle || !genreFilterPanel) {
+            console.warn('⚠️ Genre filter elements not found');
+            return;
+        }
+        
+        // Toggle panel visibility
+        genreFilterToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isActive = genreFilterPanel.classList.contains('active');
+            
+            console.log('🎨 Genre filter toggle clicked, current state:', isActive);
+            
+            if (isActive) {
+                genreFilterPanel.classList.remove('active');
+                genreFilterToggle.classList.remove('active');
+                console.log('🎨 Genre filter panel closed');
+            } else {
+                genreFilterPanel.classList.add('active');
+                genreFilterToggle.classList.add('active');
+                console.log('🎨 Genre filter panel opened');
+            }
+        });
+        
+        // Close panel when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!genreFilterToggle.contains(e.target) && !genreFilterPanel.contains(e.target)) {
+                genreFilterPanel.classList.remove('active');
+                genreFilterToggle.classList.remove('active');
+            }
+        });
+        
+        // Show More/Less button
+        if (showMoreBtn) {
+            showMoreBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isExpanded = showMoreBtn.textContent.includes('Show Less');
+                
+                console.log('🎨 Genre filter show more clicked, current state:', isExpanded);
+                
+                // Toggle the button text and update the UI
+                if (isExpanded) {
+                    showMoreBtn.textContent = 'Show More...';
+                } else {
+                    showMoreBtn.textContent = 'Show Less...';
+                }
+                
+                // Update the UI to reflect the new state
+                this.updateGenreFilterUI();
+            });
+        }
+        
+        // Clear filter button
+        if (clearGenreFilter) {
+            clearGenreFilter.addEventListener('click', (e) => {
+                e.stopPropagation();
+                console.log('🎨 Genre filter clear clicked');
+                this.genreFilterManager.clearFilter();
+            });
+        }
+        
+        console.log('✅ Genre filter event listeners set up');
+    }
 
     setupSelectionEventListeners() {
 
