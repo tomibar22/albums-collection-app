@@ -6274,6 +6274,7 @@
     appearance: none;
     cursor: pointer;
     pointer-events: none;
+    z-index: 2;
 }
 
 .range-slider::-webkit-slider-thumb {
@@ -6286,6 +6287,8 @@
     pointer-events: all;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     border: 2px solid var(--bg-primary);
+    z-index: 3;
+    position: relative;
 }
 
 .range-slider::-moz-range-thumb {
@@ -6297,6 +6300,8 @@
     border: 2px solid var(--bg-primary);
     pointer-events: all;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 3;
+    position: relative;
 }
 
 .slider-track {
@@ -6307,6 +6312,7 @@
     height: 4px;
     background: var(--border-color);
     border-radius: 2px;
+    z-index: 1;
 }
 
 .slider-range {
@@ -6315,6 +6321,7 @@
     background: var(--accent-color);
     border-radius: 2px;
     pointer-events: none;
+    z-index: 1;
 }
 
 .year-filter-actions {

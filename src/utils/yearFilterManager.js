@@ -12,7 +12,7 @@ class YearFilterManager {
         this.isActive = false;
         this.listeners = new Set();        // Components that need to be notified of changes
         this.debounceTimer = null;          // Debounce filter updates
-        this.debounceDelay = 300;           // 300ms debounce delay
+        this.debounceDelay = 150;           // 150ms debounce delay (faster response)
         
         // Statistics
         this.stats = {

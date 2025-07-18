@@ -177,21 +177,23 @@ class AlbumCollectionApp {
      */
     async onYearFilterChange(filterData) {
         try {
-            console.log(`🎯 Filter changed: ${filterData.isActive ? 'Active' : 'Inactive'}`);
-            
-            // Update active collection with filtered albums
+            // Update active collection with filtered albums immediately
             this.activeCollection.albums = filterData.filteredAlbums;
             
-            // Regenerate all derived data from filtered albums
+            // Update UI counters first for immediate feedback
+            this.updateGlobalStats();
+            
+            // Update filter summary
+            const filterSummary = document.getElementById('year-filter-summary');
+            if (filterSummary) {
+                filterSummary.textContent = this.yearFilterManager.getFilterSummary();
+            }
+            
+            // Regenerate derived data in background
             await this.regenerateCollectionData();
             
             // Refresh current view
             this.refreshCurrentView();
-            
-            // Update UI counters and stats
-            this.updateGlobalStats();
-            
-            console.log(`🎯 Filter applied: ${filterData.stats.filteredAlbums}/${filterData.stats.totalAlbums} albums`);
             
         } catch (error) {
             console.error('❌ Error handling year filter change:', error);
@@ -335,6 +337,9 @@ class AlbumCollectionApp {
     
     // Initialize year filter manager after data is loaded
     this.initializeYearFilter();
+    
+    // Load initial view to display albums
+    this.loadInitialView();
     
     // Collection state verified - debug log commented for performance
     // console.log('🎯 POST-LOADING COLLECTION CHECK:', {
@@ -1718,7 +1723,7 @@ class AlbumCollectionApp {
                 return;
             }
             
-            // Update visual display
+            // Update visual display immediately for smooth UX
             if (minYear === 1950 && maxYear === 2025) {
                 yearRangeDisplay.textContent = 'All Years';
             } else {
@@ -1727,8 +1732,7 @@ class AlbumCollectionApp {
             
             updateSliderRange();
             
-            // Apply filter
-            console.log(`🎯 Year filter changed: ${minYear}-${maxYear}`);
+            // Apply filter (debounced internally)
             this.yearFilterManager.setYearRange(minYear, maxYear);
         };
         
