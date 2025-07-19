@@ -400,6 +400,8 @@ class AlbumCollectionApp {
         
         // Optimize: Use cached full dataset when no filters are active
         const isFullDataset = finalFilteredAlbums.length === this.collection.albums.length;
+        const previousArtistsLength = this.activeCollection.artists ? this.activeCollection.artists.length : 0;
+        
         if (isFullDataset && this.fullDatasetCache) {
             console.log('⚡ Using cached full dataset (no regeneration needed)');
             this.activeCollection.artists = this.fullDatasetCache.artists;
@@ -413,6 +415,19 @@ class AlbumCollectionApp {
             this.activeCollection.roles = this.generateRolesFromAlbums();
         }
         
+        // Only clear artists page cache if the artists data actually changed or we switched datasets
+        const newArtistsLength = this.activeCollection.artists ? this.activeCollection.artists.length : 0;
+        const switchedToFullDataset = isFullDataset && this.fullDatasetCache && previousArtistsLength !== newArtistsLength;
+        const artistsDataChanged = previousArtistsLength !== newArtistsLength;
+        
+        if (switchedToFullDataset || artistsDataChanged) {
+            console.log(`🎭 Artists data changed (${previousArtistsLength} → ${newArtistsLength}), clearing artists cache`);
+            this.musicalArtists = null;
+            this.technicalArtists = null;
+            this.originalMusicalArtists = null;
+            this.originalTechnicalArtists = null;
+        }
+        
         // Update UI counters and summary immediately
         this.updateGlobalStats();
         
@@ -423,12 +438,6 @@ class AlbumCollectionApp {
         if (this.roleAlbumCountCache) {
             this.roleAlbumCountCache.clear();
         }
-        
-        // Clear artists page cache when filters change
-        this.musicalArtists = null;
-        this.technicalArtists = null;
-        this.originalMusicalArtists = null;
-        this.originalTechnicalArtists = null;
         
         // Refresh current view without delay
         this.refreshCurrentView();
