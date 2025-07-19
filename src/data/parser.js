@@ -913,25 +913,61 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
     foundCredits.forEach(credit => {
         const creditRole = credit.role.toLowerCase().trim();
         
-        // First check if role is explicitly excluded (compositional/technical)
-        const isExcludedRole = excludedRoles.some(excludedRole => {
-            // Enhanced matching for excluded roles
-            const normalizedCreditRole = creditRole.toLowerCase().trim();
-            const normalizedExcludedRole = excludedRole.toLowerCase().trim();
+        // Parse compound roles (e.g., "Producer, Mixed By" -> ["Producer", "Mixed By"])
+        const roleParts = creditRole.split(',').map(part => part.trim());
+        
+        // Check each role part separately
+        let hasPerformanceRolePart = false;
+        let hasOnlyExcludedRoles = true;
+        
+        roleParts.forEach(rolePart => {
+            // Check if this specific role part is a performance role
+            const isPerformanceRolePart = performanceRoles.some(performanceRole => {
+                const normalizedRolePart = rolePart.toLowerCase().trim();
+                const normalizedPerformanceRole = performanceRole.toLowerCase().trim();
+                
+                return normalizedRolePart === normalizedPerformanceRole ||
+                       normalizedRolePart.startsWith(normalizedPerformanceRole + ' ') ||
+                       normalizedRolePart.endsWith(' ' + normalizedPerformanceRole) ||
+                       new RegExp(`\\b${normalizedPerformanceRole.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(normalizedRolePart);
+            });
             
-            // Check for exact match, contains match, or word boundary match
-            return normalizedCreditRole === normalizedExcludedRole ||
-                   normalizedCreditRole.includes(normalizedExcludedRole) ||
-                   // Check if the excluded role appears as a complete word
-                   new RegExp(`\\b${normalizedExcludedRole.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(normalizedCreditRole);
+            if (isPerformanceRolePart) {
+                hasPerformanceRolePart = true;
+                hasOnlyExcludedRoles = false;
+                console.log(`✅ FOUND PERFORMANCE ROLE PART: "${rolePart}" in compound role "${credit.role}"`);
+            }
+            
+            // Check if this role part is excluded
+            const isExcludedRolePart = excludedRoles.some(excludedRole => {
+                const normalizedRolePart = rolePart.toLowerCase().trim();
+                const normalizedExcludedRole = excludedRole.toLowerCase().trim();
+                
+                return normalizedRolePart === normalizedExcludedRole ||
+                       normalizedRolePart.includes(normalizedExcludedRole) ||
+                       new RegExp(`\\b${normalizedExcludedRole.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(normalizedRolePart);
+            });
+            
+            if (!isExcludedRolePart && !isPerformanceRolePart) {
+                hasOnlyExcludedRoles = false; // Found a role that's neither excluded nor performance
+            }
         });
         
-        if (isExcludedRole) {
-            excludedCredits.push(credit);
-            return; // Skip this credit
+        // If compound role has any performance parts, accept it
+        if (hasPerformanceRolePart) {
+            console.log(`✅ ACCEPTED COMPOUND ROLE: "${credit.role}" - contains performance role parts`);
+            foundPerformanceRole = true;
+            return;
         }
         
-        // ENHANCED: Check for any compositional keywords even if not in main list
+        // If all parts are explicitly excluded, reject it
+        if (hasOnlyExcludedRoles) {
+            excludedCredits.push(credit);
+            console.log(`🚫 REJECTED COMPOUND ROLE: "${credit.role}" - all parts are excluded`);
+            return;
+        }
+        
+        // For any remaining roles (not compound), check for compositional keywords
         const compositionalKeywords = [
             'written', 'wrote', 'composer', 'composition', 'composed', 'songwriter',
             'lyrics', 'lyricist', 'author', 'copyright', 'publishing'
@@ -947,28 +983,22 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
             return; // Skip this credit
         }
         
-        // Check if role is a CONFIRMED performance role - be very strict here
+        // Check if single role is a CONFIRMED performance role
         const isPerformanceRole = performanceRoles.some(performanceRole => {
-            // Enhanced matching for performance roles
             const normalizedCreditRole = creditRole.toLowerCase().trim();
             const normalizedPerformanceRole = performanceRole.toLowerCase().trim();
             
-            // Must be exact match or start with the performance role
             return normalizedCreditRole === normalizedPerformanceRole ||
                    normalizedCreditRole.startsWith(normalizedPerformanceRole + ' ') ||
-                   normalizedCreditRole.startsWith(normalizedPerformanceRole + ',') ||
-                   // For compound instruments like "electric guitar", "acoustic piano"
                    normalizedCreditRole.endsWith(' ' + normalizedPerformanceRole) ||
-                   // Check if the performance role appears as a complete word
                    new RegExp(`\\b${normalizedPerformanceRole.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(normalizedCreditRole);
         });
         
         if (isPerformanceRole) {
-            console.log(`✅ CONFIRMED PERFORMANCE ROLE: "${credit.role}" - ALBUM WILL BE INCLUDED`);
+            console.log(`✅ CONFIRMED SINGLE PERFORMANCE ROLE: "${credit.role}" - ALBUM WILL BE INCLUDED`);
             foundPerformanceRole = true;
         } else {
             // STRICT POLICY: For any unrecognized role, exclude it
-            // This ensures only confirmed performance roles are included
             excludedCredits.push(credit);
             console.log(`❓ UNRECOGNIZED/AMBIGUOUS ROLE: "${credit.role}" - EXCLUDING to ensure only performance roles are included`);
         }
