@@ -4927,7 +4927,7 @@ class AlbumCollectionApp {
         `;
     }
 
-    // Generate artist role tabs HTML with musical/technical separation
+    // Generate artist role tabs HTML with musical/technical separation and genres
     generateArtistRoleTabsHtml(artist, musicalRoles, technicalRoles) {
         // Create a JavaScript-safe ID by removing quotes and special characters
         const artistId = (artist.id || artist.name)
@@ -4955,10 +4955,14 @@ class AlbumCollectionApp {
             }
         });
 
+        // Get all genres from artist's albums
+        const artistGenres = this.getArtistGenres(artist.name);
+
         console.log(`🎭 All actual roles for ${artist.name}:`, {
             totalRoles: allActualRoles.length,
             musical: actualMusicalRoles,
-            technical: actualTechnicalRoles
+            technical: actualTechnicalRoles,
+            genres: artistGenres
         });
 
         const musicalRolesHtml = actualMusicalRoles.length > 0
@@ -4969,13 +4973,19 @@ class AlbumCollectionApp {
             ? actualTechnicalRoles.map(role => `<span class="role-tag technical-role clickable-role-filter" data-role="${role}" data-artist="${this.escapeHtmlAttribute(artist.name)}">${role}</span>`).join('')
             : '<p class="no-content">No technical roles found</p>';
 
-        // Determine which tab should be active by default
-        // If artist has no musical roles but has technical roles, default to technical tab
-        const defaultToTechnical = actualMusicalRoles.length === 0 && actualTechnicalRoles.length > 0;
-        const musicalTabActive = !defaultToTechnical;
-        const technicalTabActive = defaultToTechnical;
+        const genresHtml = artistGenres.length > 0
+            ? artistGenres.map(genre => `<span class="role-tag genre-role clickable-genre-filter" data-genre="${genre}" data-artist="${this.escapeHtmlAttribute(artist.name)}">${genre}</span>`).join('')
+            : '<p class="no-content">No genres found</p>';
 
-        console.log(`🎭 Tab selection for ${artist.name}: defaultToTechnical=${defaultToTechnical}, musical=${actualMusicalRoles.length}, technical=${actualTechnicalRoles.length}`);
+        // Determine which tab should be active by default
+        // Priority: musical roles > technical roles > genres
+        const defaultToTechnical = actualMusicalRoles.length === 0 && actualTechnicalRoles.length > 0;
+        const defaultToGenres = actualMusicalRoles.length === 0 && actualTechnicalRoles.length === 0 && artistGenres.length > 0;
+        const musicalTabActive = actualMusicalRoles.length > 0;
+        const technicalTabActive = !musicalTabActive && actualTechnicalRoles.length > 0;
+        const genresTabActive = !musicalTabActive && !technicalTabActive && artistGenres.length > 0;
+
+        console.log(`🎭 Tab selection for ${artist.name}: musical=${actualMusicalRoles.length}, technical=${actualTechnicalRoles.length}, genres=${artistGenres.length}`);
 
         return `
             <div class="artist-roles-section">
@@ -4988,6 +4998,10 @@ class AlbumCollectionApp {
                             onclick="window.albumApp.switchArtistRoleTab('${artistId}', 'technical')">
                         Technical Roles (${actualTechnicalRoles.length})
                     </button>
+                    <button class="role-tab-btn ${genresTabActive ? 'active' : ''}"
+                            onclick="window.albumApp.switchArtistRoleTab('${artistId}', 'genres')">
+                        Genres (${artistGenres.length})
+                    </button>
                 </div>
                 <div class="artist-role-content">
                     <div id="musical-roles-${artistId}" class="role-tab-content ${musicalTabActive ? 'active' : ''}">
@@ -4995,6 +5009,9 @@ class AlbumCollectionApp {
                     </div>
                     <div id="technical-roles-${artistId}" class="role-tab-content ${technicalTabActive ? 'active' : ''}">
                         ${technicalRolesHtml}
+                    </div>
+                    <div id="genres-${artistId}" class="role-tab-content ${genresTabActive ? 'active' : ''}">
+                        ${genresHtml}
                     </div>
                 </div>
             </div>
@@ -5112,7 +5129,46 @@ class AlbumCollectionApp {
         return sortedRoles;
     }
 
-    // Switch between musical and technical role tabs
+    // Get all unique genres from albums where artist performed
+    getArtistGenres(artistName) {
+        const genreFrequency = new Map();
+        
+        // Go through all albums and collect genres where this artist performed
+        this.collection.albums.forEach(album => {
+            // Check if artist is in this album's credits
+            const artistIsInAlbum = album.credits && album.credits.some(credit => 
+                credit.name === artistName
+            );
+            
+            if (artistIsInAlbum) {
+                // Combine genres and styles into a single array
+                const allGenres = [];
+                if (album.genres && Array.isArray(album.genres)) {
+                    allGenres.push(...album.genres);
+                }
+                if (album.styles && Array.isArray(album.styles)) {
+                    allGenres.push(...album.styles);
+                }
+                
+                // Count frequency of each genre
+                allGenres.forEach(genre => {
+                    if (genre && genre.trim()) {
+                        const cleanGenre = genre.trim();
+                        genreFrequency.set(cleanGenre, (genreFrequency.get(cleanGenre) || 0) + 1);
+                    }
+                });
+            }
+        });
+        
+        // Convert to array and sort by frequency (most frequent first)
+        const sortedGenres = Array.from(genreFrequency.entries())
+            .sort((a, b) => b[1] - a[1]) // Sort by frequency descending
+            .map(entry => entry[0]); // Extract just the genre names
+        
+        return sortedGenres;
+    }
+
+    // Switch between musical, technical, and genres role tabs
     switchArtistRoleTab(artistId, tabType) {
         // Update tab buttons
         const tabs = document.querySelectorAll('.role-tab-btn');
@@ -5122,13 +5178,20 @@ class AlbumCollectionApp {
         // Update content
         const musicalContent = document.getElementById(`musical-roles-${artistId}`);
         const technicalContent = document.getElementById(`technical-roles-${artistId}`);
+        const genresContent = document.getElementById(`genres-${artistId}`);
 
+        // Hide all content first
+        musicalContent.classList.remove('active');
+        technicalContent.classList.remove('active');
+        genresContent.classList.remove('active');
+
+        // Show the selected tab content
         if (tabType === 'musical') {
             musicalContent.classList.add('active');
-            technicalContent.classList.remove('active');
-        } else {
+        } else if (tabType === 'technical') {
             technicalContent.classList.add('active');
-            musicalContent.classList.remove('active');
+        } else if (tabType === 'genres') {
+            genresContent.classList.add('active');
         }
     }
 
@@ -5206,6 +5269,100 @@ class AlbumCollectionApp {
         this.showRoleFilterStatus(role, sortedFilteredAlbums.length);
 
         console.log(`✅ Filtered to ${sortedFilteredAlbums.length} albums with role "${role}" (sorted by ${currentSort})`);
+    }
+
+    // Filter albums in artist modal by specific genre (integrates with sorting)
+    filterAlbumsByGenre(artistName, genre) {
+        // Unescape the artist name since it comes from an HTML attribute
+        const unescapedArtistName = this.unescapeHtmlAttribute(artistName);
+        console.log(`🎨 Filtering albums for ${unescapedArtistName} by genre: ${genre}`);
+
+        const albumsGrid = document.getElementById('artist-albums-grid');
+        if (!albumsGrid) {
+            console.error('❌ Albums grid not found');
+            return;
+        }
+
+        // Get all albums data
+        const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+        if (!allAlbumsData) {
+            console.error('❌ No albums data found');
+            return;
+        }
+
+        let allAlbums;
+        try {
+            allAlbums = JSON.parse(allAlbumsData);
+        } catch (e) {
+            console.error('❌ Error parsing albums data:', e);
+            return;
+        }
+
+        // Filter albums that have this specific genre and where artist performed
+        const filteredAlbums = allAlbums.filter(album => {
+            // Check if artist is in this album's credits
+            const artistIsInAlbum = album.credits && album.credits.some(credit => 
+                credit.name === unescapedArtistName
+            );
+            
+            if (!artistIsInAlbum) return false;
+            
+            // Check if album has this genre (in genres or styles)
+            const albumGenres = [];
+            if (album.genres && Array.isArray(album.genres)) {
+                albumGenres.push(...album.genres);
+            }
+            if (album.styles && Array.isArray(album.styles)) {
+                albumGenres.push(...album.styles);
+            }
+            
+            return albumGenres.some(albumGenre => 
+                albumGenre && albumGenre.trim() === genre
+            );
+        });
+
+        console.log(`🎯 Filter result: ${filteredAlbums.length} albums visible out of ${allAlbums.length} total`);
+
+        // Get current sort setting and apply it to filtered albums
+        const sortSelect = document.getElementById('artist-albums-sort');
+        const currentSort = sortSelect ? sortSelect.value : 'year-asc';
+
+        // Sort the filtered albums according to current sort setting
+        let sortedFilteredAlbums = [...filteredAlbums];
+
+        switch(currentSort) {
+            case 'year-asc':
+                sortedFilteredAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : Infinity;
+                    return yearA - yearB;
+                });
+                break;
+            case 'year-desc':
+                sortedFilteredAlbums.sort((a, b) => {
+                    const yearA = this.isValidYear(a.year) ? a.year : -Infinity;
+                    const yearB = this.isValidYear(b.year) ? b.year : -Infinity;
+                    return yearB - yearA;
+                });
+                break;
+            case 'title-asc':
+                sortedFilteredAlbums.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'title-desc':
+                sortedFilteredAlbums.sort((a, b) => b.title.localeCompare(a.title));
+                break;
+            case 'random':
+                this.shuffleArray(sortedFilteredAlbums);
+                break;
+        }
+
+        // Re-render grid with filtered and sorted albums
+        this.renderArtistAlbumsGrid(unescapedArtistName, sortedFilteredAlbums, `genre: ${genre}`);
+
+        // Show filter status
+        this.showGenreFilterStatus(genre, sortedFilteredAlbums.length);
+
+        console.log(`✅ Filtered to ${sortedFilteredAlbums.length} albums with genre "${genre}" (sorted by ${currentSort})`);
     }
 
     // Extract roles by removing brackets and splitting bracketed content
@@ -5342,6 +5499,20 @@ class AlbumCollectionApp {
         }
     }
 
+    // Show genre filter status
+    showGenreFilterStatus(genre, albumCount) {
+        const filterStatus = document.getElementById('role-filter-status');
+
+        if (filterStatus) {
+            // Update the albums count in the status
+            const albumText = albumCount === 1 ? '1 album' : `${albumCount} albums`;
+            const artistName = document.getElementById('artist-albums-grid')?.getAttribute('data-artist') || '';
+            filterStatus.innerHTML = `<span class="filter-text">Filtered by genre: <strong>${genre}</strong> (${albumText})</span>
+                                      <button class="clear-filter-btn" onclick="window.albumApp.clearRoleFilter('${artistName}')">Clear Filter</button>`;
+            filterStatus.style.display = 'flex';
+        }
+    }
+
     // Clear role filter (maintains current sort order)
     clearRoleFilter(artistName) {
         console.log(`🎭 Clearing role filter for ${artistName}`);
@@ -5354,9 +5525,12 @@ class AlbumCollectionApp {
             filterStatus.style.display = 'none';
         }
 
-        // Remove active filter styling from all role tags
+        // Remove active filter styling from all role and genre tags
         document.querySelectorAll('.clickable-role-filter').forEach(role => {
             role.classList.remove('active-filter');
+        });
+        document.querySelectorAll('.clickable-genre-filter').forEach(genre => {
+            genre.classList.remove('active-filter');
         });
 
         if (albumsGrid) {
@@ -10645,6 +10819,22 @@ class AlbumCollectionApp {
 
                     // Add visual feedback to clicked role
                     document.querySelectorAll('.clickable-role-filter').forEach(r => r.classList.remove('active-filter'));
+                    document.querySelectorAll('.clickable-genre-filter').forEach(g => g.classList.remove('active-filter'));
+                    event.target.classList.add('active-filter');
+                }
+                return;
+            }
+
+            // Handle genre filter clicks in artist albums modal
+            if (event.target.classList.contains('clickable-genre-filter')) {
+                const genre = event.target.getAttribute('data-genre');
+                const artistName = event.target.getAttribute('data-artist');
+                if (genre && artistName) {
+                    this.filterAlbumsByGenre(artistName, genre);
+
+                    // Add visual feedback to clicked genre
+                    document.querySelectorAll('.clickable-role-filter').forEach(r => r.classList.remove('active-filter'));
+                    document.querySelectorAll('.clickable-genre-filter').forEach(g => g.classList.remove('active-filter'));
                     event.target.classList.add('active-filter');
                 }
                 return;

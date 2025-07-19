@@ -3500,6 +3500,17 @@
     border-color: #9ca3af;
 }
 
+.genre-role {
+    background-color: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+    border: 1px solid #8b5cf6;
+}
+
+.genre-role:hover {
+    background-color: rgba(168, 85, 247, 0.3);
+    border-color: #a855f7;
+}
+
 .no-roles {
     text-align: center;
     color: #6b7280;
