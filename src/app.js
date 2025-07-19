@@ -8292,6 +8292,8 @@ class AlbumCollectionApp {
         // Generate artists if not already done (using active collection)
         if (this.musicalArtists.length === 0 && this.technicalArtists.length === 0) {
             this.activeCollection.artists = this.generateArtistsFromAlbums();
+            // CRITICAL: Categorize the newly generated artists
+            this.categorizeArtistsByRoles(this.activeCollection.artists);
         }
 
         // Only sort if we have artists
