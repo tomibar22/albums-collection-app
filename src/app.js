@@ -3066,17 +3066,18 @@ class AlbumCollectionApp {
 
     // Artist Card Rendering and Management with Tabs
     renderArtistsGrid() {
-        // Check if artists need to be regenerated
-        if (!this.collection.artists || this.collection.artists.length === 0 || this.artistsNeedRegeneration) {
-            console.log('🎭 Generating artists from albums (first time or flagged for regeneration)...');
-            // Generate and categorize artists from current albums
-            this.collection.artists = this.generateArtistsFromAlbums();
+        // Use the active collection (filtered data) for artists display
+        // This ensures artists page properly reflects current filter state
+        if (!this.activeCollection.artists || this.activeCollection.artists.length === 0 || this.artistsNeedRegeneration) {
+            console.log('🎭 Generating artists from active collection (filtered albums)...');
+            // Generate artists from currently active/filtered albums
+            this.activeCollection.artists = this.generateArtistsFromAlbums();
             this.artistsNeedRegeneration = false; // Reset flag
         } else {
-            // console.log('🎭 Using cached artists for performance');
+            // console.log('🎭 Using cached active artists for performance');
         }
 
-        if (this.collection.artists.length === 0) {
+        if (this.activeCollection.artists.length === 0) {
             this.displayEmptyState('artists');
             return;
         }
@@ -8007,15 +8008,15 @@ class AlbumCollectionApp {
 
             case 'artists':
                 // MOBILE FIX: Check if artists need to be generated first
-                if (!this.collection.artists || this.collection.artists.length === 0) {
-                    console.log(`📱 Mobile: Generating artists data before rendering...`);
-                    this.collection.artists = this.generateArtistsFromAlbums();
+                if (!this.activeCollection.artists || this.activeCollection.artists.length === 0) {
+                    console.log(`📱 Mobile: Generating artists data from active collection before rendering...`);
+                    this.activeCollection.artists = this.generateArtistsFromAlbums();
                     this.artistsNeedRegeneration = false;
                 }
                 
                 // Mobile lazy loading for artists
                 if (isMobile && this.artistsNeedRegeneration) {
-                    this.collection.artists = this.generateArtistsFromAlbums();
+                    this.activeCollection.artists = this.generateArtistsFromAlbums();
                     this.artistsNeedRegeneration = false;
                 }
 
@@ -8256,9 +8257,9 @@ class AlbumCollectionApp {
         if (!this.musicalArtists) this.musicalArtists = [];
         if (!this.technicalArtists) this.technicalArtists = [];
 
-        // Generate artists if not already done
+        // Generate artists if not already done (using active collection)
         if (this.musicalArtists.length === 0 && this.technicalArtists.length === 0) {
-            this.collection.artists = this.generateArtistsFromAlbums();
+            this.activeCollection.artists = this.generateArtistsFromAlbums();
         }
 
         // Only sort if we have artists
