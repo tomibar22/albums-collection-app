@@ -3096,6 +3096,9 @@ class AlbumCollectionApp {
             this.activeCollection.artists = this.generateArtistsFromAlbums();
             this.lastArtistsAlbumsHash = currentAlbumsHash; // Track which albums were used
             this.artistsNeedRegeneration = false; // Reset flag
+            
+            // Categorize the newly generated artists
+            this.categorizeArtistsByRoles(this.activeCollection.artists);
         } else {
             console.log('🎭 Using cached artists (albums unchanged)');
         }
@@ -3105,7 +3108,7 @@ class AlbumCollectionApp {
             return;
         }
 
-        // Use categorized artists (stored in generateArtistsFromAlbums)
+        // Use categorized artists
         const musicalArtists = this.musicalArtists || [];
         const technicalArtists = this.technicalArtists || [];
 
