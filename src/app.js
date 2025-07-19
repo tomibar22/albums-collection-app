@@ -4978,7 +4978,16 @@ class AlbumCollectionApp {
             : '<p class="no-content">No genres found</p>';
 
         const collaboratorsHtml = artistCollaborators.length > 0
-            ? artistCollaborators.map(collaborator => `<span class="role-tag collaborator-role clickable-collaborator-filter" data-collaborator="${collaborator.name}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${collaborator.albumCount}">${collaborator.name} (${collaborator.albumCount})</span>`).join('')
+            ? `<div class="collaborator-search-container">
+                <input type="text" 
+                       class="collaborator-search-input" 
+                       placeholder="🔍 Search collaborators..." 
+                       data-artist-id="${artistId}"
+                       onkeyup="window.albumApp.filterCollaborators(this.value, '${artistId}')">
+               </div>
+               <div class="collaborators-list">
+                ${artistCollaborators.map(collaborator => `<span class="role-tag collaborator-role clickable-collaborator-filter" data-collaborator="${collaborator.name}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${collaborator.albumCount}">${collaborator.name} (${collaborator.albumCount})</span>`).join('')}
+               </div>`
             : '<p class="no-content">No collaborators found</p>';
 
         // Determine which tab should be active by default
@@ -5669,6 +5678,49 @@ class AlbumCollectionApp {
         };
     }
 
+    // Filter collaborators by search term
+    filterCollaborators(searchTerm, artistId) {
+        const collaboratorsList = document.querySelector(`#collaborators-${artistId} .collaborators-list`);
+        if (!collaboratorsList) return;
+
+        const collaboratorElements = collaboratorsList.querySelectorAll('.clickable-collaborator-filter');
+        const lowerSearchTerm = searchTerm.toLowerCase().trim();
+
+        let visibleCount = 0;
+        collaboratorElements.forEach(element => {
+            const collaboratorName = element.getAttribute('data-collaborator');
+            const isMatch = lowerSearchTerm === '' || collaboratorName.toLowerCase().includes(lowerSearchTerm);
+            
+            if (isMatch) {
+                element.style.display = '';
+                visibleCount++;
+            } else {
+                element.style.display = 'none';
+            }
+        });
+
+        // Update placeholder or add a "no results" message if needed
+        if (lowerSearchTerm !== '' && visibleCount === 0) {
+            // Show "no results" message if there's a container for it
+            let noResultsMsg = collaboratorsList.querySelector('.no-search-results');
+            if (!noResultsMsg) {
+                noResultsMsg = document.createElement('p');
+                noResultsMsg.className = 'no-search-results no-content';
+                noResultsMsg.textContent = 'No collaborators match your search';
+                collaboratorsList.appendChild(noResultsMsg);
+            }
+            noResultsMsg.style.display = 'block';
+        } else {
+            // Hide "no results" message
+            const noResultsMsg = collaboratorsList.querySelector('.no-search-results');
+            if (noResultsMsg) {
+                noResultsMsg.style.display = 'none';
+            }
+        }
+
+        console.log(`🔍 Collaborator search "${searchTerm}": ${visibleCount} matches`);
+    }
+
     // Calculate how many albums would be visible if this collaborator was selected
     calculateCollaboratorAlbumCount(artistName, collaboratorName) {
         const albumsGrid = document.getElementById('artist-albums-grid');
@@ -5909,6 +5961,11 @@ class AlbumCollectionApp {
             const collaboratorName = element.getAttribute('data-collaborator');
             const originalCount = element.getAttribute('data-album-count');
             element.textContent = `${collaboratorName} (${originalCount})`;
+        });
+        
+        // Clear collaborator search input
+        document.querySelectorAll('.collaborator-search-input').forEach(input => {
+            input.value = '';
         });
 
         if (albumsGrid) {
@@ -11210,6 +11267,10 @@ class AlbumCollectionApp {
                         const originalCount = element.getAttribute('data-album-count');
                         element.textContent = `${collaboratorName} (${originalCount})`;
                     });
+                    // Clear collaborator search input
+                    document.querySelectorAll('.collaborator-search-input').forEach(input => {
+                        input.value = '';
+                    });
                 }
                 return;
             }
@@ -11235,6 +11296,10 @@ class AlbumCollectionApp {
                         const collaboratorName = element.getAttribute('data-collaborator');
                         const originalCount = element.getAttribute('data-album-count');
                         element.textContent = `${collaboratorName} (${originalCount})`;
+                    });
+                    // Clear collaborator search input
+                    document.querySelectorAll('.collaborator-search-input').forEach(input => {
+                        input.value = '';
                     });
                 }
                 return;
