@@ -1932,6 +1932,25 @@
     transform: translateY(-1px);
 }
 
+/* Collaborator filtering styles */
+.clickable-collaborator-filter {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.clickable-collaborator-filter:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.clickable-collaborator-filter.active-filter {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    transform: translateY(-1px);
+}
+
 .albums-section-header {
     display: flex;
     justify-content: space-between;
@@ -3528,6 +3547,17 @@
 .genre-role:hover {
     background-color: rgba(168, 85, 247, 0.3);
     border-color: #a855f7;
+}
+
+.collaborator-role {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid #10b981;
+}
+
+.collaborator-role:hover {
+    background-color: rgba(34, 197, 94, 0.3);
+    border-color: #059669;
 }
 
 .no-roles {
