@@ -35,6 +35,9 @@ class AlbumCollectionApp {
         artistsByRole: new Map()      // cleanRoleName -> Set of artistNames
     };
 
+    // Track when artists need regeneration based on album changes
+    this.lastArtistsAlbumsHash = null;
+
     // Original collection (full dataset - immutable)
     this.collection = {
 
@@ -3081,15 +3084,20 @@ class AlbumCollectionApp {
 
     // Artist Card Rendering and Management with Tabs
     renderArtistsGrid() {
-        // Use the active collection (filtered data) for artists display
-        // This ensures artists page properly reflects current filter state
-        if (!this.activeCollection.artists || this.activeCollection.artists.length === 0 || this.artistsNeedRegeneration) {
-            console.log('🎭 Generating artists from active collection (filtered albums)...');
-            // Generate artists from currently active/filtered albums
+        // Check if artists need to be regenerated based on current album set
+        const currentAlbumsHash = this.generateAlbumsHash();
+        const needsRegeneration = !this.activeCollection.artists || 
+                                 this.activeCollection.artists.length === 0 || 
+                                 this.artistsNeedRegeneration ||
+                                 this.lastArtistsAlbumsHash !== currentAlbumsHash;
+                                 
+        if (needsRegeneration) {
+            console.log('🎭 Regenerating artists from active collection (albums changed)...');
             this.activeCollection.artists = this.generateArtistsFromAlbums();
+            this.lastArtistsAlbumsHash = currentAlbumsHash; // Track which albums were used
             this.artistsNeedRegeneration = false; // Reset flag
         } else {
-            // console.log('🎭 Using cached active artists for performance');
+            console.log('🎭 Using cached artists (albums unchanged)');
         }
 
         if (this.activeCollection.artists.length === 0) {
