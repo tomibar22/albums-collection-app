@@ -4895,30 +4895,26 @@ class AlbumCollectionApp {
                         <div class="modal-search-container">
                             <input type="text"
                                    id="artist-albums-search"
-                                   placeholder="🔍 Search by title, artist, year, genre, role, track..."
+                                   placeholder="🔍 Search albums..."
                                    class="modal-search-input"
                                    data-artist="${artist.name}">
-                            <div class="search-results-count" id="search-results-count">
-                                ${sortedAlbums.length} album${sortedAlbums.length !== 1 ? 's' : ''}
-                            </div>
                         </div>
                         <div class="modal-sort-controls">
-                            <label>Sort by:</label>
                             <select id="artist-albums-sort" data-artist="${artist.name}">
-                                <option value="year-asc" selected>Year (Ascending)</option>
-                                <option value="year-desc">Year (Descending)</option>
-                                <option value="title-asc">Title (A-Z)</option>
-                                <option value="title-desc">Title (Z-A)</option>
+                                <option value="year-asc" selected>Year ↑</option>
+                                <option value="year-desc">Year ↓</option>
+                                <option value="title-asc">Title A-Z</option>
+                                <option value="title-desc">Title Z-A</option>
                                 <option value="random">Random</option>
                             </select>
-                            <button class="shuffle-btn hidden" id="artist-albums-shuffle" data-artist="${artist.name}">🔀 Shuffle</button>
+                            <span class="album-count">${sortedAlbums.length} album${sortedAlbums.length !== 1 ? 's' : ''}</span>
                         </div>
                     </div>
-                        <div class="role-filter-status" id="role-filter-status" style="display: none;">
-                            <span class="filter-text">Filtered by role: <strong id="current-role-filter"></strong></span>
-                            <button class="clear-filter-btn" onclick="window.albumApp.clearRoleFilter('${artist.name}')">Clear Filter</button>
-                        </div>
+                    <div class="role-filter-status" id="role-filter-status" style="display: none;">
+                        <span class="filter-text">Filtered by role: <strong id="current-role-filter"></strong></span>
+                        <button class="clear-filter-btn" onclick="window.albumApp.clearRoleFilter('${artist.name}')">Clear Filter</button>
                     </div>
+                </div>
                     <div class="albums-grid" id="artist-albums-grid" data-artist="${artist.name}" data-all-albums='${this.escapeJsonForAttribute(sortedAlbums)}'>
                         ${albumsHtml}
                     </div>
