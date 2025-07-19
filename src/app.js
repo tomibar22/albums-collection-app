@@ -3098,7 +3098,9 @@ class AlbumCollectionApp {
             this.artistsNeedRegeneration = false; // Reset flag
             
             // Categorize the newly generated artists
-            this.categorizeArtistsByRoles(this.activeCollection.artists);
+            const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(this.activeCollection.artists);
+            this.musicalArtists = musicalArtists;
+            this.technicalArtists = technicalArtists;
         } else {
             console.log('🎭 Using cached artists (albums unchanged)');
         }
@@ -8293,7 +8295,9 @@ class AlbumCollectionApp {
         if (this.musicalArtists.length === 0 && this.technicalArtists.length === 0) {
             this.activeCollection.artists = this.generateArtistsFromAlbums();
             // CRITICAL: Categorize the newly generated artists
-            this.categorizeArtistsByRoles(this.activeCollection.artists);
+            const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(this.activeCollection.artists);
+            this.musicalArtists = musicalArtists;
+            this.technicalArtists = technicalArtists;
         }
 
         // Only sort if we have artists
