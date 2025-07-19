@@ -5439,7 +5439,10 @@ class AlbumCollectionApp {
         
         console.log(`🤝 Toggled collaborator "${collaborator}". Selected: [${Array.from(this.selectedCollaborators).join(', ')}]`);
         
-        // Apply filtering (removed expensive count updates for performance)
+        // Update collaborator visibility and counts efficiently
+        this.updateCollaboratorDisplay(unescapedArtistName);
+        
+        // Apply filtering
         this.filterAlbumsByCollaborators(unescapedArtistName);
     }
 
@@ -5543,29 +5546,131 @@ class AlbumCollectionApp {
         console.log(`✅ Filtered to ${sortedFilteredAlbums.length} albums with collaborators [${Array.from(this.selectedCollaborators).join(', ')}] (sorted by ${currentSort})`);
     }
 
-    // Update album counts for collaborator capsules based on current selection
-    // DISABLED FOR PERFORMANCE - this was causing UI freezing with large datasets
-    updateCollaboratorAlbumCounts(artistName) {
-        // Performance optimization: Skip dynamic count updates to prevent UI freezing
-        // The static counts from initial load are sufficient for user understanding
-        return;
+    // Update collaborator display: show/hide and update counts based on current selection
+    updateCollaboratorDisplay(artistName) {
+        if (!this.collaboratorData) {
+            // Build collaborator data structure for efficient lookups
+            this.buildCollaboratorDataStructure(artistName);
+        }
         
-        /* ORIGINAL EXPENSIVE CODE - kept for reference
         const collaboratorElements = document.querySelectorAll('.clickable-collaborator-filter');
+        const selectedCollaboratorsArray = Array.from(this.selectedCollaborators || []);
         
         collaboratorElements.forEach(element => {
             const collaboratorName = element.getAttribute('data-collaborator');
-            const originalCount = parseInt(element.getAttribute('data-album-count'));
             
-            // Calculate new count based on current selection
-            let newCount = this.calculateCollaboratorAlbumCount(artistName, collaboratorName);
+            // Skip if this is a selected collaborator (always keep visible)
+            if (this.selectedCollaborators && this.selectedCollaborators.has(collaboratorName)) {
+                element.style.display = '';
+                return;
+            }
             
-            // Update the displayed text
-            const currentText = element.textContent;
-            const nameOnly = currentText.replace(/\s*\(\d+\)$/, '');
-            element.textContent = `${nameOnly} (${newCount})`;
+            // Calculate if this collaborator is compatible with current selection
+            const { isCompatible, albumCount } = this.calculateCollaboratorCompatibility(
+                artistName, 
+                collaboratorName, 
+                selectedCollaboratorsArray
+            );
+            
+            if (isCompatible && albumCount > 0) {
+                // Show collaborator and update count
+                element.style.display = '';
+                const nameOnly = collaboratorName;
+                element.textContent = `${nameOnly} (${albumCount})`;
+            } else {
+                // Hide incompatible collaborator
+                element.style.display = 'none';
+            }
         });
-        */
+    }
+
+    // Build efficient data structure for collaborator filtering
+    buildCollaboratorDataStructure(artistName) {
+        const albumsGrid = document.getElementById('artist-albums-grid');
+        if (!albumsGrid) return;
+
+        const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+        if (!allAlbumsData) return;
+
+        let allAlbums;
+        try {
+            allAlbums = JSON.parse(allAlbumsData);
+        } catch (e) {
+            return;
+        }
+
+        // Build a map of album ID to collaborators for fast lookup
+        this.collaboratorData = {
+            albumCollaborators: new Map(), // albumId -> Set of collaborators
+            collaboratorAlbums: new Map(), // collaborator -> Set of album IDs
+            artistAlbums: [] // albums where target artist appears
+        };
+
+        allAlbums.forEach((album, index) => {
+            // Check if target artist is in this album
+            const artistIsInAlbum = album.credits && album.credits.some(credit => 
+                credit.name === artistName
+            );
+            
+            if (artistIsInAlbum) {
+                this.collaboratorData.artistAlbums.push(index);
+                
+                // Get collaborators in this album (excluding target artist)
+                const albumCollaborators = new Set(
+                    album.credits
+                        .map(credit => credit.name)
+                        .filter(name => name !== artistName)
+                );
+                
+                this.collaboratorData.albumCollaborators.set(index, albumCollaborators);
+                
+                // Update collaborator -> albums mapping
+                albumCollaborators.forEach(collaborator => {
+                    if (!this.collaboratorData.collaboratorAlbums.has(collaborator)) {
+                        this.collaboratorData.collaboratorAlbums.set(collaborator, new Set());
+                    }
+                    this.collaboratorData.collaboratorAlbums.get(collaborator).add(index);
+                });
+            }
+        });
+
+        console.log(`📊 Built collaborator data structure: ${this.collaboratorData.artistAlbums.length} albums, ${this.collaboratorData.collaboratorAlbums.size} unique collaborators`);
+    }
+
+    // Calculate if collaborator is compatible with current selection and count albums
+    calculateCollaboratorCompatibility(artistName, collaboratorName, selectedCollaborators) {
+        if (!this.collaboratorData) {
+            return { isCompatible: false, albumCount: 0 };
+        }
+        
+        // If no collaborators selected, all are compatible with their original count
+        if (selectedCollaborators.length === 0) {
+            const albumCount = this.collaboratorData.collaboratorAlbums.get(collaboratorName)?.size || 0;
+            return { isCompatible: albumCount > 0, albumCount };
+        }
+        
+        // Find albums that have ALL currently selected collaborators + this collaborator
+        const targetCollaborators = [...selectedCollaborators, collaboratorName];
+        let compatibleAlbumCount = 0;
+        
+        // Check each album where target artist appears
+        this.collaboratorData.artistAlbums.forEach(albumIndex => {
+            const albumCollaborators = this.collaboratorData.albumCollaborators.get(albumIndex);
+            
+            // Check if this album has ALL target collaborators
+            const hasAllCollaborators = targetCollaborators.every(collab => 
+                albumCollaborators.has(collab)
+            );
+            
+            if (hasAllCollaborators) {
+                compatibleAlbumCount++;
+            }
+        });
+        
+        return { 
+            isCompatible: compatibleAlbumCount > 0, 
+            albumCount: compatibleAlbumCount 
+        };
     }
 
     // Calculate how many albums would be visible if this collaborator was selected
@@ -5797,8 +5902,18 @@ class AlbumCollectionApp {
             collaborator.classList.remove('active-filter');
         });
         
-        // Clear selected collaborators
+        // Clear selected collaborators and reset data structure
         this.selectedCollaborators = new Set();
+        this.collaboratorData = null;
+        
+        // Reset all collaborator displays
+        document.querySelectorAll('.clickable-collaborator-filter').forEach(element => {
+            element.style.display = '';
+            // Reset to original text from data attribute
+            const collaboratorName = element.getAttribute('data-collaborator');
+            const originalCount = element.getAttribute('data-album-count');
+            element.textContent = `${collaboratorName} (${originalCount})`;
+        });
 
         if (albumsGrid) {
             // Get all albums data
@@ -11090,8 +11205,15 @@ class AlbumCollectionApp {
                     document.querySelectorAll('.clickable-collaborator-filter').forEach(c => c.classList.remove('active-filter'));
                     event.target.classList.add('active-filter');
                     
-                    // Clear collaborator selection
+                    // Clear collaborator selection and reset display
                     this.selectedCollaborators = new Set();
+                    this.collaboratorData = null;
+                    document.querySelectorAll('.clickable-collaborator-filter').forEach(element => {
+                        element.style.display = '';
+                        const collaboratorName = element.getAttribute('data-collaborator');
+                        const originalCount = element.getAttribute('data-album-count');
+                        element.textContent = `${collaboratorName} (${originalCount})`;
+                    });
                 }
                 return;
             }
@@ -11109,8 +11231,15 @@ class AlbumCollectionApp {
                     document.querySelectorAll('.clickable-collaborator-filter').forEach(c => c.classList.remove('active-filter'));
                     event.target.classList.add('active-filter');
                     
-                    // Clear collaborator selection
+                    // Clear collaborator selection and reset display
                     this.selectedCollaborators = new Set();
+                    this.collaboratorData = null;
+                    document.querySelectorAll('.clickable-collaborator-filter').forEach(element => {
+                        element.style.display = '';
+                        const collaboratorName = element.getAttribute('data-collaborator');
+                        const originalCount = element.getAttribute('data-album-count');
+                        element.textContent = `${collaboratorName} (${originalCount})`;
+                    });
                 }
                 return;
             }
