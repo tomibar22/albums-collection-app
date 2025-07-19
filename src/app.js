@@ -25,6 +25,9 @@ class AlbumCollectionApp {
         roles: { data: null, hash: null }
     };
 
+    // Full dataset cache for filter performance optimization
+    this.fullDatasetCache = null;
+
     // Original collection (full dataset - immutable)
     this.collection = {
 
@@ -170,6 +173,14 @@ class AlbumCollectionApp {
         this.activeCollection.artists = this.generateArtistsFromAlbums();
         this.activeCollection.tracks = this.generateTracksFromAlbums();
         this.activeCollection.roles = this.generateRolesFromAlbums();
+        
+        // Cache the full dataset for performance optimization
+        this.fullDatasetCache = {
+            artists: [...this.activeCollection.artists],
+            tracks: [...this.activeCollection.tracks],
+            roles: [...this.activeCollection.roles]
+        };
+        console.log('💾 Full dataset cached for filter performance optimization');
         
         // Update UI elements with actual data range
         this.updateYearFilterUI();
@@ -380,10 +391,20 @@ class AlbumCollectionApp {
         // Update active collection with final filtered albums
         this.activeCollection.albums = finalFilteredAlbums;
         
-        // Regenerate derived data immediately without loading indicator
-        this.activeCollection.artists = this.generateArtistsFromAlbums();
-        this.activeCollection.tracks = this.generateTracksFromAlbums();
-        this.activeCollection.roles = this.generateRolesFromAlbums();
+        // Optimize: Use cached full dataset when no filters are active
+        const isFullDataset = finalFilteredAlbums.length === this.collection.albums.length;
+        if (isFullDataset && this.fullDatasetCache) {
+            console.log('⚡ Using cached full dataset (no regeneration needed)');
+            this.activeCollection.artists = this.fullDatasetCache.artists;
+            this.activeCollection.tracks = this.fullDatasetCache.tracks;
+            this.activeCollection.roles = this.fullDatasetCache.roles;
+        } else {
+            // Regenerate derived data for filtered dataset
+            console.log('🔄 Regenerating derived data for filtered dataset...');
+            this.activeCollection.artists = this.generateArtistsFromAlbums();
+            this.activeCollection.tracks = this.generateTracksFromAlbums();
+            this.activeCollection.roles = this.generateRolesFromAlbums();
+        }
         
         // Update UI counters and summary immediately
         this.updateGlobalStats();
@@ -6880,6 +6901,9 @@ class AlbumCollectionApp {
 
             // Generate artists from albums
             this.collection.artists = this.generateArtistsFromAlbums();
+            
+            // Invalidate full dataset cache since collection changed
+            this.fullDatasetCache = null;
 
             // Generate tracks from albums
             this.collection.tracks = this.generateTracksFromAlbums();
