@@ -28,6 +28,13 @@ class AlbumCollectionApp {
     // Full dataset cache for filter performance optimization
     this.fullDatasetCache = null;
 
+    // Role processing cache for performance optimization
+    this.roleProcessingCache = {
+        cleanedRoles: new Map(),      // roleName -> cleanedName
+        roleCategories: new Map(),    // roleName -> category
+        artistsByRole: new Map()      // cleanRoleName -> Set of artistNames
+    };
+
     // Original collection (full dataset - immutable)
     this.collection = {
 
@@ -3206,6 +3213,12 @@ class AlbumCollectionApp {
     cleanRoleName(roleName, shouldCleanBrackets = null) {
         if (!roleName || typeof roleName !== 'string') return roleName;
 
+        // Check cache first for performance
+        const cacheKey = `${roleName}|${shouldCleanBrackets}`;
+        if (this.roleProcessingCache.cleanedRoles.has(cacheKey)) {
+            return this.roleProcessingCache.cleanedRoles.get(cacheKey);
+        }
+
         // Determine if we should clean brackets based on role category
         if (shouldCleanBrackets === null) {
             shouldCleanBrackets = this.shouldCleanRoleBrackets(roleName);
@@ -3241,7 +3254,12 @@ class AlbumCollectionApp {
         );
 
         // Filter out obvious company names
-        if (isCompanyName) {
+        const result = isCompanyName ? null : cleaned;
+        
+        // Cache the result
+        this.roleProcessingCache.cleanedRoles.set(cacheKey, result);
+        
+        if (result === null) {
             return null; // Signal that this should be filtered out
         }
 
@@ -3253,18 +3271,25 @@ class AlbumCollectionApp {
     shouldCleanRoleBrackets(roleName) {
         if (!roleName || typeof roleName !== 'string') return false;
 
-        // Use role categorizer to determine if this is a musical or technical role
-        if (window.roleCategorizer) {
-            // For categorization, temporarily remove brackets to get the core role
-            const coreRole = roleName.replace(/\s*\[.*?\]/g, '').trim();
-            const category = window.roleCategorizer.categorizeRole(coreRole);
-
-            // Only clean brackets for musical roles
+        // Check cache first for performance
+        if (this.roleProcessingCache.roleCategories.has(roleName)) {
+            const category = this.roleProcessingCache.roleCategories.get(roleName);
             return category === 'musical';
         }
 
-        // Fallback: default to cleaning brackets (preserve existing behavior)
-        return true;
+        // Use role categorizer to determine if this is a musical or technical role
+        let category = 'musical'; // default
+        if (window.roleCategorizer) {
+            // For categorization, temporarily remove brackets to get the core role
+            const coreRole = roleName.replace(/\s*\[.*?\]/g, '').trim();
+            category = window.roleCategorizer.categorizeRole(coreRole);
+        }
+
+        // Cache the category result
+        this.roleProcessingCache.roleCategories.set(roleName, category);
+
+        // Only clean brackets for musical roles
+        return category === 'musical';
     }
 
     // Extract specific instruments from bracketed role details
@@ -6904,6 +6929,11 @@ class AlbumCollectionApp {
             
             // Invalidate full dataset cache since collection changed
             this.fullDatasetCache = null;
+            
+            // Clear role processing cache when collection changes
+            this.roleProcessingCache.cleanedRoles.clear();
+            this.roleProcessingCache.roleCategories.clear();
+            this.roleProcessingCache.artistsByRole.clear();
 
             // Generate tracks from albums
             this.collection.tracks = this.generateTracksFromAlbums();
@@ -10162,24 +10192,41 @@ class AlbumCollectionApp {
                                     const cleanRoleName = this.cleanRoleName(roleName);
 
                                     if (cleanRoleName) {
+                                        // Use a combined key for faster artist lookups
+                                        const artistRoleKey = `${cleanRoleName}:${credit.name}`;
+                                        
                                         if (roleMap.has(cleanRoleName)) {
                                             const existingRole = roleMap.get(cleanRoleName);
                                             existingRole.frequency++;
 
-                                            // Add unique artist to this role
-                                            const existingArtist = existingRole.artists.find(a => a.name === credit.name);
+                                            // Use Map for O(1) artist lookups instead of O(n) find()
+                                            if (!existingRole.artistMap) {
+                                                existingRole.artistMap = new Map();
+                                                // Initialize map with existing artists for backward compatibility
+                                                existingRole.artists.forEach(artist => {
+                                                    existingRole.artistMap.set(artist.name, artist);
+                                                });
+                                            }
+
+                                            const existingArtist = existingRole.artistMap.get(credit.name);
                                             if (existingArtist) {
                                                 existingArtist.albumCount++;
-                                                if (!existingArtist.albums.some(a => a.albumId === album.id)) {
-                                                    existingArtist.albums.push({
+                                                // Use Set for O(1) duplicate album checking
+                                                if (!existingArtist.albumSet) {
+                                                    existingArtist.albumSet = new Set(existingArtist.albums.map(a => a.albumId));
+                                                }
+                                                if (!existingArtist.albumSet.has(album.id)) {
+                                                    const albumData = {
                                                         albumId: album.id,
                                                         albumTitle: album.title,
                                                         albumYear: album.year,
                                                         albumImage: album.images && album.images[0] ? album.images[0].uri : null
-                                                    });
+                                                    };
+                                                    existingArtist.albums.push(albumData);
+                                                    existingArtist.albumSet.add(album.id);
                                                 }
                                             } else {
-                                                existingRole.artists.push({
+                                                const newArtist = {
                                                     id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
                                                     name: credit.name,
                                                     image: null,
@@ -10189,28 +10236,37 @@ class AlbumCollectionApp {
                                                         albumTitle: album.title,
                                                         albumYear: album.year,
                                                         albumImage: album.images && album.images[0] ? album.images[0].uri : null
-                                                    }]
-                                                });
+                                                    }],
+                                                    albumSet: new Set([album.id])
+                                                };
+                                                existingRole.artists.push(newArtist);
+                                                existingRole.artistMap.set(credit.name, newArtist);
                                             }
                                         } else {
                                             // Create new role entry
-                                            roleMap.set(cleanRoleName, {
+                                            const newArtist = {
+                                                id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                name: credit.name,
+                                                image: null,
+                                                albumCount: 1,
+                                                albums: [{
+                                                    albumId: album.id,
+                                                    albumTitle: album.title,
+                                                    albumYear: album.year,
+                                                    albumImage: album.images && album.images[0] ? album.images[0].uri : null
+                                                }],
+                                                albumSet: new Set([album.id])
+                                            };
+                                            
+                                            const newRole = {
                                                 id: `role-${cleanRoleName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
                                                 name: cleanRoleName,
                                                 frequency: 1,
-                                                artists: [{
-                                                    id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
-                                                    name: credit.name,
-                                                    image: null,
-                                                    albumCount: 1,
-                                                    albums: [{
-                                                        albumId: album.id,
-                                                        albumTitle: album.title,
-                                                        albumYear: album.year,
-                                                        albumImage: album.images && album.images[0] ? album.images[0].uri : null
-                                                    }]
-                                                }]
-                                            });
+                                                artists: [newArtist],
+                                                artistMap: new Map([[credit.name, newArtist]])
+                                            };
+                                            
+                                            roleMap.set(cleanRoleName, newRole);
                                         }
                                     }
                                 }
@@ -10228,6 +10284,15 @@ class AlbumCollectionApp {
 
         // Convert map to array and sort by frequency
         const rolesArray = Array.from(roleMap.values()).sort((a, b) => b.frequency - a.frequency);
+        
+        // Clean up temporary helper properties for memory efficiency
+        rolesArray.forEach(role => {
+            if (role.artistMap) delete role.artistMap;
+            role.artists.forEach(artist => {
+                if (artist.albumSet) delete artist.albumSet;
+            });
+        });
+        
         console.log(`🎭 Generated ${rolesArray.length} roles from ${albumsToProcess.length} albums`);
 
         // Cache the generated data for performance optimization
