@@ -3482,7 +3482,7 @@
 
 .role-tab-btn {
     flex: 1;
-    padding: 0.75rem 1rem;
+    padding: 0.9rem 1rem;
     background: transparent;
     border: none;
     color: #9ca3af;
@@ -3511,9 +3511,9 @@
 .artist-role-content {
     padding: 1rem;
     background-color: #111827;
-    max-height: 150px;
+    max-height: 180px;
     overflow-y: auto;
-    min-height: 60px;
+    min-height: 80px;
 }
 
 .role-tab-content {
@@ -3625,7 +3625,7 @@
 @media (max-width: 768px) {
     .role-tab-btn {
         font-size: 0.8rem;
-        padding: 0.6rem 0.75rem;
+        padding: 0.75rem 0.75rem;
     }
     
     .artist-role-content {
@@ -5947,23 +5947,23 @@
 .modal-search-container {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    padding: 8px 0;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 4px 0;
 }
 
 .modal-search-input {
     flex: 1;
-    padding: 16px 20px;
+    padding: 10px 14px;
     background: var(--bg-input);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     color: var(--text-primary);
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 400;
     transition: all 0.2s ease;
-    min-height: 52px;
-    min-width: 600px;
+    min-height: 38px;
+    min-width: 400px;
     box-sizing: border-box;
 }
 
@@ -6794,23 +6794,31 @@
     opacity: 0.9;
 }
 
-/* Show More Button */
-.show-more-genres-btn {
-    background: transparent;
-    border: 1px dashed var(--border-color);
-    color: var(--text-secondary);
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8em;
-    transition: all 0.2s ease;
-    align-self: flex-start;
+/* Genre Search Container */
+.genre-search-container {
+    margin-bottom: 12px;
 }
 
-.show-more-genres-btn:hover {
-    background: var(--bg-hover);
-    border-color: var(--accent-color);
+.genre-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
     color: var(--text-primary);
+    font-size: 0.9em;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.genre-search-input:focus {
+    border-color: var(--accent-color);
+    background: var(--bg-primary);
+    box-shadow: 0 0 0 2px var(--accent-color-alpha);
+}
+
+.genre-search-input::placeholder {
+    color: var(--text-secondary);
 }
 
 /* Genre Filter Actions */
@@ -6854,9 +6862,9 @@
         font-size: 0.7em;
     }
     
-    .show-more-genres-btn {
-        padding: 4px 8px;
-        font-size: 0.7em;
+    .genre-search-input {
+        padding: 6px 10px;
+        font-size: 0.8em;
     }
     
     .genre-filter-actions {

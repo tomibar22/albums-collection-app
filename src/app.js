@@ -262,7 +262,6 @@ class AlbumCollectionApp {
      * Update genre filter UI elements
      */
     updateGenreFilterUI() {
-        const INITIAL_GENRE_LIMIT = 12; // Number of genres to show initially
         
         // Get genre data sorted by frequency
         const genresByFrequency = this.genreFilterManager.getGenresByFrequency();
@@ -282,14 +281,18 @@ class AlbumCollectionApp {
         
         // Update genre capsules
         const genreCapsules = document.getElementById('genre-capsules');
-        const showMoreBtn = document.getElementById('show-more-genres');
         
         if (genreCapsules) {
             genreCapsules.innerHTML = '';
             
-            // Determine how many genres to show
-            const isExpanded = showMoreBtn && showMoreBtn.textContent.includes('Show Less');
-            const genresToShow = isExpanded ? genresByFrequency : genresByFrequency.slice(0, INITIAL_GENRE_LIMIT);
+            // Get current search filter
+            const searchInput = document.getElementById('genre-search-input');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            
+            // Filter genres based on search term, show all matching genres
+            const genresToShow = searchTerm 
+                ? genresByFrequency.filter(({ genre }) => genre.toLowerCase().includes(searchTerm))
+                : genresByFrequency;
             
             // Create genre capsules
             genresToShow.forEach(({ genre, count }) => {
@@ -308,16 +311,6 @@ class AlbumCollectionApp {
                 
                 genreCapsules.appendChild(capsule);
             });
-            
-            // Show/hide "Show More" button
-            if (showMoreBtn) {
-                if (genresByFrequency.length > INITIAL_GENRE_LIMIT) {
-                    showMoreBtn.style.display = 'block';
-                    showMoreBtn.textContent = isExpanded ? 'Show Less...' : 'Show More...';
-                } else {
-                    showMoreBtn.style.display = 'none';
-                }
-            }
         }
         
         console.log(`🎨 Genre filter UI updated with ${genresByFrequency.length} genres`);
@@ -2178,13 +2171,13 @@ class AlbumCollectionApp {
         // Genre filter toggle elements
         const genreFilterToggle = document.getElementById('genre-filter-toggle');
         const genreFilterPanel = document.getElementById('genre-filter-panel');
-        const showMoreBtn = document.getElementById('show-more-genres');
+        const genreSearchInput = document.getElementById('genre-search-input');
         const clearGenreFilter = document.getElementById('clear-genre-filter');
         
         console.log('🎨 Genre filter elements found:', {
             genreFilterToggle: !!genreFilterToggle,
             genreFilterPanel: !!genreFilterPanel,
-            showMoreBtn: !!showMoreBtn,
+            genreSearchInput: !!genreSearchInput,
             clearGenreFilter: !!clearGenreFilter
         });
         
@@ -2208,6 +2201,11 @@ class AlbumCollectionApp {
                 genreFilterPanel.classList.add('active');
                 genreFilterToggle.classList.add('active');
                 console.log('🎨 Genre filter panel opened');
+                
+                // Focus search input when panel opens
+                if (genreSearchInput) {
+                    setTimeout(() => genreSearchInput.focus(), 100);
+                }
             }
         });
         
@@ -2219,23 +2217,17 @@ class AlbumCollectionApp {
             }
         });
         
-        // Show More/Less button
-        if (showMoreBtn) {
-            showMoreBtn.addEventListener('click', (e) => {
+        // Genre search input - real-time filtering
+        if (genreSearchInput) {
+            genreSearchInput.addEventListener('input', (e) => {
                 e.stopPropagation();
-                const isExpanded = showMoreBtn.textContent.includes('Show Less');
-                
-                console.log('🎨 Genre filter show more clicked, current state:', isExpanded);
-                
-                // Toggle the button text and update the UI
-                if (isExpanded) {
-                    showMoreBtn.textContent = 'Show More...';
-                } else {
-                    showMoreBtn.textContent = 'Show Less...';
-                }
-                
-                // Update the UI to reflect the new state
+                console.log('🎨 Genre search input changed:', e.target.value);
                 this.updateGenreFilterUI();
+            });
+            
+            // Prevent click event from bubbling up and closing the panel
+            genreSearchInput.addEventListener('click', (e) => {
+                e.stopPropagation();
             });
         }
         
@@ -2244,6 +2236,12 @@ class AlbumCollectionApp {
             clearGenreFilter.addEventListener('click', (e) => {
                 e.stopPropagation();
                 console.log('🎨 Genre filter clear clicked');
+                
+                // Clear search input as well
+                if (genreSearchInput) {
+                    genreSearchInput.value = '';
+                }
+                
                 this.genreFilterManager.clearFilter();
             });
         }
