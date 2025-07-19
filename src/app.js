@@ -5439,10 +5439,7 @@ class AlbumCollectionApp {
         
         console.log(`🤝 Toggled collaborator "${collaborator}". Selected: [${Array.from(this.selectedCollaborators).join(', ')}]`);
         
-        // Update album counts for all collaborators
-        this.updateCollaboratorAlbumCounts(unescapedArtistName);
-        
-        // Apply filtering
+        // Apply filtering (removed expensive count updates for performance)
         this.filterAlbumsByCollaborators(unescapedArtistName);
     }
 
@@ -5475,22 +5472,26 @@ class AlbumCollectionApp {
             // No collaborators selected, show all albums
             filteredAlbums = allAlbums;
         } else {
+            // Convert selected collaborators to array once for better performance
+            const selectedCollaboratorsArray = Array.from(this.selectedCollaborators);
+            
             // Filter albums that have ALL selected collaborators
             filteredAlbums = allAlbums.filter(album => {
                 // Check if artist is in this album's credits
-                const artistIsInAlbum = album.credits && album.credits.some(credit => 
-                    credit.name === artistName
+                if (!album.credits || !album.credits.some(credit => credit.name === artistName)) {
+                    return false;
+                }
+                
+                // Create a Set of album collaborators for faster lookup
+                const albumCollaboratorsSet = new Set(
+                    album.credits
+                        .map(credit => credit.name)
+                        .filter(name => name !== artistName)
                 );
                 
-                if (!artistIsInAlbum) return false;
-                
                 // Check if ALL selected collaborators are in this album
-                const albumCollaborators = album.credits
-                    .map(credit => credit.name)
-                    .filter(name => name !== artistName);
-                
-                return Array.from(this.selectedCollaborators).every(selectedCollaborator =>
-                    albumCollaborators.includes(selectedCollaborator)
+                return selectedCollaboratorsArray.every(selectedCollaborator =>
+                    albumCollaboratorsSet.has(selectedCollaborator)
                 );
             });
         }
@@ -5543,7 +5544,13 @@ class AlbumCollectionApp {
     }
 
     // Update album counts for collaborator capsules based on current selection
+    // DISABLED FOR PERFORMANCE - this was causing UI freezing with large datasets
     updateCollaboratorAlbumCounts(artistName) {
+        // Performance optimization: Skip dynamic count updates to prevent UI freezing
+        // The static counts from initial load are sufficient for user understanding
+        return;
+        
+        /* ORIGINAL EXPENSIVE CODE - kept for reference
         const collaboratorElements = document.querySelectorAll('.clickable-collaborator-filter');
         
         collaboratorElements.forEach(element => {
@@ -5558,6 +5565,7 @@ class AlbumCollectionApp {
             const nameOnly = currentText.replace(/\s*\(\d+\)$/, '');
             element.textContent = `${nameOnly} (${newCount})`;
         });
+        */
     }
 
     // Calculate how many albums would be visible if this collaborator was selected
