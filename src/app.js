@@ -424,6 +424,12 @@ class AlbumCollectionApp {
             this.roleAlbumCountCache.clear();
         }
         
+        // Clear artists page cache when filters change
+        this.musicalArtists = null;
+        this.technicalArtists = null;
+        this.originalMusicalArtists = null;
+        this.originalTechnicalArtists = null;
+        
         // Refresh current view without delay
         this.refreshCurrentView();
         
@@ -6935,6 +6941,12 @@ class AlbumCollectionApp {
             this.roleProcessingCache.cleanedRoles.clear();
             this.roleProcessingCache.roleCategories.clear();
             this.roleProcessingCache.artistsByRole.clear();
+            
+            // Clear artists page cache when collection changes
+            this.musicalArtists = null;
+            this.technicalArtists = null;
+            this.originalMusicalArtists = null;
+            this.originalTechnicalArtists = null;
 
             // Generate tracks from albums
             this.collection.tracks = this.generateTracksFromAlbums();
