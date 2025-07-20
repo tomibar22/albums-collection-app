@@ -6165,14 +6165,33 @@ class AlbumCollectionApp {
 
         console.log(`🔄 Updating capsules - Selected roles: ${filters.selectedRoles.size}, Selected genres: ${filters.selectedGenres.size}`);
 
-        // Update musical roles capsules
-        this.updateRoleCapsules(artistName, filteredAlbums, allAlbums, 'musical', filters.selectedRoles);
+        // Only update containers that exist in the DOM
+        const artistId = artistName
+            .replace(/['"]/g, '') // Remove quotes
+            .replace(/\s+/g, '-') // Replace spaces with dashes
+            .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
+
+        // Check which containers exist
+        const musicalContainer = document.querySelector(`#musical-roles-${artistId}`);
+        const technicalContainer = document.querySelector(`#technical-roles-${artistId}`);
+        const genresContainer = document.querySelector(`#genres-${artistId}`);
+
+        console.log(`📋 Container availability - Musical: ${!!musicalContainer}, Technical: ${!!technicalContainer}, Genres: ${!!genresContainer}`);
+
+        // Update musical roles capsules (if container exists)
+        if (musicalContainer) {
+            this.updateRoleCapsules(artistName, filteredAlbums, allAlbums, 'musical', filters.selectedRoles);
+        }
         
-        // Update technical roles capsules
-        this.updateRoleCapsules(artistName, filteredAlbums, allAlbums, 'technical', filters.selectedRoles);
+        // Update technical roles capsules (if container exists)
+        if (technicalContainer) {
+            this.updateRoleCapsules(artistName, filteredAlbums, allAlbums, 'technical', filters.selectedRoles);
+        }
         
-        // Update genres capsules
-        this.updateGenreCapsules(artistName, filteredAlbums, allAlbums, filters.selectedGenres);
+        // Update genres capsules (if container exists)
+        if (genresContainer) {
+            this.updateGenreCapsules(artistName, filteredAlbums, allAlbums, filters.selectedGenres);
+        }
     }
 
     // Update role capsules (musical or technical) based on filtered albums
