@@ -4231,8 +4231,13 @@ class AlbumCollectionApp {
     showArtistAlbums(artist) {
         console.log(`🎤 Showing albums for artist: ${artist.name}`);
 
-        const artistAlbums = artist.albums || [];
-        const modalContent = this.generateArtistAlbumsModalContent(artist, artistAlbums);
+        // IMPORTANT: Use complete unfiltered artist data for modal (ignore global filters)
+        const completeArtist = this.collection.artists.find(a => a.name === artist.name);
+        const artistAlbums = completeArtist ? (completeArtist.albums || []) : (artist.albums || []);
+        
+        console.log(`📀 Using ${completeArtist ? 'complete' : 'filtered'} artist data for modal: ${artistAlbums.length} albums`);
+        
+        const modalContent = this.generateArtistAlbumsModalContent(completeArtist || artist, artistAlbums);
 
         // Use reliable modal state tracking instead of DOM classes
         const isModalCurrentlyOpen = this.isModalCurrentlyOpen;
@@ -4243,21 +4248,19 @@ class AlbumCollectionApp {
             this.modalStack = [];
         }
 
-        // ALWAYS use total album count from main collection (not filtered count)
-        // Find the complete artist data to get total album count across ALL roles
-        let totalAlbumCount = artistAlbums.length; // fallback to current count
-
-        const completeArtist = this.collection.artists.find(a => a.name === artist.name);
+        // Use total album count from complete artist data
+        let totalAlbumCount = artistAlbums.length;
         if (completeArtist && completeArtist.albumCount) {
             totalAlbumCount = completeArtist.albumCount;
-            console.log(`🔢 Using total album count from collection: ${totalAlbumCount} (vs filtered: ${artistAlbums.length})`);
+            console.log(`🔢 Using album count from complete artist: ${totalAlbumCount} albums (unfiltered)`);
         } else {
-            console.log(`⚠️ Could not find complete artist data, using filtered count: ${totalAlbumCount}`);
+            console.log(`⚠️ Using album count from current data: ${totalAlbumCount} albums`);
         }
 
-        // Include TOTAL album count in title (not filtered count)
-        const artistImage = artist.image ? `<img src="${artist.image}" alt="${artist.name}" class="modal-title-image">` : '';
-        const titleWithImage = `${artistImage}${artist.name} - Albums (${totalAlbumCount})`;
+        // Include TOTAL album count in title (always unfiltered count)
+        const artistToUse = completeArtist || artist;
+        const artistImage = artistToUse.image ? `<img src="${artistToUse.image}" alt="${artistToUse.name}" class="modal-title-image">` : '';
+        const titleWithImage = `${artistImage}${artistToUse.name} - Albums (${totalAlbumCount})`;
 
         this.showModal(titleWithImage, modalContent, isModalCurrentlyOpen);
     }
