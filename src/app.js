@@ -6255,12 +6255,12 @@ class AlbumCollectionApp {
             genresBtn.textContent = `Genres (${genres.size})`;
             console.log(`🎨 Updated Genres button: "${genresBtn.textContent}"`);
         }
+        // Leave Collaborators tab count unchanged - it keeps its original count
         if (collaboratorsBtn) {
-            collaboratorsBtn.textContent = `Collaborators (${collaborators.size})`;
-            console.log(`🤝 Updated Collaborators button: "${collaboratorsBtn.textContent}"`);
+            console.log(`🤝 Collaborators button left unchanged: "${collaboratorsBtn.textContent}"`);
         }
 
-        console.log(`📊 Updated tab counts - Musical: ${musicalRoles.size}, Technical: ${technicalRoles.size}, Genres: ${genres.size}, Collaborators: ${collaborators.size} | Based on ${filteredAlbums.length} albums`);
+        console.log(`📊 Updated tab counts - Musical: ${musicalRoles.size}, Technical: ${technicalRoles.size}, Genres: ${genres.size}, Collaborators: unchanged | Based on ${filteredAlbums.length} albums`);
     }
 
     // Update artist modal capsules based on filtered albums (dynamic filtering)
