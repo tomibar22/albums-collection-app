@@ -1913,6 +1913,14 @@
     transform: translateY(-1px);
 }
 
+/* Keep active role filters filled when hovering */
+.clickable-role-filter.active-filter:hover {
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+}
+
 /* Genre filtering styles */
 .clickable-genre-filter {
     cursor: pointer;
@@ -1932,6 +1940,14 @@
     transform: translateY(-1px);
 }
 
+/* Keep active genre filters filled when hovering */
+.clickable-genre-filter.active-filter:hover {
+    background: linear-gradient(135deg, #8b5cf6, #a855f7);
+    color: white;
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+    transform: translateY(-1px);
+}
+
 /* Collaborator filtering styles */
 .clickable-collaborator-filter {
     cursor: pointer;
@@ -1945,6 +1961,14 @@
 }
 
 .clickable-collaborator-filter.active-filter {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Keep active collaborator filters filled when hovering */
+.clickable-collaborator-filter.active-filter:hover {
     background: linear-gradient(135deg, #10b981, #059669);
     color: white;
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
