@@ -11741,21 +11741,6 @@ class AlbumCollectionApp {
                 if (role && artistName) {
                     this.toggleArtistModalRole(artistName, role, event.target);
                 }
-                    
-                    // Clear collaborator selection and reset display
-                    this.selectedCollaborators = new Set();
-                    this.collaboratorData = null;
-                    document.querySelectorAll('.clickable-collaborator-filter').forEach(element => {
-                        element.style.display = '';
-                        const collaboratorName = element.getAttribute('data-collaborator');
-                        const originalCount = element.getAttribute('data-album-count');
-                        element.textContent = `${collaboratorName} (${originalCount})`;
-                    });
-                    // Clear collaborator search input
-                    document.querySelectorAll('.collaborator-search-input').forEach(input => {
-                        input.value = '';
-                    });
-                }
                 return;
             }
 
