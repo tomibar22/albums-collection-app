@@ -391,8 +391,8 @@ class AlbumCollectionApp {
                     allGenres.push(...album.styles);
                 }
                 
-                // Check if any of the album's genres match the selected genres
-                return selectedGenresArray.some(selectedGenre => 
+                // Check if the album contains ALL selected genres (AND filter)
+                return selectedGenresArray.every(selectedGenre => 
                     allGenres.includes(selectedGenre)
                 );
             });
