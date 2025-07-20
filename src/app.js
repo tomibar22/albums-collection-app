@@ -11766,7 +11766,12 @@ class AlbumCollectionApp {
                 if (genre && artistName) {
                     this.toggleArtistModalGenre(artistName, genre, event.target);
                 }
-                    
+                return;
+            }
+
+            // Handle clear collaborators button clicks in artist albums modal
+            if (event.target.classList.contains('clear-collaborators-btn')) {
+                if (event.target.id === 'clear-collaborators' || event.target.closest('#clear-collaborators')) {
                     // Clear collaborator selection and reset display
                     this.selectedCollaborators = new Set();
                     this.collaboratorData = null;
