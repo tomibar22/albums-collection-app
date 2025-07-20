@@ -5054,43 +5054,43 @@ class AlbumCollectionApp {
 
         // Generate multi-select HTML for musical roles
         const musicalRolesHtml = musicalRolesWithCounts.length > 0
-            ? `<div class="role-search-container">
+            ? `<div class="modal-search-container">
                 <input type="text" 
-                       class="role-search-input" 
+                       class="modal-search-input" 
                        placeholder="🔍 Search musical roles..." 
                        data-artist-id="${artistId}"
                        onkeyup="window.albumApp.filterArtistModalItems(this.value, '${artistId}', 'musical')">
                </div>
                <div class="roles-list">
-                ${musicalRolesWithCounts.map(roleData => `<span class="role-tag musical-role multi-select-capsule" data-role="${roleData.role}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${roleData.albumCount}" data-selected="false">${roleData.role} (${roleData.albumCount})</span>`).join('')}
+                ${musicalRolesWithCounts.map(roleData => `<span class="role-tag musical-role clickable-role-filter" data-role="${roleData.role}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${roleData.albumCount}">${roleData.role} (${roleData.albumCount})</span>`).join('')}
                </div>`
             : '<p class="no-content">No musical roles found</p>';
 
         // Generate multi-select HTML for technical roles  
         const technicalRolesHtml = technicalRolesWithCounts.length > 0
-            ? `<div class="role-search-container">
+            ? `<div class="modal-search-container">
                 <input type="text" 
-                       class="role-search-input" 
+                       class="modal-search-input" 
                        placeholder="🔍 Search technical roles..." 
                        data-artist-id="${artistId}"
                        onkeyup="window.albumApp.filterArtistModalItems(this.value, '${artistId}', 'technical')">
                </div>
                <div class="roles-list">
-                ${technicalRolesWithCounts.map(roleData => `<span class="role-tag technical-role multi-select-capsule" data-role="${roleData.role}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${roleData.albumCount}" data-selected="false">${roleData.role} (${roleData.albumCount})</span>`).join('')}
+                ${technicalRolesWithCounts.map(roleData => `<span class="role-tag technical-role clickable-role-filter" data-role="${roleData.role}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${roleData.albumCount}">${roleData.role} (${roleData.albumCount})</span>`).join('')}
                </div>`
             : '<p class="no-content">No technical roles found</p>';
 
         // Generate multi-select HTML for genres
         const genresHtml = genresWithCounts.length > 0
-            ? `<div class="genre-search-container">
+            ? `<div class="modal-search-container">
                 <input type="text" 
-                       class="genre-search-input" 
+                       class="modal-search-input" 
                        placeholder="🔍 Search genres..." 
                        data-artist-id="${artistId}"
                        onkeyup="window.albumApp.filterArtistModalItems(this.value, '${artistId}', 'genres')">
                </div>
                <div class="genres-list">
-                ${genresWithCounts.map(genreData => `<span class="role-tag genre-role multi-select-capsule" data-genre="${genreData.genre}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${genreData.albumCount}" data-selected="false">${genreData.genre} (${genreData.albumCount})</span>`).join('')}
+                ${genresWithCounts.map(genreData => `<span class="role-tag genre-role clickable-genre-filter" data-genre="${genreData.genre}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${genreData.albumCount}">${genreData.genre} (${genreData.albumCount})</span>`).join('')}
                </div>`
             : '<p class="no-content">No genres found</p>';
 
@@ -5346,13 +5346,31 @@ class AlbumCollectionApp {
         
         // Go through all albums and count roles for this artist
         this.collection.albums.forEach(album => {
-            if (album.credits) {
-                const artistCredits = album.credits.filter(credit => credit.name === artistName);
-                
-                artistCredits.forEach(credit => {
-                    if (credit.role) {
-                        const cleanRole = credit.role.trim();
-                        roleFrequency.set(cleanRole, (roleFrequency.get(cleanRole) || 0) + 1);
+            if (album.credits && Array.isArray(album.credits)) {
+                album.credits.forEach(credit => {
+                    if (credit.name === artistName) {
+                        const originalRole = credit.role;
+
+                        // Use smart splitting that respects bracket boundaries (same as getAllActualRolesFromCredits)
+                        const individualRoles = this.smartSplitRoles(originalRole);
+
+                        individualRoles.forEach(role => {
+                            if (role) {
+                                // Keep bracketed details for artist modals - don't clean them
+                                // Only filter out obvious company names
+                                const lowerRole = role.toLowerCase();
+                                const isCompanyName = ['company', 'corporation', 'corp', 'inc', 'ltd', 'llc',
+                                    'records', 'recording', 'studios', 'studio', 'sound',
+                                    'entertainment', 'music', 'productions'].some(indicator =>
+                                    lowerRole.includes(indicator) &&
+                                    (lowerRole.endsWith(indicator) || lowerRole.includes(indicator + ' ')));
+
+                                if (!isCompanyName) {
+                                    // Count frequency
+                                    roleFrequency.set(role, (roleFrequency.get(role) || 0) + 1);
+                                }
+                            }
+                        });
                     }
                 });
             }
@@ -5914,15 +5932,15 @@ class AlbumCollectionApp {
         switch(tabType) {
             case 'musical':
                 listSelector = `#musical-roles-${artistId} .roles-list`;
-                itemClass = '.multi-select-capsule';
+                itemClass = '.clickable-role-filter';
                 break;
             case 'technical':
                 listSelector = `#technical-roles-${artistId} .roles-list`;
-                itemClass = '.multi-select-capsule';
+                itemClass = '.clickable-role-filter';
                 break;
             case 'genres':
                 listSelector = `#genres-${artistId} .genres-list`;
-                itemClass = '.multi-select-capsule';
+                itemClass = '.clickable-genre-filter';
                 break;
             default:
                 return;
