@@ -808,6 +808,7 @@ function hasScrapedArtistMusicalRole(albumData, scrapedArtistName) {
         'vocals', 'lead vocals', 'backing vocals', 'harmony vocals', 'voice',
         'singer', 'vocal', 'lead vocal', 'background vocals', 'harmony',
         'soprano', 'alto', 'tenor', 'baritone', 'bass vocals', 'choir', 'chorus',
+        'featuring', 'featured', 'guest vocals', 'guest',
         
         // Performance roles
         'performer', 'musician', 'soloist', 'bandleader', 'conductor',
