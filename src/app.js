@@ -6107,6 +6107,9 @@ class AlbumCollectionApp {
         // Update the display
         this.updateArtistModalAlbumsDisplay(filteredAlbums, allAlbums.length);
         
+        // Update capsules based on filtered albums
+        this.updateArtistModalCapsules(artistName, filteredAlbums, allAlbums);
+        
         console.log(`🔍 Artist modal filtering: ${filteredAlbums.length}/${allAlbums.length} albums shown`);
         console.log(`Selected roles: [${Array.from(filters.selectedRoles).join(', ')}]`);
         console.log(`Selected genres: [${Array.from(filters.selectedGenres).join(', ')}]`);
@@ -6148,6 +6151,114 @@ class AlbumCollectionApp {
         } else if (filterStatus) {
             filterStatus.style.display = 'none';
         }
+    }
+
+    // Update artist modal capsules based on filtered albums (dynamic filtering)
+    updateArtistModalCapsules(artistName, filteredAlbums, allAlbums) {
+        const filters = this.artistModalFilters.get(artistName);
+        if (!filters) return;
+
+        // Update musical roles capsules
+        this.updateRoleCapsules(artistName, filteredAlbums, allAlbums, 'musical', filters.selectedRoles);
+        
+        // Update technical roles capsules
+        this.updateRoleCapsules(artistName, filteredAlbums, allAlbums, 'technical', filters.selectedRoles);
+        
+        // Update genres capsules
+        this.updateGenreCapsules(artistName, filteredAlbums, allAlbums, filters.selectedGenres);
+    }
+
+    // Update role capsules (musical or technical) based on filtered albums
+    updateRoleCapsules(artistName, filteredAlbums, allAlbums, roleType, selectedRoles) {
+        const artistId = artistName.toLowerCase().replace(/\s+/g, '-');
+        const containerSelector = `#${roleType}-roles-${artistId} .roles-list`;
+        const container = document.querySelector(containerSelector);
+        
+        if (!container) return;
+
+        // Calculate role frequencies from filtered albums
+        const roleFrequencies = new Map();
+        
+        filteredAlbums.forEach(album => {
+            if (!album.credits) return;
+            
+            album.credits.forEach(credit => {
+                if (credit.name === artistName && credit.role) {
+                    const roles = this.smartSplitRoles(credit.role);
+                    roles.forEach(role => {
+                        const category = window.roleCategorizer.categorizeRole(role);
+                        if (category === roleType) {
+                            roleFrequencies.set(role, (roleFrequencies.get(role) || 0) + 1);
+                        }
+                    });
+                }
+            });
+        });
+
+        // Update existing capsules
+        const capsules = container.querySelectorAll('.clickable-role-filter');
+        capsules.forEach(capsule => {
+            const role = capsule.getAttribute('data-role');
+            const newCount = roleFrequencies.get(role) || 0;
+            
+            if (newCount === 0 && !selectedRoles.has(role)) {
+                // Hide capsules with 0 count that aren't selected
+                capsule.style.display = 'none';
+            } else {
+                // Show capsule and update count
+                capsule.style.display = '';
+                capsule.textContent = `${role} (${newCount})`;
+                // Preserve album count data attribute
+                capsule.setAttribute('data-album-count', newCount);
+            }
+        });
+
+        console.log(`🎭 Updated ${roleType} roles: ${roleFrequencies.size} visible roles`);
+    }
+
+    // Update genre capsules based on filtered albums
+    updateGenreCapsules(artistName, filteredAlbums, allAlbums, selectedGenres) {
+        const artistId = artistName.toLowerCase().replace(/\s+/g, '-');
+        const containerSelector = `#genres-${artistId} .genres-list`;
+        const container = document.querySelector(containerSelector);
+        
+        if (!container) return;
+
+        // Calculate genre frequencies from filtered albums
+        const genreFrequencies = new Map();
+        
+        filteredAlbums.forEach(album => {
+            const allGenres = [];
+            if (album.genres) allGenres.push(...album.genres);
+            if (album.styles) allGenres.push(...album.styles);
+            
+            const uniqueGenres = [...new Set(allGenres)];
+            uniqueGenres.forEach(genre => {
+                if (genre && genre.trim()) {
+                    genreFrequencies.set(genre, (genreFrequencies.get(genre) || 0) + 1);
+                }
+            });
+        });
+
+        // Update existing capsules
+        const capsules = container.querySelectorAll('.clickable-genre-filter');
+        capsules.forEach(capsule => {
+            const genre = capsule.getAttribute('data-genre');
+            const newCount = genreFrequencies.get(genre) || 0;
+            
+            if (newCount === 0 && !selectedGenres.has(genre)) {
+                // Hide capsules with 0 count that aren't selected
+                capsule.style.display = 'none';
+            } else {
+                // Show capsule and update count
+                capsule.style.display = '';
+                capsule.textContent = `${genre} (${newCount})`;
+                // Preserve album count data attribute
+                capsule.setAttribute('data-album-count', newCount);
+            }
+        });
+
+        console.log(`🎨 Updated genres: ${genreFrequencies.size} visible genres`);
     }
 
     // Calculate how many albums would be visible if this collaborator was selected
@@ -6404,6 +6515,9 @@ class AlbumCollectionApp {
             input.value = '';
         });
 
+        // Reset all role and genre capsules to original state
+        this.resetArtistModalCapsules(artistName);
+
         if (albumsGrid) {
             // Get all albums data
             const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
@@ -6430,6 +6544,29 @@ class AlbumCollectionApp {
         }
 
         console.log(`✅ Role filter cleared, showing all albums with current sort`);
+    }
+
+    // Reset artist modal capsules to original state (show all with original counts)
+    resetArtistModalCapsules(artistName) {
+        const albumsGrid = document.getElementById('artist-albums-grid');
+        if (!albumsGrid) return;
+
+        // Get original albums data
+        const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+        if (!allAlbumsData) return;
+
+        let allAlbums;
+        try {
+            allAlbums = JSON.parse(allAlbumsData);
+        } catch (error) {
+            console.error('Error parsing albums data:', error);
+            return;
+        }
+
+        // Reset role and genre capsules to show all with original counts
+        this.updateArtistModalCapsules(artistName, allAlbums, allAlbums);
+        
+        console.log(`🔄 Reset capsules to original state for ${artistName}`);
     }
 
     // ============================================
