@@ -5648,20 +5648,14 @@ class AlbumCollectionApp {
         
         console.log(`🤝 Toggled collaborator "${collaborator}". Selected: [${Array.from(this.selectedCollaborators).join(', ')}]`);
         
-        // Clear other tab selections when collaborator is toggled
-        if (this.artistModalFilters && this.artistModalFilters.has(unescapedArtistName)) {
-            const filters = this.artistModalFilters.get(unescapedArtistName);
-            filters.selectedRoles.clear();
-            filters.selectedGenres.clear();
-            document.querySelectorAll('.clickable-role-filter').forEach(r => r.classList.remove('active-filter'));
-            document.querySelectorAll('.clickable-genre-filter').forEach(g => g.classList.remove('active-filter'));
-        }
+        // Don't clear other tab selections when collaborator is toggled - allow cross-filtering
+        // Role and genre selections will now work within the collaborator-filtered context
         
         // Update collaborator visibility and counts efficiently
         this.updateCollaboratorDisplay(unescapedArtistName);
         
-        // Apply filtering
-        this.filterAlbumsByCollaborators(unescapedArtistName);
+        // Apply filtering - use the unified filtering system
+        this.applyArtistModalFilters(unescapedArtistName);
     }
 
     // Filter albums by selected collaborators (multi-select)
@@ -6034,13 +6028,9 @@ class AlbumCollectionApp {
             console.log(`🎭 Selected role: ${role}`);
         }
         
-        // Clear other tab selections when role is toggled
+        // Clear genre selections when role is toggled (but keep collaborator selections)
         filters.selectedGenres.clear();
         document.querySelectorAll('.clickable-genre-filter').forEach(g => g.classList.remove('active-filter'));
-        
-        // Clear collaborator selections
-        this.selectedCollaborators = new Set();
-        document.querySelectorAll('.clickable-collaborator-filter').forEach(c => c.classList.remove('active-filter'));
         
         // Apply multi-select filtering
         this.applyArtistModalFilters(artistName);
@@ -6062,13 +6052,9 @@ class AlbumCollectionApp {
             console.log(`🎨 Selected genre: ${genre}`);
         }
         
-        // Clear other tab selections when genre is toggled
+        // Clear role selections when genre is toggled (but keep collaborator selections)
         filters.selectedRoles.clear();
         document.querySelectorAll('.clickable-role-filter').forEach(r => r.classList.remove('active-filter'));
-        
-        // Clear collaborator selections
-        this.selectedCollaborators = new Set();
-        document.querySelectorAll('.clickable-collaborator-filter').forEach(c => c.classList.remove('active-filter'));
         
         // Apply multi-select filtering
         this.applyArtistModalFilters(artistName);
@@ -6124,6 +6110,23 @@ class AlbumCollectionApp {
             });
         }
 
+        // Apply collaborator filtering (AND logic - album must have ALL selected collaborators)
+        if (this.selectedCollaborators && this.selectedCollaborators.size > 0) {
+            filteredAlbums = filteredAlbums.filter(album => {
+                if (!album.credits) return false;
+                
+                // Get all collaborator names from this album (excluding the main artist)
+                const albumCollaborators = album.credits
+                    .map(credit => credit.name)
+                    .filter(name => name !== artistName);
+                
+                // Check if ALL selected collaborators are in this album
+                return Array.from(this.selectedCollaborators).every(selectedCollaborator =>
+                    albumCollaborators.includes(selectedCollaborator)
+                );
+            });
+        }
+
         // Update the display
         this.updateArtistModalAlbumsDisplay(filteredAlbums, allAlbums.length);
         
@@ -6138,6 +6141,7 @@ class AlbumCollectionApp {
         console.log(`🔍 Artist modal filtering: ${filteredAlbums.length}/${allAlbums.length} albums shown`);
         console.log(`Selected roles: [${Array.from(filters.selectedRoles).join(', ')}]`);
         console.log(`Selected genres: [${Array.from(filters.selectedGenres).join(', ')}]`);
+        console.log(`Selected collaborators: [${Array.from(this.selectedCollaborators || []).join(', ')}]`);
     }
 
     // Update artist modal albums display with filtered results
