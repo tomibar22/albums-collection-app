@@ -6177,7 +6177,11 @@ class AlbumCollectionApp {
 
     // Update role capsules (musical or technical) based on filtered albums
     updateRoleCapsules(artistName, filteredAlbums, allAlbums, roleType, selectedRoles) {
-        const artistId = artistName.toLowerCase().replace(/\s+/g, '-');
+        // Use same ID generation logic as generateArtistRoleTabsHtml
+        const artistId = artistName
+            .replace(/['"]/g, '') // Remove quotes
+            .replace(/\s+/g, '-') // Replace spaces with dashes
+            .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
         const containerSelector = `#${roleType}-roles-${artistId} .roles-list`;
         console.log(`🎭 Looking for container: ${containerSelector}`);
         const container = document.querySelector(containerSelector);
@@ -6237,11 +6241,20 @@ class AlbumCollectionApp {
 
     // Update genre capsules based on filtered albums
     updateGenreCapsules(artistName, filteredAlbums, allAlbums, selectedGenres) {
-        const artistId = artistName.toLowerCase().replace(/\s+/g, '-');
+        // Use same ID generation logic as generateArtistRoleTabsHtml
+        const artistId = artistName
+            .replace(/['"]/g, '') // Remove quotes
+            .replace(/\s+/g, '-') // Replace spaces with dashes
+            .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
         const containerSelector = `#genres-${artistId} .genres-list`;
+        console.log(`🎨 Looking for container: ${containerSelector}`);
         const container = document.querySelector(containerSelector);
         
-        if (!container) return;
+        if (!container) {
+            console.log(`❌ Container not found: ${containerSelector}`);
+            return;
+        }
+        console.log(`✅ Found container for genres`);
 
         // Calculate genre frequencies from filtered albums
         const genreFrequencies = new Map();
@@ -6261,15 +6274,22 @@ class AlbumCollectionApp {
 
         // Update existing capsules
         const capsules = container.querySelectorAll('.clickable-genre-filter');
+        console.log(`🔄 Found ${capsules.length} genre capsules to update`);
+        
         capsules.forEach(capsule => {
             const genre = capsule.getAttribute('data-genre');
             const newCount = genreFrequencies.get(genre) || 0;
+            const isSelected = selectedGenres.has(genre);
             
-            if (newCount === 0 && !selectedGenres.has(genre)) {
+            console.log(`🎨 Genre: ${genre}, Count: ${newCount}, Selected: ${isSelected}`);
+            
+            if (newCount === 0 && !isSelected) {
                 // Hide capsules with 0 count that aren't selected
+                console.log(`🙈 Hiding genre: ${genre} (count: 0, not selected)`);
                 capsule.style.display = 'none';
             } else {
                 // Show capsule and update count
+                console.log(`👁️ Showing genre: ${genre} (count: ${newCount})`);
                 capsule.style.display = '';
                 capsule.textContent = `${genre} (${newCount})`;
                 // Preserve album count data attribute
