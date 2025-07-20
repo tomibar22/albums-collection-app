@@ -6172,11 +6172,22 @@ class AlbumCollectionApp {
             .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
 
         // Check which containers exist
-        const musicalContainer = document.querySelector(`#musical-roles-${artistId}`);
-        const technicalContainer = document.querySelector(`#technical-roles-${artistId}`);
-        const genresContainer = document.querySelector(`#genres-${artistId}`);
+        const musicalSelector = `#musical-roles-${artistId}`;
+        const technicalSelector = `#technical-roles-${artistId}`;
+        const genresSelector = `#genres-${artistId}`;
+        
+        console.log(`🔍 Looking for containers with artistId: "${artistId}"`);
+        console.log(`🔍 Selectors: Musical: "${musicalSelector}", Technical: "${technicalSelector}", Genres: "${genresSelector}"`);
+        
+        const musicalContainer = document.querySelector(musicalSelector);
+        const technicalContainer = document.querySelector(technicalSelector);
+        const genresContainer = document.querySelector(genresSelector);
 
         console.log(`📋 Container availability - Musical: ${!!musicalContainer}, Technical: ${!!technicalContainer}, Genres: ${!!genresContainer}`);
+        
+        // Let's also check what containers actually exist in the modal
+        const allContainers = document.querySelectorAll('[id*="roles"], [id*="genres"]');
+        console.log(`🔍 All role/genre containers in DOM:`, Array.from(allContainers).map(el => el.id));
 
         // Update musical roles capsules (if container exists)
         if (musicalContainer) {
