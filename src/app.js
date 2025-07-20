@@ -5034,30 +5034,64 @@ class AlbumCollectionApp {
             }
         });
 
-        // Get all genres from artist's albums
-        const artistGenres = this.getArtistGenres(artist.name);
+        // Get roles with album counts for multi-select filtering
+        const rolesWithCounts = this.getArtistRolesWithCounts(artist.name);
+        const musicalRolesWithCounts = rolesWithCounts.filter(r => r.category === 'musical');
+        const technicalRolesWithCounts = rolesWithCounts.filter(r => r.category === 'technical');
         
-        // Get all collaborators from artist's albums
+        // Get genres with album counts for multi-select filtering
+        const genresWithCounts = this.getArtistGenresWithCounts(artist.name);
+        
+        // Get all collaborators from artist's albums (already has counts)
         const artistCollaborators = this.getArtistCollaborators(artist.name);
 
-        console.log(`🎭 All actual roles for ${artist.name}:`, {
-            totalRoles: allActualRoles.length,
-            musical: actualMusicalRoles,
-            technical: actualTechnicalRoles,
-            genres: artistGenres,
+        console.log(`🎭 All data for ${artist.name}:`, {
+            musicalRoles: musicalRolesWithCounts,
+            technicalRoles: technicalRolesWithCounts,
+            genres: genresWithCounts,
             collaborators: artistCollaborators
         });
 
-        const musicalRolesHtml = actualMusicalRoles.length > 0
-            ? actualMusicalRoles.map(role => `<span class="role-tag musical-role clickable-role-filter" data-role="${role}" data-artist="${this.escapeHtmlAttribute(artist.name)}">${role}</span>`).join('')
+        // Generate multi-select HTML for musical roles
+        const musicalRolesHtml = musicalRolesWithCounts.length > 0
+            ? `<div class="role-search-container">
+                <input type="text" 
+                       class="role-search-input" 
+                       placeholder="🔍 Search musical roles..." 
+                       data-artist-id="${artistId}"
+                       onkeyup="window.albumApp.filterArtistModalItems(this.value, '${artistId}', 'musical')">
+               </div>
+               <div class="roles-list">
+                ${musicalRolesWithCounts.map(roleData => `<span class="role-tag musical-role multi-select-capsule" data-role="${roleData.role}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${roleData.albumCount}" data-selected="false">${roleData.role} (${roleData.albumCount})</span>`).join('')}
+               </div>`
             : '<p class="no-content">No musical roles found</p>';
 
-        const technicalRolesHtml = actualTechnicalRoles.length > 0
-            ? actualTechnicalRoles.map(role => `<span class="role-tag technical-role clickable-role-filter" data-role="${role}" data-artist="${this.escapeHtmlAttribute(artist.name)}">${role}</span>`).join('')
+        // Generate multi-select HTML for technical roles  
+        const technicalRolesHtml = technicalRolesWithCounts.length > 0
+            ? `<div class="role-search-container">
+                <input type="text" 
+                       class="role-search-input" 
+                       placeholder="🔍 Search technical roles..." 
+                       data-artist-id="${artistId}"
+                       onkeyup="window.albumApp.filterArtistModalItems(this.value, '${artistId}', 'technical')">
+               </div>
+               <div class="roles-list">
+                ${technicalRolesWithCounts.map(roleData => `<span class="role-tag technical-role multi-select-capsule" data-role="${roleData.role}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${roleData.albumCount}" data-selected="false">${roleData.role} (${roleData.albumCount})</span>`).join('')}
+               </div>`
             : '<p class="no-content">No technical roles found</p>';
 
-        const genresHtml = artistGenres.length > 0
-            ? artistGenres.map(genre => `<span class="role-tag genre-role clickable-genre-filter" data-genre="${genre}" data-artist="${this.escapeHtmlAttribute(artist.name)}">${genre}</span>`).join('')
+        // Generate multi-select HTML for genres
+        const genresHtml = genresWithCounts.length > 0
+            ? `<div class="genre-search-container">
+                <input type="text" 
+                       class="genre-search-input" 
+                       placeholder="🔍 Search genres..." 
+                       data-artist-id="${artistId}"
+                       onkeyup="window.albumApp.filterArtistModalItems(this.value, '${artistId}', 'genres')">
+               </div>
+               <div class="genres-list">
+                ${genresWithCounts.map(genreData => `<span class="role-tag genre-role multi-select-capsule" data-genre="${genreData.genre}" data-artist="${this.escapeHtmlAttribute(artist.name)}" data-album-count="${genreData.albumCount}" data-selected="false">${genreData.genre} (${genreData.albumCount})</span>`).join('')}
+               </div>`
             : '<p class="no-content">No genres found</p>';
 
         const collaboratorsHtml = artistCollaborators.length > 0
@@ -5075,27 +5109,27 @@ class AlbumCollectionApp {
 
         // Determine which tab should be active by default
         // Priority: musical roles > technical roles > genres > collaborators
-        const musicalTabActive = actualMusicalRoles.length > 0;
-        const technicalTabActive = !musicalTabActive && actualTechnicalRoles.length > 0;
-        const genresTabActive = !musicalTabActive && !technicalTabActive && artistGenres.length > 0;
+        const musicalTabActive = musicalRolesWithCounts.length > 0;
+        const technicalTabActive = !musicalTabActive && technicalRolesWithCounts.length > 0;
+        const genresTabActive = !musicalTabActive && !technicalTabActive && genresWithCounts.length > 0;
         const collaboratorsTabActive = !musicalTabActive && !technicalTabActive && !genresTabActive && artistCollaborators.length > 0;
 
-        console.log(`🎭 Tab selection for ${artist.name}: musical=${actualMusicalRoles.length}, technical=${actualTechnicalRoles.length}, genres=${artistGenres.length}, collaborators=${artistCollaborators.length}`);
+        console.log(`🎭 Tab selection for ${artist.name}: musical=${musicalRolesWithCounts.length}, technical=${technicalRolesWithCounts.length}, genres=${genresWithCounts.length}, collaborators=${artistCollaborators.length}`);
 
         return `
             <div class="artist-roles-section">
                 <div class="artist-role-tabs">
                     <button class="role-tab-btn ${musicalTabActive ? 'active' : ''}"
                             onclick="window.albumApp.switchArtistRoleTab('${artistId}', 'musical')">
-                        Musical Roles (${actualMusicalRoles.length})
+                        Musical Roles (${musicalRolesWithCounts.length})
                     </button>
                     <button class="role-tab-btn ${technicalTabActive ? 'active' : ''}"
                             onclick="window.albumApp.switchArtistRoleTab('${artistId}', 'technical')">
-                        Technical Roles (${actualTechnicalRoles.length})
+                        Technical Roles (${technicalRolesWithCounts.length})
                     </button>
                     <button class="role-tab-btn ${genresTabActive ? 'active' : ''}"
                             onclick="window.albumApp.switchArtistRoleTab('${artistId}', 'genres')">
-                        Genres (${artistGenres.length})
+                        Genres (${genresWithCounts.length})
                     </button>
                     <button class="role-tab-btn ${collaboratorsTabActive ? 'active' : ''}"
                             onclick="window.albumApp.switchArtistRoleTab('${artistId}', 'collaborators')">
@@ -5304,6 +5338,75 @@ class AlbumCollectionApp {
             .map(([name, albumCount]) => ({ name, albumCount })); // Convert to objects with name and albumCount
         
         return sortedCollaborators;
+    }
+
+    // Get artist roles with album counts for multi-select filtering
+    getArtistRolesWithCounts(artistName) {
+        const roleFrequency = new Map();
+        
+        // Go through all albums and count roles for this artist
+        this.collection.albums.forEach(album => {
+            if (album.credits) {
+                const artistCredits = album.credits.filter(credit => credit.name === artistName);
+                
+                artistCredits.forEach(credit => {
+                    if (credit.role) {
+                        const cleanRole = credit.role.trim();
+                        roleFrequency.set(cleanRole, (roleFrequency.get(cleanRole) || 0) + 1);
+                    }
+                });
+            }
+        });
+        
+        // Convert to array with album counts and categorize
+        const rolesWithCounts = Array.from(roleFrequency.entries())
+            .map(([role, albumCount]) => ({
+                role,
+                albumCount,
+                category: window.roleCategorizer.categorizeRole(role)
+            }))
+            .sort((a, b) => b.albumCount - a.albumCount); // Sort by frequency descending
+        
+        return rolesWithCounts;
+    }
+
+    // Get artist genres with album counts for multi-select filtering
+    getArtistGenresWithCounts(artistName) {
+        const genreFrequency = new Map();
+        
+        // Go through all albums where this artist appears and collect genres
+        this.collection.albums.forEach(album => {
+            // Check if target artist is in this album's credits
+            const artistIsInAlbum = album.credits && album.credits.some(credit => 
+                credit.name === artistName
+            );
+            
+            if (artistIsInAlbum) {
+                // Combine genres and styles
+                const allGenres = [];
+                if (album.genres && Array.isArray(album.genres)) {
+                    allGenres.push(...album.genres);
+                }
+                if (album.styles && Array.isArray(album.styles)) {
+                    allGenres.push(...album.styles);
+                }
+                
+                // Count frequency of each genre
+                allGenres.forEach(genre => {
+                    if (genre && genre.trim()) {
+                        const cleanGenre = genre.trim();
+                        genreFrequency.set(cleanGenre, (genreFrequency.get(cleanGenre) || 0) + 1);
+                    }
+                });
+            }
+        });
+        
+        // Convert to array with album counts and sort by frequency (most frequent first)
+        const sortedGenres = Array.from(genreFrequency.entries())
+            .sort((a, b) => b[1] - a[1]) // Sort by frequency descending
+            .map(([genre, albumCount]) => ({ genre, albumCount })); // Convert to objects with genre and albumCount
+        
+        return sortedGenres;
     }
 
     // Switch between musical, technical, and genres role tabs
@@ -5802,6 +5905,72 @@ class AlbumCollectionApp {
         }
 
         console.log(`🔍 Collaborator search "${searchTerm}": ${visibleCount} matches`);
+    }
+
+    // Filter roles/genres by search term in artist modal tabs
+    filterArtistModalItems(searchTerm, artistId, tabType) {
+        let listSelector, itemClass;
+        
+        switch(tabType) {
+            case 'musical':
+                listSelector = `#musical-roles-${artistId} .roles-list`;
+                itemClass = '.multi-select-capsule';
+                break;
+            case 'technical':
+                listSelector = `#technical-roles-${artistId} .roles-list`;
+                itemClass = '.multi-select-capsule';
+                break;
+            case 'genres':
+                listSelector = `#genres-${artistId} .genres-list`;
+                itemClass = '.multi-select-capsule';
+                break;
+            default:
+                return;
+        }
+        
+        const itemsList = document.querySelector(listSelector);
+        if (!itemsList) return;
+
+        const itemElements = itemsList.querySelectorAll(itemClass);
+        const lowerSearchTerm = searchTerm.toLowerCase().trim();
+
+        let visibleCount = 0;
+        itemElements.forEach(element => {
+            let itemName = '';
+            if (tabType === 'genres') {
+                itemName = element.getAttribute('data-genre');
+            } else {
+                itemName = element.getAttribute('data-role');
+            }
+            
+            const isMatch = lowerSearchTerm === '' || itemName.toLowerCase().includes(lowerSearchTerm);
+            
+            if (isMatch) {
+                element.style.display = '';
+                visibleCount++;
+            } else {
+                element.style.display = 'none';
+            }
+        });
+
+        // Handle "no results" message
+        if (lowerSearchTerm !== '' && visibleCount === 0) {
+            let noResultsMsg = itemsList.querySelector('.no-search-results');
+            if (!noResultsMsg) {
+                noResultsMsg = document.createElement('p');
+                noResultsMsg.className = 'no-search-results no-content';
+                noResultsMsg.textContent = `No ${tabType} items match your search`;
+                itemsList.appendChild(noResultsMsg);
+            }
+            noResultsMsg.style.display = 'block';
+        } else {
+            const noResultsMsg = itemsList.querySelector('.no-search-results');
+            if (noResultsMsg) {
+                noResultsMsg.style.display = 'none';
+            }
+        }
+
+        console.log(`🔍 ${tabType} search "${searchTerm}": ${visibleCount} matches`);
     }
 
     // Calculate how many albums would be visible if this collaborator was selected
