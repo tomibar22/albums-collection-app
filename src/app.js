@@ -6171,10 +6171,11 @@ class AlbumCollectionApp {
             .replace(/\s+/g, '-') // Replace spaces with dashes
             .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
 
-        // Check which containers exist
-        const musicalSelector = `#musical-roles-${artistId}`;
-        const technicalSelector = `#technical-roles-${artistId}`;
-        const genresSelector = `#genres-${artistId}`;
+        // Check which containers exist (they have 'artist-' prefix and are lowercase)
+        const lowercaseArtistId = artistId.toLowerCase();
+        const musicalSelector = `#musical-roles-artist-${lowercaseArtistId}`;
+        const technicalSelector = `#technical-roles-artist-${lowercaseArtistId}`;
+        const genresSelector = `#genres-artist-${lowercaseArtistId}`;
         
         console.log(`🔍 Looking for containers with artistId: "${artistId}"`);
         console.log(`🔍 Selectors: Musical: "${musicalSelector}", Technical: "${technicalSelector}", Genres: "${genresSelector}"`);
@@ -6212,7 +6213,8 @@ class AlbumCollectionApp {
             .replace(/['"]/g, '') // Remove quotes
             .replace(/\s+/g, '-') // Replace spaces with dashes
             .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
-        const containerSelector = `#${roleType}-roles-${artistId} .roles-list`;
+        const lowercaseArtistId = artistId.toLowerCase();
+        const containerSelector = `#${roleType}-roles-artist-${lowercaseArtistId} .roles-list`;
         console.log(`🎭 Looking for container: ${containerSelector}`);
         const container = document.querySelector(containerSelector);
         
@@ -6276,7 +6278,8 @@ class AlbumCollectionApp {
             .replace(/['"]/g, '') // Remove quotes
             .replace(/\s+/g, '-') // Replace spaces with dashes
             .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
-        const containerSelector = `#genres-${artistId} .genres-list`;
+        const lowercaseArtistId = artistId.toLowerCase();
+        const containerSelector = `#genres-artist-${lowercaseArtistId} .genres-list`;
         console.log(`🎨 Looking for container: ${containerSelector}`);
         const container = document.querySelector(containerSelector);
         
