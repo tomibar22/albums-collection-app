@@ -12419,14 +12419,10 @@ class AlbumCollectionApp {
             this.collection.artists = this.generateArtistsFromAlbums();
         }
 
-        // Find the artist in the active (filtered) collection first, then fallback to main collection
-        let artist = this.activeCollection.artists.find(a => a.name === artistName);
-        if (!artist) {
-            artist = this.collection.artists.find(a => a.name === artistName);
-            console.log(`🔍 Artist found in main collection (fallback):`, !!artist);
-        } else {
-            console.log(`🔍 Artist found in filtered collection:`, !!artist);
-        }
+        // IMPORTANT: For modal navigation, always use unfiltered collection to ignore global filters
+        // When exploring through modals, we don't want global genre/year filters to interfere
+        let artist = this.collection.artists.find(a => a.name === artistName);
+        console.log(`🔍 Artist found in unfiltered collection:`, !!artist);
 
         // Check if the found artist has albums - if not, we need to recreate from credits
         if (artist && (!artist.albums || artist.albums.length === 0)) {
