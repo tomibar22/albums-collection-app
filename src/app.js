@@ -5632,6 +5632,9 @@ class AlbumCollectionApp {
     toggleCollaboratorFilter(artistName, collaborator, element) {
         const unescapedArtistName = this.unescapeHtmlAttribute(artistName);
         
+        // Initialize artist modal filters if they don't exist
+        this.initializeArtistModalFilters(unescapedArtistName);
+        
         // Initialize selected collaborators set if it doesn't exist
         if (!this.selectedCollaborators) {
             this.selectedCollaborators = new Set();
@@ -6818,19 +6821,13 @@ class AlbumCollectionApp {
         this.selectedCollaborators = new Set();
         this.collaboratorData = null;
         
-        // Reset all collaborator displays
-        document.querySelectorAll('.clickable-collaborator-filter').forEach(element => {
-            element.style.display = '';
-            // Reset to original text from data attribute
-            const collaboratorName = element.getAttribute('data-collaborator');
-            const originalCount = element.getAttribute('data-album-count');
-            element.textContent = `${collaboratorName} (${originalCount})`;
-        });
-        
         // Clear collaborator search input
         document.querySelectorAll('.collaborator-search-input').forEach(input => {
             input.value = '';
         });
+        
+        // Properly update collaborator display with frequency-based ordering
+        this.updateCollaboratorDisplay(artistName);
 
         // Reset all role and genre capsules to original state
         this.resetArtistModalCapsules(artistName);
