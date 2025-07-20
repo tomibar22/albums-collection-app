@@ -5648,6 +5648,15 @@ class AlbumCollectionApp {
         
         console.log(`🤝 Toggled collaborator "${collaborator}". Selected: [${Array.from(this.selectedCollaborators).join(', ')}]`);
         
+        // Clear other tab selections when collaborator is toggled
+        if (this.artistModalFilters && this.artistModalFilters.has(unescapedArtistName)) {
+            const filters = this.artistModalFilters.get(unescapedArtistName);
+            filters.selectedRoles.clear();
+            filters.selectedGenres.clear();
+            document.querySelectorAll('.clickable-role-filter').forEach(r => r.classList.remove('active-filter'));
+            document.querySelectorAll('.clickable-genre-filter').forEach(g => g.classList.remove('active-filter'));
+        }
+        
         // Update collaborator visibility and counts efficiently
         this.updateCollaboratorDisplay(unescapedArtistName);
         
@@ -5751,6 +5760,9 @@ class AlbumCollectionApp {
 
         // Show filter status
         this.showCollaboratorFilterStatus(Array.from(this.selectedCollaborators), sortedFilteredAlbums.length);
+
+        // Update tab title counts based on filtered albums
+        this.updateArtistModalTabCounts(artistName, sortedFilteredAlbums);
 
         console.log(`✅ Filtered to ${sortedFilteredAlbums.length} albums with collaborators [${Array.from(this.selectedCollaborators).join(', ')}] (sorted by ${currentSort})`);
     }
@@ -6022,9 +6034,13 @@ class AlbumCollectionApp {
             console.log(`🎭 Selected role: ${role}`);
         }
         
-        // Clear genre selections when role is toggled
+        // Clear other tab selections when role is toggled
         filters.selectedGenres.clear();
         document.querySelectorAll('.clickable-genre-filter').forEach(g => g.classList.remove('active-filter'));
+        
+        // Clear collaborator selections
+        this.selectedCollaborators = new Set();
+        document.querySelectorAll('.clickable-collaborator-filter').forEach(c => c.classList.remove('active-filter'));
         
         // Apply multi-select filtering
         this.applyArtistModalFilters(artistName);
@@ -6046,9 +6062,13 @@ class AlbumCollectionApp {
             console.log(`🎨 Selected genre: ${genre}`);
         }
         
-        // Clear role selections when genre is toggled
+        // Clear other tab selections when genre is toggled
         filters.selectedRoles.clear();
         document.querySelectorAll('.clickable-role-filter').forEach(r => r.classList.remove('active-filter'));
+        
+        // Clear collaborator selections
+        this.selectedCollaborators = new Set();
+        document.querySelectorAll('.clickable-collaborator-filter').forEach(c => c.classList.remove('active-filter'));
         
         // Apply multi-select filtering
         this.applyArtistModalFilters(artistName);
@@ -6107,6 +6127,9 @@ class AlbumCollectionApp {
         // Update the display
         this.updateArtistModalAlbumsDisplay(filteredAlbums, allAlbums.length);
         
+        // Update tab title counts based on filtered albums
+        this.updateArtistModalTabCounts(artistName, filteredAlbums);
+        
         // Update capsules based on filtered albums
         console.log(`🔄 Calling updateArtistModalCapsules for ${artistName} with ${filteredAlbums.length}/${allAlbums.length} albums`);
         this.updateArtistModalCapsules(artistName, filteredAlbums, allAlbums);
@@ -6152,6 +6175,60 @@ class AlbumCollectionApp {
         } else if (filterStatus) {
             filterStatus.style.display = 'none';
         }
+    }
+
+    // Update tab title counts based on filtered albums
+    updateArtistModalTabCounts(artistName, filteredAlbums) {
+        // Generate artistId same way as HTML generation
+        const artistId = artistName
+            .replace(/['"]/g, '') // Remove quotes
+            .replace(/\s+/g, '-') // Replace spaces with dashes
+            .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
+
+        // Calculate role frequencies from filtered albums
+        const musicalRoles = new Set();
+        const technicalRoles = new Set();
+        const genres = new Set();
+        const collaborators = new Set();
+
+        filteredAlbums.forEach(album => {
+            // Count roles
+            if (album.credits) {
+                album.credits.forEach(credit => {
+                    if (credit.name === artistName && credit.role) {
+                        const roles = this.smartSplitRoles(credit.role);
+                        roles.forEach(role => {
+                            const category = window.roleCategorizer.categorizeRole(role);
+                            if (category === 'musical') {
+                                musicalRoles.add(role);
+                            } else {
+                                technicalRoles.add(role);
+                            }
+                        });
+                    } else if (credit.name !== artistName) {
+                        // Count collaborators
+                        collaborators.add(credit.name);
+                    }
+                });
+            }
+
+            // Count genres
+            if (album.genres) album.genres.forEach(genre => genres.add(genre));
+            if (album.styles) album.styles.forEach(style => genres.add(style));
+        });
+
+        // Update tab button texts
+        const musicalBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'musical')"]`);
+        const technicalBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'technical')"]`);
+        const genresBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'genres')"]`);
+        const collaboratorsBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'collaborators')"]`);
+
+        if (musicalBtn) musicalBtn.textContent = `Musical Roles (${musicalRoles.size})`;
+        if (technicalBtn) technicalBtn.textContent = `Technical Roles (${technicalRoles.size})`;
+        if (genresBtn) genresBtn.textContent = `Genres (${genres.size})`;
+        if (collaboratorsBtn) collaboratorsBtn.textContent = `Collaborators (${collaborators.size})`;
+
+        console.log(`📊 Updated tab counts - Musical: ${musicalRoles.size}, Technical: ${technicalRoles.size}, Genres: ${genres.size}, Collaborators: ${collaborators.size}`);
     }
 
     // Update artist modal capsules based on filtered albums (dynamic filtering)
@@ -6611,6 +6688,19 @@ class AlbumCollectionApp {
                     allAlbumCards.forEach(card => {
                         card.style.display = 'block';
                     });
+                }
+            }
+        }
+
+        // Reset tab counts to original values (all albums)
+        if (albumsGrid) {
+            const allAlbumsData = albumsGrid.getAttribute('data-all-albums');
+            if (allAlbumsData) {
+                try {
+                    const allAlbums = JSON.parse(allAlbumsData);
+                    this.updateArtistModalTabCounts(artistName, allAlbums);
+                } catch (e) {
+                    console.error('❌ Error parsing albums data for tab count reset:', e);
                 }
             }
         }
