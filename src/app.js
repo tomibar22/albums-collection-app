@@ -4231,6 +4231,10 @@ class AlbumCollectionApp {
     showArtistAlbums(artist) {
         console.log(`🎤 Showing albums for artist: ${artist.name}`);
 
+        // Clear previous artist's filter state to prevent contamination
+        this.selectedCollaborators = new Set();
+        this.collaboratorData = null;
+        
         // IMPORTANT: Generate complete unfiltered artist data for modal (ignore global filters)
         // Find all albums where this artist appears in the UNFILTERED collection
         const unfilteredAlbums = this.collection.albums.filter(album => {
