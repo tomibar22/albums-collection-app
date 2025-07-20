@@ -5771,12 +5771,22 @@ class AlbumCollectionApp {
         const collaboratorElements = document.querySelectorAll('.clickable-collaborator-filter');
         const selectedCollaboratorsArray = Array.from(this.selectedCollaborators || []);
         
+        // Get the container for reordering
+        const container = collaboratorElements[0]?.parentElement;
+        if (!container) return;
+        
+        // Create arrays to separate selected and unselected collaborators
+        const selectedCapsules = [];
+        const unselectedCapsules = [];
+        
         collaboratorElements.forEach(element => {
             const collaboratorName = element.getAttribute('data-collaborator');
+            const isSelected = this.selectedCollaborators && this.selectedCollaborators.has(collaboratorName);
             
-            // Skip if this is a selected collaborator (always keep visible)
-            if (this.selectedCollaborators && this.selectedCollaborators.has(collaboratorName)) {
+            if (isSelected) {
+                // Selected collaborator - always keep visible and update
                 element.style.display = '';
+                selectedCapsules.push(element);
                 return;
             }
             
@@ -5792,11 +5802,20 @@ class AlbumCollectionApp {
                 element.style.display = '';
                 const nameOnly = collaboratorName;
                 element.textContent = `${nameOnly} (${albumCount})`;
+                unselectedCapsules.push(element);
             } else {
                 // Hide incompatible collaborator
                 element.style.display = 'none';
+                unselectedCapsules.push(element);
             }
         });
+        
+        // Reorder: selected capsules first, then unselected
+        [...selectedCapsules, ...unselectedCapsules].forEach(capsule => {
+            container.appendChild(capsule);
+        });
+        
+        console.log(`🔄 Reordered collaborators: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected`);
     }
 
     // Build efficient data structure for collaborator filtering
@@ -6356,9 +6375,13 @@ class AlbumCollectionApp {
             });
         });
 
-        // Update existing capsules
+        // Update existing capsules and reorder selected ones to the front
         const capsules = container.querySelectorAll('.clickable-role-filter');
         console.log(`🔄 Found ${capsules.length} ${roleType} role capsules to update`);
+        
+        // Create arrays to separate selected and unselected capsules
+        const selectedCapsules = [];
+        const unselectedCapsules = [];
         
         capsules.forEach(capsule => {
             const role = capsule.getAttribute('data-role');
@@ -6371,6 +6394,7 @@ class AlbumCollectionApp {
                 // Hide capsules with 0 count that aren't selected
                 console.log(`🙈 Hiding role: ${role} (count: 0, not selected)`);
                 capsule.style.display = 'none';
+                unselectedCapsules.push(capsule);
             } else {
                 // Show capsule and update count
                 console.log(`👁️ Showing role: ${role} (count: ${newCount})`);
@@ -6378,8 +6402,22 @@ class AlbumCollectionApp {
                 capsule.textContent = `${role} (${newCount})`;
                 // Preserve album count data attribute
                 capsule.setAttribute('data-album-count', newCount);
+                
+                // Sort into selected/unselected arrays
+                if (isSelected) {
+                    selectedCapsules.push(capsule);
+                } else {
+                    unselectedCapsules.push(capsule);
+                }
             }
         });
+        
+        // Reorder: selected capsules first, then unselected
+        [...selectedCapsules, ...unselectedCapsules].forEach(capsule => {
+            container.appendChild(capsule);
+        });
+        
+        console.log(`🔄 Reordered ${roleType} roles: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected`);
 
         console.log(`🎭 Updated ${roleType} roles: ${roleFrequencies.size} visible roles`);
     }
@@ -6418,9 +6456,13 @@ class AlbumCollectionApp {
             });
         });
 
-        // Update existing capsules
+        // Update existing capsules and reorder selected ones to the front
         const capsules = container.querySelectorAll('.clickable-genre-filter');
         console.log(`🔄 Found ${capsules.length} genre capsules to update`);
+        
+        // Create arrays to separate selected and unselected capsules
+        const selectedCapsules = [];
+        const unselectedCapsules = [];
         
         capsules.forEach(capsule => {
             const genre = capsule.getAttribute('data-genre');
@@ -6433,6 +6475,7 @@ class AlbumCollectionApp {
                 // Hide capsules with 0 count that aren't selected
                 console.log(`🙈 Hiding genre: ${genre} (count: 0, not selected)`);
                 capsule.style.display = 'none';
+                unselectedCapsules.push(capsule);
             } else {
                 // Show capsule and update count
                 console.log(`👁️ Showing genre: ${genre} (count: ${newCount})`);
@@ -6440,8 +6483,22 @@ class AlbumCollectionApp {
                 capsule.textContent = `${genre} (${newCount})`;
                 // Preserve album count data attribute
                 capsule.setAttribute('data-album-count', newCount);
+                
+                // Sort into selected/unselected arrays
+                if (isSelected) {
+                    selectedCapsules.push(capsule);
+                } else {
+                    unselectedCapsules.push(capsule);
+                }
             }
         });
+        
+        // Reorder: selected capsules first, then unselected
+        [...selectedCapsules, ...unselectedCapsules].forEach(capsule => {
+            container.appendChild(capsule);
+        });
+        
+        console.log(`🔄 Reordered genres: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected`);
 
         console.log(`🎨 Updated genres: ${genreFrequencies.size} visible genres`);
     }
