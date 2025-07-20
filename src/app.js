@@ -6108,6 +6108,7 @@ class AlbumCollectionApp {
         this.updateArtistModalAlbumsDisplay(filteredAlbums, allAlbums.length);
         
         // Update capsules based on filtered albums
+        console.log(`🔄 Calling updateArtistModalCapsules for ${artistName} with ${filteredAlbums.length}/${allAlbums.length} albums`);
         this.updateArtistModalCapsules(artistName, filteredAlbums, allAlbums);
         
         console.log(`🔍 Artist modal filtering: ${filteredAlbums.length}/${allAlbums.length} albums shown`);
@@ -6155,8 +6156,14 @@ class AlbumCollectionApp {
 
     // Update artist modal capsules based on filtered albums (dynamic filtering)
     updateArtistModalCapsules(artistName, filteredAlbums, allAlbums) {
+        console.log(`🎯 updateArtistModalCapsules called for ${artistName}`);
         const filters = this.artistModalFilters.get(artistName);
-        if (!filters) return;
+        if (!filters) {
+            console.log(`❌ No filters found for ${artistName}`);
+            return;
+        }
+
+        console.log(`🔄 Updating capsules - Selected roles: ${filters.selectedRoles.size}, Selected genres: ${filters.selectedGenres.size}`);
 
         // Update musical roles capsules
         this.updateRoleCapsules(artistName, filteredAlbums, allAlbums, 'musical', filters.selectedRoles);
@@ -6172,9 +6179,14 @@ class AlbumCollectionApp {
     updateRoleCapsules(artistName, filteredAlbums, allAlbums, roleType, selectedRoles) {
         const artistId = artistName.toLowerCase().replace(/\s+/g, '-');
         const containerSelector = `#${roleType}-roles-${artistId} .roles-list`;
+        console.log(`🎭 Looking for container: ${containerSelector}`);
         const container = document.querySelector(containerSelector);
         
-        if (!container) return;
+        if (!container) {
+            console.log(`❌ Container not found: ${containerSelector}`);
+            return;
+        }
+        console.log(`✅ Found container for ${roleType} roles`);
 
         // Calculate role frequencies from filtered albums
         const roleFrequencies = new Map();
@@ -6197,15 +6209,22 @@ class AlbumCollectionApp {
 
         // Update existing capsules
         const capsules = container.querySelectorAll('.clickable-role-filter');
+        console.log(`🔄 Found ${capsules.length} ${roleType} role capsules to update`);
+        
         capsules.forEach(capsule => {
             const role = capsule.getAttribute('data-role');
             const newCount = roleFrequencies.get(role) || 0;
+            const isSelected = selectedRoles.has(role);
             
-            if (newCount === 0 && !selectedRoles.has(role)) {
+            console.log(`🎭 Role: ${role}, Count: ${newCount}, Selected: ${isSelected}`);
+            
+            if (newCount === 0 && !isSelected) {
                 // Hide capsules with 0 count that aren't selected
+                console.log(`🙈 Hiding role: ${role} (count: 0, not selected)`);
                 capsule.style.display = 'none';
             } else {
                 // Show capsule and update count
+                console.log(`👁️ Showing role: ${role} (count: ${newCount})`);
                 capsule.style.display = '';
                 capsule.textContent = `${role} (${newCount})`;
                 // Preserve album count data attribute
