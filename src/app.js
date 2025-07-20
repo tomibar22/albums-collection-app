@@ -6164,6 +6164,9 @@ class AlbumCollectionApp {
         console.log(`🔄 Calling updateArtistModalCapsules for ${artistName} with ${filteredAlbums.length}/${allAlbums.length} albums`);
         this.updateArtistModalCapsules(artistName, filteredAlbums, allAlbums);
         
+        // Show combined filter status
+        this.showArtistModalFilterStatus(artistName, filteredAlbums.length, allAlbums.length, filters);
+        
         console.log(`🔍 Artist modal filtering: ${filteredAlbums.length}/${allAlbums.length} albums shown`);
         console.log(`Selected roles: [${Array.from(filters.selectedRoles).join(', ')}]`);
         console.log(`Selected genres: [${Array.from(filters.selectedGenres).join(', ')}]`);
@@ -6725,6 +6728,57 @@ class AlbumCollectionApp {
                 ? `<strong>${collaborators[0]}</strong>`
                 : `<strong>${collaborators.join(', ')}</strong>`;
             filterStatus.innerHTML = `<span class="filter-text">Filtered by collaborators: ${collaboratorText} (${albumText})</span>
+                                      <button class="clear-filter-btn" onclick="window.albumApp.clearRoleFilter('${artistName}')">Clear Filter</button>`;
+            filterStatus.style.display = 'flex';
+        }
+    }
+
+    // Show combined filter status for artist modal (MULTI-SELECT)
+    showArtistModalFilterStatus(artistName, filteredCount, totalCount, filters) {
+        const filterStatus = document.getElementById('role-filter-status');
+        if (!filterStatus) return;
+
+        // Collect all active filters
+        const activeFilters = [];
+        
+        // Add role filters
+        if (filters.selectedRoles.size > 0) {
+            const roles = Array.from(filters.selectedRoles);
+            if (roles.length === 1) {
+                activeFilters.push(`role: <strong>${roles[0]}</strong>`);
+            } else {
+                activeFilters.push(`roles: <strong>${roles.join(', ')}</strong>`);
+            }
+        }
+        
+        // Add genre filters
+        if (filters.selectedGenres.size > 0) {
+            const genres = Array.from(filters.selectedGenres);
+            if (genres.length === 1) {
+                activeFilters.push(`genre: <strong>${genres[0]}</strong>`);
+            } else {
+                activeFilters.push(`genres: <strong>${genres.join(', ')}</strong>`);
+            }
+        }
+        
+        // Add collaborator filters
+        if (this.selectedCollaborators && this.selectedCollaborators.size > 0) {
+            const collaborators = Array.from(this.selectedCollaborators);
+            if (collaborators.length === 1) {
+                activeFilters.push(`collaborator: <strong>${collaborators[0]}</strong>`);
+            } else {
+                activeFilters.push(`collaborators: <strong>${collaborators.join(', ')}</strong>`);
+            }
+        }
+
+        // Show or hide filter status based on active filters
+        if (activeFilters.length === 0) {
+            filterStatus.style.display = 'none';
+        } else {
+            const albumText = filteredCount === 1 ? '1 album' : `${filteredCount} albums`;
+            const filterText = activeFilters.join('; ');
+            
+            filterStatus.innerHTML = `<span class="filter-text">Filtered by ${filterText} (${albumText})</span>
                                       <button class="clear-filter-btn" onclick="window.albumApp.clearRoleFilter('${artistName}')">Clear Filter</button>`;
             filterStatus.style.display = 'flex';
         }
