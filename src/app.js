@@ -6778,7 +6778,7 @@ class AlbumCollectionApp {
             const filterText = activeFilters.join('; ');
             
             filterStatus.innerHTML = `<span class="filter-text">Filtered by ${filterText} (${albumText})</span>
-                                      <button class="clear-filter-btn" data-artist-name="${this.escapeHtmlAttribute(artistName)}">Clear Filter</button>`;
+                                      <button class="clear-filter-btn" onclick="window.albumApp.clearRoleFilter('${artistName}')">Clear Filter</button>`;
             filterStatus.style.display = 'flex';
         }
     }
@@ -12214,16 +12214,6 @@ class AlbumCollectionApp {
                 return;
             }
 
-            // Handle clear filter button clicks in artist modal filter status
-            if (event.target.classList.contains('clear-filter-btn')) {
-                const artistName = event.target.getAttribute('data-artist-name');
-                if (artistName) {
-                    console.log(`🧹 Clear filter button clicked for: ${artistName}`);
-                    this.clearRoleFilter(this.unescapeHtmlAttribute(artistName));
-                }
-                return;
-            }
-            
             // Handle clear collaborators button clicks in artist albums modal
             if (event.target.classList.contains('clear-collaborators-btn')) {
                 if (event.target.id === 'clear-collaborators' || event.target.closest('#clear-collaborators')) {
