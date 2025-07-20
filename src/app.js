@@ -6223,12 +6223,24 @@ class AlbumCollectionApp {
         const genresBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'genres')"]`);
         const collaboratorsBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'collaborators')"]`);
 
-        if (musicalBtn) musicalBtn.textContent = `Musical Roles (${musicalRoles.size})`;
-        if (technicalBtn) technicalBtn.textContent = `Technical Roles (${technicalRoles.size})`;
-        if (genresBtn) genresBtn.textContent = `Genres (${genres.size})`;
-        if (collaboratorsBtn) collaboratorsBtn.textContent = `Collaborators (${collaborators.size})`;
+        if (musicalBtn) {
+            musicalBtn.textContent = `Musical Roles (${musicalRoles.size})`;
+            console.log(`🎭 Updated Musical Roles button: "${musicalBtn.textContent}"`);
+        }
+        if (technicalBtn) {
+            technicalBtn.textContent = `Technical Roles (${technicalRoles.size})`;
+            console.log(`🔧 Updated Technical Roles button: "${technicalBtn.textContent}"`);
+        }
+        if (genresBtn) {
+            genresBtn.textContent = `Genres (${genres.size})`;
+            console.log(`🎨 Updated Genres button: "${genresBtn.textContent}"`);
+        }
+        if (collaboratorsBtn) {
+            collaboratorsBtn.textContent = `Collaborators (${collaborators.size})`;
+            console.log(`🤝 Updated Collaborators button: "${collaboratorsBtn.textContent}"`);
+        }
 
-        console.log(`📊 Updated tab counts - Musical: ${musicalRoles.size}, Technical: ${technicalRoles.size}, Genres: ${genres.size}, Collaborators: ${collaborators.size}`);
+        console.log(`📊 Updated tab counts - Musical: ${musicalRoles.size}, Technical: ${technicalRoles.size}, Genres: ${genres.size}, Collaborators: ${collaborators.size} | Based on ${filteredAlbums.length} albums`);
     }
 
     // Update artist modal capsules based on filtered albums (dynamic filtering)
