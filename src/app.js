@@ -6057,9 +6057,7 @@ class AlbumCollectionApp {
             console.log(`🎭 Selected role: ${role}`);
         }
         
-        // Clear genre selections when role is toggled (but keep collaborator selections)
-        filters.selectedGenres.clear();
-        document.querySelectorAll('.clickable-genre-filter').forEach(g => g.classList.remove('active-filter'));
+        // Allow cross-filtering - don't clear other selections
         
         // Apply multi-select filtering
         this.applyArtistModalFilters(artistName);
@@ -6081,9 +6079,7 @@ class AlbumCollectionApp {
             console.log(`🎨 Selected genre: ${genre}`);
         }
         
-        // Clear role selections when genre is toggled (but keep collaborator selections)
-        filters.selectedRoles.clear();
-        document.querySelectorAll('.clickable-role-filter').forEach(r => r.classList.remove('active-filter'));
+        // Allow cross-filtering - don't clear other selections
         
         // Apply multi-select filtering
         this.applyArtistModalFilters(artistName);
