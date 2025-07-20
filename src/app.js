@@ -5810,12 +5810,19 @@ class AlbumCollectionApp {
             }
         });
         
-        // Reorder: selected capsules first, then unselected
+        // Sort unselected capsules by album count (frequency) descending
+        unselectedCapsules.sort((a, b) => {
+            const countA = parseInt(a.getAttribute('data-album-count')) || 0;
+            const countB = parseInt(b.getAttribute('data-album-count')) || 0;
+            return countB - countA;
+        });
+        
+        // Reorder: selected capsules first, then unselected (sorted by frequency)
         [...selectedCapsules, ...unselectedCapsules].forEach(capsule => {
             container.appendChild(capsule);
         });
         
-        console.log(`🔄 Reordered collaborators: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected`);
+        console.log(`🔄 Reordered collaborators: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected (sorted by frequency)`);
     }
 
     // Build efficient data structure for collaborator filtering
@@ -6412,12 +6419,19 @@ class AlbumCollectionApp {
             }
         });
         
-        // Reorder: selected capsules first, then unselected
+        // Sort unselected capsules by album count (frequency) descending
+        unselectedCapsules.sort((a, b) => {
+            const countA = parseInt(a.getAttribute('data-album-count')) || 0;
+            const countB = parseInt(b.getAttribute('data-album-count')) || 0;
+            return countB - countA;
+        });
+        
+        // Reorder: selected capsules first, then unselected (sorted by frequency)
         [...selectedCapsules, ...unselectedCapsules].forEach(capsule => {
             container.appendChild(capsule);
         });
         
-        console.log(`🔄 Reordered ${roleType} roles: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected`);
+        console.log(`🔄 Reordered ${roleType} roles: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected (sorted by frequency)`);
 
         console.log(`🎭 Updated ${roleType} roles: ${roleFrequencies.size} visible roles`);
     }
@@ -6493,12 +6507,19 @@ class AlbumCollectionApp {
             }
         });
         
-        // Reorder: selected capsules first, then unselected
+        // Sort unselected capsules by album count (frequency) descending
+        unselectedCapsules.sort((a, b) => {
+            const countA = parseInt(a.getAttribute('data-album-count')) || 0;
+            const countB = parseInt(b.getAttribute('data-album-count')) || 0;
+            return countB - countA;
+        });
+        
+        // Reorder: selected capsules first, then unselected (sorted by frequency)
         [...selectedCapsules, ...unselectedCapsules].forEach(capsule => {
             container.appendChild(capsule);
         });
         
-        console.log(`🔄 Reordered genres: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected`);
+        console.log(`🔄 Reordered genres: ${selectedCapsules.length} selected first, then ${unselectedCapsules.length} unselected (sorted by frequency)`);
 
         console.log(`🎨 Updated genres: ${genreFrequencies.size} visible genres`);
     }
