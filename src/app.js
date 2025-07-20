@@ -6128,6 +6128,7 @@ class AlbumCollectionApp {
         this.updateArtistModalAlbumsDisplay(filteredAlbums, allAlbums.length);
         
         // Update tab title counts based on filtered albums
+        console.log(`🔄 About to call updateArtistModalTabCounts for ${artistName} with ${filteredAlbums.length} albums`);
         this.updateArtistModalTabCounts(artistName, filteredAlbums);
         
         // Update capsules based on filtered albums
@@ -6179,11 +6180,15 @@ class AlbumCollectionApp {
 
     // Update tab title counts based on filtered albums
     updateArtistModalTabCounts(artistName, filteredAlbums) {
+        console.log(`📊 updateArtistModalTabCounts called for ${artistName} with ${filteredAlbums.length} albums`);
+        
         // Generate artistId same way as HTML generation
         const artistId = artistName
             .replace(/['"]/g, '') // Remove quotes
             .replace(/\s+/g, '-') // Replace spaces with dashes
             .replace(/[^a-zA-Z0-9\-_]/g, ''); // Remove other special characters
+            
+        console.log(`📊 Generated artistId: "${artistId}" from artistName: "${artistName}"`);
 
         // Calculate role frequencies from filtered albums
         const musicalRoles = new Set();
@@ -6218,10 +6223,23 @@ class AlbumCollectionApp {
         });
 
         // Update tab button texts
-        const musicalBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'musical')"]`);
-        const technicalBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'technical')"]`);
-        const genresBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'genres')"]`);
-        const collaboratorsBtn = document.querySelector(`button[onclick*="switchArtistRoleTab('${artistId}', 'collaborators')"]`);
+        const musicalSelector = `button[onclick*="switchArtistRoleTab('${artistId}', 'musical')"]`;
+        const technicalSelector = `button[onclick*="switchArtistRoleTab('${artistId}', 'technical')"]`;
+        const genresSelector = `button[onclick*="switchArtistRoleTab('${artistId}', 'genres')"]`;
+        const collaboratorsSelector = `button[onclick*="switchArtistRoleTab('${artistId}', 'collaborators')"]`;
+        
+        console.log(`📊 Looking for buttons with selectors:`);
+        console.log(`  Musical: "${musicalSelector}"`);
+        console.log(`  Technical: "${technicalSelector}"`);
+        console.log(`  Genres: "${genresSelector}"`);
+        console.log(`  Collaborators: "${collaboratorsSelector}"`);
+        
+        const musicalBtn = document.querySelector(musicalSelector);
+        const technicalBtn = document.querySelector(technicalSelector);
+        const genresBtn = document.querySelector(genresSelector);
+        const collaboratorsBtn = document.querySelector(collaboratorsSelector);
+        
+        console.log(`📊 Found buttons: Musical: ${!!musicalBtn}, Technical: ${!!technicalBtn}, Genres: ${!!genresBtn}, Collaborators: ${!!collaboratorsBtn}`);
 
         if (musicalBtn) {
             musicalBtn.textContent = `Musical Roles (${musicalRoles.size})`;
