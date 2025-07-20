@@ -6222,24 +6222,26 @@ class AlbumCollectionApp {
             if (album.styles) album.styles.forEach(style => genres.add(style));
         });
 
-        // Update tab button texts
-        const musicalSelector = `button[onclick*="switchArtistRoleTab('${artistId}', 'musical')"]`;
-        const technicalSelector = `button[onclick*="switchArtistRoleTab('${artistId}', 'technical')"]`;
-        const genresSelector = `button[onclick*="switchArtistRoleTab('${artistId}', 'genres')"]`;
-        const collaboratorsSelector = `button[onclick*="switchArtistRoleTab('${artistId}', 'collaborators')"]`;
+        // Update tab button texts - try different selector approaches
+        // First, let's find what buttons actually exist
+        const allTabButtons = document.querySelectorAll('.role-tab-btn');
+        console.log(`📊 Found ${allTabButtons.length} .role-tab-btn buttons`);
+        allTabButtons.forEach((btn, index) => {
+            console.log(`  Button ${index}: "${btn.textContent}" | onclick: "${btn.getAttribute('onclick')}" | classes: "${btn.className}"`);
+        });
         
-        console.log(`📊 Looking for buttons with selectors:`);
-        console.log(`  Musical: "${musicalSelector}"`);
-        console.log(`  Technical: "${technicalSelector}"`);
-        console.log(`  Genres: "${genresSelector}"`);
-        console.log(`  Collaborators: "${collaboratorsSelector}"`);
+        // Try finding buttons by text content pattern
+        let musicalBtn = null, technicalBtn = null, genresBtn = null, collaboratorsBtn = null;
         
-        const musicalBtn = document.querySelector(musicalSelector);
-        const technicalBtn = document.querySelector(technicalSelector);
-        const genresBtn = document.querySelector(genresSelector);
-        const collaboratorsBtn = document.querySelector(collaboratorsSelector);
+        allTabButtons.forEach(btn => {
+            const text = btn.textContent;
+            if (text.includes('Musical Roles')) musicalBtn = btn;
+            else if (text.includes('Technical Roles')) technicalBtn = btn;
+            else if (text.includes('Genres')) genresBtn = btn;
+            else if (text.includes('Collaborators')) collaboratorsBtn = btn;
+        });
         
-        console.log(`📊 Found buttons: Musical: ${!!musicalBtn}, Technical: ${!!technicalBtn}, Genres: ${!!genresBtn}, Collaborators: ${!!collaboratorsBtn}`);
+        console.log(`📊 Found buttons by text: Musical: ${!!musicalBtn}, Technical: ${!!technicalBtn}, Genres: ${!!genresBtn}, Collaborators: ${!!collaboratorsBtn}`);
 
         if (musicalBtn) {
             musicalBtn.textContent = `Musical Roles (${musicalRoles.size})`;
