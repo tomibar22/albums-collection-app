@@ -1025,10 +1025,9 @@ class AlbumCollectionApp {
 
             
 
-            // Skip tracks generation at startup for faster load - generate on-demand when tracks tab is accessed
-            this.updateLoadingProgress('📊 Preparing tracks...', 'Ready for on-demand generation...', 70);
-            
-            this.collection.tracks = []; // Will be generated when tracks tab is first accessed
+            this.updateLoadingProgress('📊 Generating tracks...', 'Processing album tracklists...', 70);
+
+            this.collection.tracks = await this.generateTracksFromAlbumsAsync();
 
             
 
@@ -9723,38 +9722,40 @@ class AlbumCollectionApp {
                                     const albumArtists = Array.isArray(album.artists) ? album.artists :
                                                        (album.artist ? [album.artist] : ['Unknown Artist']);
 
-                                    // Optimize: cache album data creation
-                                    const albumData = {
-                                        albumId: album.id,
-                                        albumTitle: album.title,
-                                        albumYear: album.year,
-                                        albumArtists: albumArtists,
-                                        albumImage: album.images?.[0]?.uri || null,
-                                        trackPosition: track.position,
-                                        trackDuration: track.duration
-                                    };
-
                                     if (trackMap.has(trackTitle)) {
                                         // Check if this album is already associated with this track
                                         const existingTrack = trackMap.get(trackTitle);
+                                        const albumAlreadyExists = existingTrack.albums.some(albumInfo => albumInfo.albumId === album.id);
                                         
-                                        // Use Set for faster duplicate checking
-                                        if (!existingTrack.albumIds.has(album.id)) {
+                                        if (!albumAlreadyExists) {
                                             // Only increment frequency if it's a new album for this track
                                             existingTrack.frequency++;
-                                            existingTrack.albumIds.add(album.id);
-                                            existingTrack.albums.push(albumData);
+                                            existingTrack.albums.push({
+                                                albumId: album.id,
+                                                albumTitle: album.title,
+                                                albumYear: album.year,
+                                                albumArtists: albumArtists,
+                                                albumImage: album.images && album.images[0] ? album.images[0].uri : null,
+                                                trackPosition: track.position,
+                                                trackDuration: track.duration
+                                            });
                                         }
                                         // If album already exists for this track, skip adding it again
                                     } else {
                                         // Create new track entry
-                                        const albumIds = new Set([album.id]);
                                         trackMap.set(trackTitle, {
                                             id: `track-${trackTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
                                             title: trackTitle,
                                             frequency: 1,
-                                            albumIds: albumIds,
-                                            albums: [albumData]
+                                            albums: [{
+                                                albumId: album.id,
+                                                albumTitle: album.title,
+                                                albumYear: album.year,
+                                                albumArtists: albumArtists,
+                                                albumImage: album.images && album.images[0] ? album.images[0].uri : null,
+                                                trackPosition: track.position,
+                                                trackDuration: track.duration
+                                            }]
                                         });
                                     }
                                 }
@@ -9779,21 +9780,18 @@ class AlbumCollectionApp {
                     }
                 }
 
-                // Yield to main thread after every batch to prevent blocking
-                await new Promise(resolve => setTimeout(resolve, 1));
+                // Yield to main thread to prevent blocking, especially important on mobile
+                if (i % batchSize === 0) {
+                    await new Promise(resolve => setTimeout(resolve, isMobile ? 10 : 5));
+                }
             }
         } catch (error) {
             console.error('❌ Error generating tracks from albums (async):', error);
             return []; // Return empty array on error
         }
 
-        // Convert map to array and clean up temporary data
-        const tracksArray = Array.from(trackMap.values()).map(track => {
-            // Clean up temporary albumIds Set
-            delete track.albumIds;
-            return track;
-        });
-        
+        // Convert map to array
+        const tracksArray = Array.from(trackMap.values());
         console.log(`🎵 Generated ${tracksArray.length} tracks from ${totalAlbums} albums (async method)`);
 
         // Log sample track for debugging
