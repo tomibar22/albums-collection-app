@@ -1031,9 +1031,10 @@ class AlbumCollectionApp {
 
             
 
-            this.updateLoadingProgress('🎭 Generating roles...', 'Processing album credits...', 80);
-
-            this.collection.roles = await this.generateRolesFromAlbumsAsync();
+            // Skip roles generation at startup for faster load - generate on-demand when roles tab is accessed
+            this.updateLoadingProgress('🎭 Preparing roles...', 'Ready for on-demand generation...', 80);
+            
+            this.collection.roles = []; // Will be generated when roles tab is first accessed
 
             
 
@@ -11174,8 +11175,8 @@ class AlbumCollectionApp {
         let processedAlbums = 0;
 
         try {
-            // Process albums in batches to avoid blocking the UI
-            const batchSize = 50; // Smaller batches for credit processing
+            // Process albums in smaller batches to avoid blocking the UI
+            const batchSize = 25; // Smaller batches for better responsiveness
             for (let i = 0; i < totalAlbums; i += batchSize) {
                 const albumBatch = albumsToProcess.slice(i, i + batchSize);
 
@@ -11237,6 +11238,16 @@ class AlbumCollectionApp {
                                         const cleanRoleName = this.cleanRoleName(roleName);
 
                                         if (cleanRoleName) {
+                                            // Optimize: cache album data creation
+                                            const albumData = {
+                                                albumId: album.id,
+                                                albumTitle: album.title,
+                                                albumYear: album.year,
+                                                albumImage: album.images?.[0]?.uri || null
+                                            };
+                                            
+                                            const artistId = credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`;
+                                            
                                             if (roleMap.has(cleanRoleName)) {
                                                 const existingRole = roleMap.get(cleanRoleName);
                                                 existingRole.frequency++;
@@ -11245,45 +11256,36 @@ class AlbumCollectionApp {
                                                 const existingArtist = existingRole.artists.find(a => a.name === credit.name);
                                                 if (existingArtist) {
                                                     existingArtist.albumCount++;
-                                                    if (!existingArtist.albums.some(a => a.albumId === album.id)) {
-                                                        existingArtist.albums.push({
-                                                            albumId: album.id,
-                                                            albumTitle: album.title,
-                                                            albumYear: album.year,
-                                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null
-                                                        });
+                                                    // Use Set for faster duplicate checking
+                                                    if (!existingArtist.albumIds.has(album.id)) {
+                                                        existingArtist.albumIds.add(album.id);
+                                                        existingArtist.albums.push(albumData);
                                                     }
                                                 } else {
+                                                    const albumIds = new Set([album.id]);
                                                     existingRole.artists.push({
-                                                        id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                        id: artistId,
                                                         name: credit.name,
                                                         image: null,
                                                         albumCount: 1,
-                                                        albums: [{
-                                                            albumId: album.id,
-                                                            albumTitle: album.title,
-                                                            albumYear: album.year,
-                                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null
-                                                        }]
+                                                        albumIds: albumIds,
+                                                        albums: [albumData]
                                                     });
                                                 }
                                             } else {
                                                 // Create new role entry
+                                                const albumIds = new Set([album.id]);
                                                 roleMap.set(cleanRoleName, {
                                                     id: `role-${cleanRoleName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
                                                     name: cleanRoleName,
                                                     frequency: 1,
                                                     artists: [{
-                                                        id: credit.id || `artist-${credit.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`,
+                                                        id: artistId,
                                                         name: credit.name,
                                                         image: null,
                                                         albumCount: 1,
-                                                        albums: [{
-                                                            albumId: album.id,
-                                                            albumTitle: album.title,
-                                                            albumYear: album.year,
-                                                            albumImage: album.images && album.images[0] ? album.images[0].uri : null
-                                                        }]
+                                                        albumIds: albumIds,
+                                                        albums: [albumData]
                                                     }]
                                                 });
                                             }
@@ -11300,18 +11302,23 @@ class AlbumCollectionApp {
 
                 processedAlbums += albumBatch.length;
 
-                // Yield control to prevent UI blocking - only every few batches
-                if (i % (batchSize * 2) === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1));
-                }
+                // Yield control more frequently to prevent UI blocking
+                await new Promise(resolve => setTimeout(resolve, 1));
             }
         } catch (error) {
             console.error('❌ Error generating roles from albums:', error);
             return []; // Return empty array on error
         }
 
-        // Convert map to array and sort by frequency
-        const rolesArray = Array.from(roleMap.values()).sort((a, b) => b.frequency - a.frequency);
+        // Convert map to array, clean up temporary data, and sort by frequency
+        const rolesArray = Array.from(roleMap.values()).map(role => {
+            // Clean up temporary albumIds Sets from artists
+            role.artists.forEach(artist => {
+                delete artist.albumIds;
+            });
+            return role;
+        }).sort((a, b) => b.frequency - a.frequency);
+        
         console.log(`🎭 Generated ${rolesArray.length} roles from ${processedAlbums} albums`);
 
         return rolesArray;
