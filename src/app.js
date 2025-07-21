@@ -1137,9 +1137,10 @@ class AlbumCollectionApp {
 
             
 
-            this.updateLoadingProgress('📊 Generating tracks...', 'Processing album tracklists...', 70);
-
-            this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+            // Skip tracks generation at startup for faster load - generate on-demand when tracks tab is accessed
+            this.updateLoadingProgress('📊 Preparing tracks...', 'Ready for on-demand generation...', 70);
+            
+            this.collection.tracks = []; // Will be generated when tracks tab is first accessed
 
             
 
