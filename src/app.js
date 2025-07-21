@@ -371,6 +371,51 @@ class AlbumCollectionApp {
     }
 
     /**
+     * Super fast genre clear that bypasses all normal processing
+     */
+    performSuperFastGenreClear() {
+        const startTime = performance.now();
+        console.log('🚀 SUPER FAST GENRE CLEAR - START');
+        
+        // Step 1: Clear the genre filter state instantly (without triggering listeners)
+        this.genreFilterManager.selectedGenres.clear();
+        this.updateGenreFilterUI(); // Update UI to show cleared state
+        console.log('🚀 Step 1: Genre filter state cleared');
+        
+        // Step 2: Restore full dataset instantly if we have cache
+        if (this.fullDatasetCache) {
+            console.log('🚀 Step 2: Restoring from cache instantly');
+            this.activeCollection.albums = this.collection.albums; // Full dataset
+            this.activeCollection.artists = this.fullDatasetCache.artists;
+            this.activeCollection.tracks = this.fullDatasetCache.tracks;
+            this.activeCollection.roles = this.fullDatasetCache.roles;
+            
+            // Restore categorized artists
+            if (this.fullDatasetCache.categorizedArtists) {
+                this.musicalArtists = this.fullDatasetCache.categorizedArtists.musicalArtists;
+                this.technicalArtists = this.fullDatasetCache.categorizedArtists.technicalArtists;
+            }
+            console.log('🚀 Step 2: Cache restoration complete');
+        } else {
+            console.log('🚀 Step 2: No cache available, using normal clear');
+            this.genreFilterManager.clearFilter();
+            return;
+        }
+        
+        // Step 3: Update only essential UI elements
+        console.log('🚀 Step 3: Minimal UI updates');
+        this.updateGlobalStats();
+        
+        // Step 4: Update artist counts if on artists view  
+        if (this.currentView === 'artists') {
+            this.updateArtistTabCounts();
+        }
+        
+        const totalTime = Math.round(performance.now() - startTime);
+        console.log(`🚀 SUPER FAST GENRE CLEAR COMPLETE: ${totalTime}ms`);
+    }
+
+    /**
      * Apply combined filtering from both year and genre filters
      */
     applyCombinedFilters() {
@@ -414,6 +459,8 @@ class AlbumCollectionApp {
         // Extra optimization: Check if we're clearing filters (going back to full dataset)
         const clearingFilters = isFullDataset && this.fullDatasetCache && 
             this.activeCollection.albums && this.activeCollection.albums.length < this.collection.albums.length;
+        
+        console.log(`🔍 Filter clearing detection: isFullDataset=${isFullDataset}, hasCache=${!!this.fullDatasetCache}, clearingFilters=${clearingFilters}`);
         
         if (isFullDataset && this.fullDatasetCache) {
             if (clearingFilters) {
@@ -463,13 +510,22 @@ class AlbumCollectionApp {
         // Optimize: Skip expensive operations when just restoring from cache
         if (clearingFilters) {
             // When clearing filters (instant cache restoration), minimize UI work
-            console.log('⚡ Fast cache restore path - skipping expensive UI operations');
-            this.updateGlobalStats(); // Keep this - needed for counts
+            const startTime = performance.now();
+            console.log('⚡ Fast cache restore path - starting timer');
+            
+            console.log('⚡ Step 1: Skipping global stats for maximum speed...');
+            // Skip updateGlobalStats() for instant clearing - counts will be updated by fast path
             
             // Mark for instant UI restore instead of full re-render
+            console.log('⚡ Step 2: Fast UI refresh...');
+            const uiStart = performance.now();
             this.fastCacheRestore = true;
             this.refreshCurrentView(); // Refresh view but use fast path
             this.fastCacheRestore = false;
+            console.log(`⚡ Step 2 complete in ${Math.round(performance.now() - uiStart)}ms`);
+            
+            const totalTime = Math.round(performance.now() - startTime);
+            console.log(`⚡ TOTAL FAST CACHE RESTORE TIME: ${totalTime}ms`);
         } else {
             // Normal filter operations - do all UI updates
             this.updateGlobalStats();
@@ -2401,7 +2457,8 @@ class AlbumCollectionApp {
                     genreSearchInput.value = '';
                 }
                 
-                this.genreFilterManager.clearFilter();
+                // Super fast clear - bypass normal processing
+                this.performSuperFastGenreClear();
             });
         }
         
@@ -3199,8 +3256,11 @@ class AlbumCollectionApp {
     renderArtistsGrid() {
         // Fast path for cache restoration - skip expensive operations
         if (this.fastCacheRestore) {
+            const fastStart = performance.now();
             console.log('⚡ Fast cache restore - updating counts only, skipping full render');
             this.updateArtistTabCounts();
+            const fastTime = Math.round(performance.now() - fastStart);
+            console.log(`⚡ Fast render path completed in ${fastTime}ms`);
             return;
         }
 
