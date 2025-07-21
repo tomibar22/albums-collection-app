@@ -184,13 +184,19 @@ class AlbumCollectionApp {
         this.activeCollection.tracks = this.generateTracksFromAlbums();
         this.activeCollection.roles = this.generateRolesFromAlbums();
         
-        // Cache the full dataset for performance optimization
+        // Cache the full dataset for performance optimization including categorized artists
+        const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(this.activeCollection.artists);
+        
         this.fullDatasetCache = {
             artists: [...this.activeCollection.artists],
             tracks: [...this.activeCollection.tracks],
-            roles: [...this.activeCollection.roles]
+            roles: [...this.activeCollection.roles],
+            categorizedArtists: {
+                musicalArtists: [...musicalArtists],
+                technicalArtists: [...technicalArtists]
+            }
         };
-        console.log('💾 Full dataset cached for filter performance optimization');
+        console.log('💾 Full dataset cached for filter performance optimization (including categorized artists)');
         
         // Update UI elements with actual data range
         this.updateYearFilterUI();
@@ -433,25 +439,45 @@ class AlbumCollectionApp {
         
         if (switchedToFullDataset || artistsDataChanged) {
             console.log(`🎭 Artists data changed (${previousArtistsLength} → ${newArtistsLength}), clearing artists cache`);
-            this.musicalArtists = null;
-            this.technicalArtists = null;
-            this.originalMusicalArtists = null;
-            this.originalTechnicalArtists = null;
+            
+            // When restoring full dataset from cache, restore categorized artists too
+            if (clearingFilters && this.fullDatasetCache && this.fullDatasetCache.categorizedArtists) {
+                console.log('⚡ Restoring categorized artists from cache');
+                this.musicalArtists = this.fullDatasetCache.categorizedArtists.musicalArtists;
+                this.technicalArtists = this.fullDatasetCache.categorizedArtists.technicalArtists;
+                this.originalMusicalArtists = [...this.musicalArtists];
+                this.originalTechnicalArtists = [...this.technicalArtists];
+            } else {
+                // Clear cache for normal operations
+                this.musicalArtists = null;
+                this.technicalArtists = null;
+                this.originalMusicalArtists = null;
+                this.originalTechnicalArtists = null;
+            }
         }
         
-        // Update UI counters and summary immediately
-        this.updateGlobalStats();
+        // Update hash tracking since we just updated artists data
+        this.lastArtistsAlbumsHash = this.generateAlbumsHash();
+        this.artistsNeedRegeneration = false; // We just set fresh artist data
         
-        // Update filter UIs
-        this.updateGenreFilterUI();
-        
-        // Clear role album count cache when filters change
-        if (this.roleAlbumCountCache) {
-            this.roleAlbumCountCache.clear();
+        // Optimize: Skip expensive operations when just restoring from cache
+        if (clearingFilters) {
+            // When clearing filters (instant cache restoration), minimize UI work
+            console.log('⚡ Skipping expensive UI updates for instant cache restore');
+            this.updateGlobalStats(); // Keep this - needed for counts
+            this.refreshCurrentView(); // Refresh view but artists grid should use cached data
+        } else {
+            // Normal filter operations - do all UI updates
+            this.updateGlobalStats();
+            this.updateGenreFilterUI();
+            
+            // Clear role album count cache when filters change
+            if (this.roleAlbumCountCache) {
+                this.roleAlbumCountCache.clear();
+            }
+            
+            this.refreshCurrentView();
         }
-        
-        // Refresh current view without delay
-        this.refreshCurrentView();
         
         console.log(`🎯🎨 Combined filters applied: ${finalFilteredAlbums.length} albums (${this.yearFilterManager.isFilterActive() ? 'Year' : 'No Year'} + ${selectedGenres.size} genres)`);
     }
@@ -558,8 +584,15 @@ class AlbumCollectionApp {
         // Use the full collection artists as base (should be cached)
         const fullArtists = this.fullDatasetCache ? this.fullDatasetCache.artists : this.collection.artists;
         
-        if (!fullArtists || !Array.isArray(fullArtists)) {
+        if (!fullArtists || !Array.isArray(fullArtists) || fullArtists.length === 0) {
             console.warn('⚠️ No full artists data available, falling back to regeneration');
+            return this.generateArtistsFromAlbums();
+        }
+
+        // Ensure we have artists with album data
+        const hasAlbumData = fullArtists.some(artist => artist.albums && Array.isArray(artist.albums));
+        if (!hasAlbumData) {
+            console.warn('⚠️ Artists missing album data, falling back to regeneration');
             return this.generateArtistsFromAlbums();
         }
 
@@ -567,6 +600,7 @@ class AlbumCollectionApp {
         const filteredAlbumIds = new Set(filteredAlbums.map(album => album.id));
         
         console.log(`🎭 Filtering ${fullArtists.length} artists based on ${filteredAlbums.length} albums...`);
+        const startTime = performance.now();
         
         // Filter artists and update their album lists
         const filteredArtists = fullArtists.map(artist => {
@@ -587,7 +621,9 @@ class AlbumCollectionApp {
             };
         }).filter(artist => artist !== null); // Remove artists with no matching albums
         
-        console.log(`🎭 Filtered to ${filteredArtists.length} artists (vs ${fullArtists.length} total)`);
+        const endTime = performance.now();
+        const duration = Math.round(endTime - startTime);
+        console.log(`🎭 Filtered to ${filteredArtists.length} artists (vs ${fullArtists.length} total) in ${duration}ms`);
         return filteredArtists;
     }
 
