@@ -5755,22 +5755,18 @@ class AlbumCollectionApp {
         
         // Initialize artist modal filters if they don't exist
         this.initializeArtistModalFilters(unescapedArtistName);
+        const filters = this.artistModalFilters.get(unescapedArtistName);
         
-        // Initialize selected collaborators set if it doesn't exist
-        if (!this.selectedCollaborators) {
-            this.selectedCollaborators = new Set();
-        }
-        
-        // Toggle selection
-        if (this.selectedCollaborators.has(collaborator)) {
-            this.selectedCollaborators.delete(collaborator);
+        // Toggle selection using the artist-scoped collaborators
+        if (filters.selectedCollaborators.has(collaborator)) {
+            filters.selectedCollaborators.delete(collaborator);
             element.classList.remove('active-filter');
         } else {
-            this.selectedCollaborators.add(collaborator);
+            filters.selectedCollaborators.add(collaborator);
             element.classList.add('active-filter');
         }
         
-        console.log(`🤝 Toggled collaborator "${collaborator}". Selected: [${Array.from(this.selectedCollaborators).join(', ')}]`);
+        console.log(`🤝 Toggled collaborator "${collaborator}" for ${unescapedArtistName}. Selected: [${Array.from(filters.selectedCollaborators).join(', ')}]`);
         
         // Don't clear other tab selections when collaborator is toggled - allow cross-filtering
         // Role and genre selections will now work within the collaborator-filtered context
@@ -5807,12 +5803,16 @@ class AlbumCollectionApp {
 
         let filteredAlbums;
         
-        if (!this.selectedCollaborators || this.selectedCollaborators.size === 0) {
+        // Get the artist-scoped collaborators
+        const filters = this.artistModalFilters.get(artistName);
+        const selectedCollaborators = filters ? filters.selectedCollaborators : new Set();
+        
+        if (!selectedCollaborators || selectedCollaborators.size === 0) {
             // No collaborators selected, show all albums
             filteredAlbums = allAlbums;
         } else {
             // Convert selected collaborators to array once for better performance
-            const selectedCollaboratorsArray = Array.from(this.selectedCollaborators);
+            const selectedCollaboratorsArray = Array.from(selectedCollaborators);
             
             // Filter albums that have ALL selected collaborators
             filteredAlbums = allAlbums.filter(album => {
@@ -5871,18 +5871,18 @@ class AlbumCollectionApp {
         }
 
         // Re-render grid with filtered and sorted albums
-        const filterDesc = this.selectedCollaborators.size === 0 
+        const filterDesc = selectedCollaborators.size === 0 
             ? 'no collaborators selected'
-            : `collaborators: ${Array.from(this.selectedCollaborators).join(', ')}`;
+            : `collaborators: ${Array.from(selectedCollaborators).join(', ')}`;
         this.renderArtistAlbumsGrid(artistName, sortedFilteredAlbums, filterDesc);
 
         // Show filter status
-        this.showCollaboratorFilterStatus(Array.from(this.selectedCollaborators), sortedFilteredAlbums.length);
+        this.showCollaboratorFilterStatus(Array.from(selectedCollaborators), sortedFilteredAlbums.length);
 
         // Update tab title counts based on filtered albums
         this.updateArtistModalTabCounts(artistName, sortedFilteredAlbums);
 
-        console.log(`✅ Filtered to ${sortedFilteredAlbums.length} albums with collaborators [${Array.from(this.selectedCollaborators).join(', ')}] (sorted by ${currentSort})`);
+        console.log(`✅ Filtered to ${sortedFilteredAlbums.length} albums with collaborators [${Array.from(selectedCollaborators).join(', ')}] (sorted by ${currentSort})`);
     }
 
     // Update collaborator display: show/hide and update counts based on current selection
@@ -5893,7 +5893,11 @@ class AlbumCollectionApp {
         }
         
         const collaboratorElements = document.querySelectorAll('.clickable-collaborator-filter');
-        const selectedCollaboratorsArray = Array.from(this.selectedCollaborators || []);
+        
+        // Get the artist-scoped collaborators
+        const filters = this.artistModalFilters.get(artistName);
+        const selectedCollaborators = filters ? filters.selectedCollaborators : new Set();
+        const selectedCollaboratorsArray = Array.from(selectedCollaborators);
         
         // Get the container for reordering
         const container = collaboratorElements[0]?.parentElement;
@@ -5905,7 +5909,7 @@ class AlbumCollectionApp {
         
         collaboratorElements.forEach(element => {
             const collaboratorName = element.getAttribute('data-collaborator');
-            const isSelected = this.selectedCollaborators && this.selectedCollaborators.has(collaboratorName);
+            const isSelected = selectedCollaborators && selectedCollaborators.has(collaboratorName);
             
             if (isSelected) {
                 // Selected collaborator - always keep visible and update
@@ -6157,6 +6161,7 @@ class AlbumCollectionApp {
             this.artistModalFilters.set(artistName, {
                 selectedRoles: new Set(),
                 selectedGenres: new Set(),
+                selectedCollaborators: new Set(),
                 originalAlbums: null
             });
         }
@@ -6257,7 +6262,7 @@ class AlbumCollectionApp {
         }
 
         // Apply collaborator filtering (AND logic - album must have ALL selected collaborators)
-        if (this.selectedCollaborators && this.selectedCollaborators.size > 0) {
+        if (filters.selectedCollaborators && filters.selectedCollaborators.size > 0) {
             filteredAlbums = filteredAlbums.filter(album => {
                 if (!album.credits) return false;
                 
@@ -6267,7 +6272,7 @@ class AlbumCollectionApp {
                     .filter(name => name !== artistName);
                 
                 // Check if ALL selected collaborators are in this album
-                return Array.from(this.selectedCollaborators).every(selectedCollaborator =>
+                return Array.from(filters.selectedCollaborators).every(selectedCollaborator =>
                     albumCollaborators.includes(selectedCollaborator)
                 );
             });
@@ -6290,7 +6295,7 @@ class AlbumCollectionApp {
         console.log(`🔍 Artist modal filtering: ${filteredAlbums.length}/${allAlbums.length} albums shown`);
         console.log(`Selected roles: [${Array.from(filters.selectedRoles).join(', ')}]`);
         console.log(`Selected genres: [${Array.from(filters.selectedGenres).join(', ')}]`);
-        console.log(`Selected collaborators: [${Array.from(this.selectedCollaborators || []).join(', ')}]`);
+        console.log(`Selected collaborators: [${Array.from(filters.selectedCollaborators).join(', ')}]`);
     }
 
     // Update artist modal albums display with filtered results
@@ -6662,8 +6667,10 @@ class AlbumCollectionApp {
             return 0;
         }
 
-        // Create a temporary selection that includes this collaborator
-        const tempSelection = new Set(this.selectedCollaborators || []);
+        // Get the artist-scoped collaborators and create a temporary selection that includes this collaborator
+        const filters = this.artistModalFilters.get(artistName);
+        const selectedCollaborators = filters ? filters.selectedCollaborators : new Set();
+        const tempSelection = new Set(selectedCollaborators);
         tempSelection.add(collaboratorName);
 
         // Count albums that would match this selection
@@ -6882,8 +6889,8 @@ class AlbumCollectionApp {
         }
         
         // Add collaborator filters
-        if (this.selectedCollaborators && this.selectedCollaborators.size > 0) {
-            const collaborators = Array.from(this.selectedCollaborators);
+        if (filters.selectedCollaborators && filters.selectedCollaborators.size > 0) {
+            const collaborators = Array.from(filters.selectedCollaborators);
             if (collaborators.length === 1) {
                 activeFilters.push(`collaborator: <strong>${collaborators[0]}</strong>`);
             } else {
@@ -6913,6 +6920,7 @@ class AlbumCollectionApp {
             const filters = this.artistModalFilters.get(artistName);
             filters.selectedRoles.clear();
             filters.selectedGenres.clear();
+            filters.selectedCollaborators.clear();
         }
 
         const albumsGrid = document.getElementById('artist-albums-grid');
@@ -6934,8 +6942,7 @@ class AlbumCollectionApp {
             collaborator.classList.remove('active-filter');
         });
         
-        // Clear selected collaborators and reset data structure
-        this.selectedCollaborators = new Set();
+        // Clear data structure - selectedCollaborators are now cleared above in the filters
         this.collaboratorData = null;
         
         // Clear collaborator search input
@@ -12344,8 +12351,18 @@ class AlbumCollectionApp {
             // Handle clear collaborators button clicks in artist albums modal
             if (event.target.classList.contains('clear-collaborators-btn')) {
                 if (event.target.id === 'clear-collaborators' || event.target.closest('#clear-collaborators')) {
-                    // Clear collaborator selection and reset display
-                    this.selectedCollaborators = new Set();
+                    // Get artist name from modal context
+                    const albumsGrid = document.getElementById('artist-albums-grid');
+                    const artistName = albumsGrid ? albumsGrid.getAttribute('data-artist') : null;
+                    
+                    if (artistName) {
+                        // Clear artist-specific collaborator selection
+                        this.initializeArtistModalFilters(artistName);
+                        const filters = this.artistModalFilters.get(artistName);
+                        if (filters) {
+                            filters.selectedCollaborators.clear();
+                        }
+                    }
                     this.collaboratorData = null;
                     document.querySelectorAll('.clickable-collaborator-filter').forEach(element => {
                         element.style.display = '';
