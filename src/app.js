@@ -463,9 +463,13 @@ class AlbumCollectionApp {
         // Optimize: Skip expensive operations when just restoring from cache
         if (clearingFilters) {
             // When clearing filters (instant cache restoration), minimize UI work
-            console.log('⚡ Skipping expensive UI updates for instant cache restore');
+            console.log('⚡ Fast cache restore path - skipping expensive UI operations');
             this.updateGlobalStats(); // Keep this - needed for counts
-            this.refreshCurrentView(); // Refresh view but artists grid should use cached data
+            
+            // Mark for instant UI restore instead of full re-render
+            this.fastCacheRestore = true;
+            this.refreshCurrentView(); // Refresh view but use fast path
+            this.fastCacheRestore = false;
         } else {
             // Normal filter operations - do all UI updates
             this.updateGlobalStats();
@@ -625,6 +629,30 @@ class AlbumCollectionApp {
         const duration = Math.round(endTime - startTime);
         console.log(`🎭 Filtered to ${filteredArtists.length} artists (vs ${fullArtists.length} total) in ${duration}ms`);
         return filteredArtists;
+    }
+
+    /**
+     * Fast update of artist tab counts without full rendering (for cache restore)
+     */
+    updateArtistTabCounts() {
+        if (!this.musicalArtists || !this.technicalArtists) {
+            console.log('⚠️ Categorized artists not available, skipping count update');
+            return;
+        }
+
+        // Find and update the tab button texts
+        const tabs = document.querySelectorAll('.artist-tab-btn');
+        tabs.forEach(tab => {
+            if (tab.dataset.tab === 'musical' || tab.textContent.includes('Musical')) {
+                tab.textContent = `Musical Artists (${this.musicalArtists.length})`;
+                console.log(`⚡ Updated Musical Artists count: ${this.musicalArtists.length}`);
+            } else if (tab.dataset.tab === 'technical' || tab.textContent.includes('Technical')) {
+                tab.textContent = `Technical Artists (${this.technicalArtists.length})`;
+                console.log(`⚡ Updated Technical Artists count: ${this.technicalArtists.length}`);
+            }
+        });
+        
+        console.log(`⚡ Fast count update complete: ${this.musicalArtists.length} musical, ${this.technicalArtists.length} technical`);
     }
 
     /**
@@ -3169,6 +3197,13 @@ class AlbumCollectionApp {
 
     // Artist Card Rendering and Management with Tabs
     renderArtistsGrid() {
+        // Fast path for cache restoration - skip expensive operations
+        if (this.fastCacheRestore) {
+            console.log('⚡ Fast cache restore - updating counts only, skipping full render');
+            this.updateArtistTabCounts();
+            return;
+        }
+
         // Check if artists need to be regenerated based on current album set
         const currentAlbumsHash = this.generateAlbumsHash();
         const needsRegeneration = !this.activeCollection.artists || 
