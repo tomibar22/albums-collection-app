@@ -405,15 +405,23 @@ class AlbumCollectionApp {
         const isFullDataset = finalFilteredAlbums.length === this.collection.albums.length;
         const previousArtistsLength = this.activeCollection.artists ? this.activeCollection.artists.length : 0;
         
+        // Extra optimization: Check if we're clearing filters (going back to full dataset)
+        const clearingFilters = isFullDataset && this.fullDatasetCache && 
+            this.activeCollection.albums && this.activeCollection.albums.length < this.collection.albums.length;
+        
         if (isFullDataset && this.fullDatasetCache) {
-            console.log('⚡ Using cached full dataset (no regeneration needed)');
+            if (clearingFilters) {
+                console.log('⚡ Filter cleared - restoring cached full dataset (instant)');
+            } else {
+                console.log('⚡ Using cached full dataset (no regeneration needed)');
+            }
             this.activeCollection.artists = this.fullDatasetCache.artists;
             this.activeCollection.tracks = this.fullDatasetCache.tracks;
             this.activeCollection.roles = this.fullDatasetCache.roles;
         } else {
-            // Regenerate derived data for filtered dataset
-            console.log('🔄 Regenerating derived data for filtered dataset...');
-            this.activeCollection.artists = this.generateArtistsFromAlbums();
+            // Optimize: Filter existing artists instead of regenerating from scratch
+            console.log('🔄 Filtering derived data for filtered dataset...');
+            this.activeCollection.artists = this.filterArtistsByAlbums(finalFilteredAlbums);
             this.activeCollection.tracks = this.generateTracksFromAlbums();
             this.activeCollection.roles = this.generateRolesFromAlbums();
         }
@@ -541,6 +549,46 @@ class AlbumCollectionApp {
         this.dataGenerationCache.artists = { data: null, hash: null };
         this.dataGenerationCache.tracks = { data: null, hash: null };
         this.dataGenerationCache.roles = { data: null, hash: null };
+    }
+
+    /**
+     * Efficiently filter existing artists based on filtered albums (much faster than regeneration)
+     */
+    filterArtistsByAlbums(filteredAlbums) {
+        // Use the full collection artists as base (should be cached)
+        const fullArtists = this.fullDatasetCache ? this.fullDatasetCache.artists : this.collection.artists;
+        
+        if (!fullArtists || !Array.isArray(fullArtists)) {
+            console.warn('⚠️ No full artists data available, falling back to regeneration');
+            return this.generateArtistsFromAlbums();
+        }
+
+        // Create a Set of filtered album IDs for fast lookup
+        const filteredAlbumIds = new Set(filteredAlbums.map(album => album.id));
+        
+        console.log(`🎭 Filtering ${fullArtists.length} artists based on ${filteredAlbums.length} albums...`);
+        
+        // Filter artists and update their album lists
+        const filteredArtists = fullArtists.map(artist => {
+            // Filter the artist's albums to only include those in the filtered set
+            const filteredArtistAlbums = artist.albums ? 
+                artist.albums.filter(album => filteredAlbumIds.has(album.id)) : [];
+            
+            // Only include artists that have albums in the filtered set
+            if (filteredArtistAlbums.length === 0) {
+                return null;
+            }
+            
+            // Create a new artist object with filtered albums
+            return {
+                ...artist,
+                albums: filteredArtistAlbums,
+                albumCount: filteredArtistAlbums.length
+            };
+        }).filter(artist => artist !== null); // Remove artists with no matching albums
+        
+        console.log(`🎭 Filtered to ${filteredArtists.length} artists (vs ${fullArtists.length} total)`);
+        return filteredArtists;
     }
 
     /**
