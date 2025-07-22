@@ -21,6 +21,64 @@
         align-items: stretch;
     }
     
+    /* === MOBILE FILTER LAYOUT === */
+    /* Make year and genre filters appear side by side using float */
+    .year-filter-toggle-container {
+        float: left;
+        width: calc(50% - 0.25rem);
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .genre-filter-toggle-container {
+        float: left;
+        width: calc(50% - 0.25rem);
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Clear floats after filter containers */
+    .header-content::after {
+        content: '';
+        display: table;
+        clear: both;
+    }
+    
+    /* Style filter toggle buttons for mobile side-by-side layout */
+    .year-filter-toggle,
+    .genre-filter-toggle {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.75rem;
+        border-radius: 16px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+    
+    .year-filter-toggle .filter-status,
+    .genre-filter-toggle .filter-status {
+        font-size: 0.7rem;
+        flex: 1;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+    
+    .year-filter-toggle .filter-icon,
+    .genre-filter-toggle .filter-icon {
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+    
+    .year-filter-toggle .toggle-arrow,
+    .genre-filter-toggle .toggle-arrow {
+        font-size: 0.7rem;
+        flex-shrink: 0;
+    }
+    
     .app-title {
         font-size: 1.25rem;
         text-align: center;
@@ -81,13 +139,44 @@
     
     .view-controls {
         justify-content: center;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 0.5rem;
+        align-items: stretch;
+    }
+    
+    /* === MOBILE SEARCH & SELECT LAYOUT === */
+    /* Make search and select side by side on mobile */
+    .search-controls {
+        flex: 2; /* Search takes more space */
+        min-width: 0; /* Allow shrinking */
     }
     
     .sort-controls {
-        gap: 0.25rem;
+        flex: 1; /* Select takes less space */
+        min-width: fit-content;
+        align-items: stretch;
     }
+    
+    .search-controls .search-input {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        border-radius: 12px;
+    }
+    
+    .sort-controls select {
+        padding: 0.6rem 0.5rem;
+        font-size: 0.75rem;
+        border-radius: 12px;
+        width: 100%;
+        min-width: 80px;
+    }
+    
+    .sort-controls label {
+        display: none; /* Hide label on mobile to save space */
+    }
+    
+    /* Removed - replaced above */
     
     .sort-btn, .shuffle-btn {
         padding: 0.4rem 0.8rem;
