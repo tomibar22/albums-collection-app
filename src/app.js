@@ -9018,58 +9018,130 @@ class AlbumCollectionApp {
                 break;
 
             case 'tracks':
-                // 🚀 OPTIMIZATION 3: Smart tracks caching to prevent unnecessary regeneration
-                const albumsHash = this.collection.albums?.length || 0;
-                const needsTracksRegeneration = !this.collection.tracks || 
-                                              this.collection.tracks.length === 0 || 
-                                              this.lastTracksAlbumsHash !== albumsHash;
+                try {
+                    // 🚀 OPTIMIZATION 3: Smart tracks caching to prevent unnecessary regeneration
+                    const albumsHash = this.collection.albums?.length || 0;
+                    const needsTracksRegeneration = !this.collection.tracks || 
+                                                  this.collection.tracks.length === 0 || 
+                                                  this.lastTracksAlbumsHash !== albumsHash;
 
-                if (needsTracksRegeneration) {
-                    console.log(`🎵 Regenerating tracks (albums changed: ${this.lastTracksAlbumsHash || 0} → ${albumsHash})`);
-                    if (isMobile) {
-                        this.collection.tracks = await this.generateTracksFromAlbumsAsync();
+                    if (needsTracksRegeneration) {
+                        console.log(`🎵 Regenerating tracks (albums changed: ${this.lastTracksAlbumsHash || 0} → ${albumsHash})`);
+                        
+                        if (isMobile) {
+                            // Mobile-specific timeout and error handling
+                            const timeoutPromise = new Promise((_, reject) => {
+                                setTimeout(() => reject(new Error('Tracks generation timeout on mobile')), 25000);
+                            });
+                            
+                            try {
+                                this.collection.tracks = await Promise.race([
+                                    this.generateTracksFromAlbumsAsync(),
+                                    timeoutPromise
+                                ]);
+                            } catch (mobileError) {
+                                console.error('❌ Mobile tracks generation failed, falling back to sync:', mobileError);
+                                // Fallback to sync method on mobile
+                                this.collection.tracks = this.generateTracksFromAlbums();
+                            }
+                        } else {
+                            this.collection.tracks = this.generateTracksFromAlbums();
+                        }
+                        
+                        if (!this.collection.tracks || this.collection.tracks.length === 0) {
+                            console.warn('⚠️ No tracks generated, showing empty state');
+                            this.displayEmptyState('tracks');
+                            return;
+                        }
+                        
+                        this.lastTracksAlbumsHash = albumsHash;
                     } else {
-                        this.collection.tracks = this.generateTracksFromAlbums();
+                        console.log(`✅ Using cached tracks (${this.collection.tracks.length} tracks)`);
                     }
-                    this.lastTracksAlbumsHash = albumsHash;
-                } else {
-                    console.log(`✅ Using cached tracks (${this.collection.tracks.length} tracks)`);
-                }
 
-                // Don't call renderTracksGrid() here - sortTracks() will handle it
-                // Apply current sort after rendering
-                const tracksSort = document.getElementById('tracks-sort');
-                if (tracksSort && tracksSort.value) {
-                    console.log(`🔄 Auto-applying tracks sort: ${tracksSort.value}`);
-                    this.sortTracks(tracksSort.value);
-                } else {
-                    // If no sort is set, use default sort (frequency) for consistency
-                    console.log(`🔄 No sort selected, applying default sort: frequency`);
-                    this.sortTracks('frequency');
+                    // Don't call renderTracksGrid() here - sortTracks() will handle it
+                    // Apply current sort after rendering with mobile error handling
+                    const tracksSort = document.getElementById('tracks-sort');
+                    try {
+                        if (tracksSort && tracksSort.value) {
+                            console.log(`🔄 Auto-applying tracks sort: ${tracksSort.value}`);
+                            this.sortTracks(tracksSort.value);
+                        } else {
+                            // If no sort is set, use default sort (frequency) for consistency
+                            console.log(`🔄 No sort selected, applying default sort: frequency`);
+                            this.sortTracks('frequency');
+                        }
+                    } catch (sortError) {
+                        console.error('❌ Error sorting tracks, fallback to direct render:', sortError);
+                        // Fallback to direct rendering if sorting fails
+                        this.renderTracksGrid();
+                    }
+                } catch (tracksError) {
+                    console.error('❌ Error loading tracks view:', tracksError);
+                    this.displayEmptyState('tracks', 'Error loading tracks. Please try refreshing the page.');
                 }
                 break;
 
             case 'roles':
-                // MOBILE FIX: Check if roles need to be generated first
-                if (!this.collection.roles || this.collection.roles.length === 0) {
-                    console.log(`📱 Mobile: Generating roles data before rendering...`);
-                    if (isMobile) {
-                        this.collection.roles = await this.generateRolesFromAlbumsAsync();
-                    } else {
-                        this.collection.roles = this.generateRolesFromAlbums();
+                try {
+                    // Check if roleCategorizer is available first (critical for roles)
+                    if (!window.roleCategorizer) {
+                        console.error('❌ RoleCategorizer not loaded - cannot display roles');
+                        this.displayEmptyState('roles', 'Role categorizer not loaded. Please refresh the page.');
+                        return;
                     }
-                }
+                    
+                    // MOBILE FIX: Check if roles need to be generated first
+                    if (!this.collection.roles || this.collection.roles.length === 0) {
+                        console.log(`📱 Mobile: Generating roles data before rendering...`);
+                        
+                        if (isMobile) {
+                            // Mobile-specific timeout and error handling for roles
+                            const timeoutPromise = new Promise((_, reject) => {
+                                setTimeout(() => reject(new Error('Roles generation timeout on mobile')), 20000);
+                            });
+                            
+                            try {
+                                this.collection.roles = await Promise.race([
+                                    this.generateRolesFromAlbumsAsync(),
+                                    timeoutPromise
+                                ]);
+                            } catch (mobileRolesError) {
+                                console.error('❌ Mobile roles generation failed, falling back to sync:', mobileRolesError);
+                                // Fallback to sync method on mobile
+                                this.collection.roles = this.generateRolesFromAlbums();
+                            }
+                        } else {
+                            this.collection.roles = this.generateRolesFromAlbums();
+                        }
+                        
+                        if (!this.collection.roles || this.collection.roles.length === 0) {
+                            console.warn('⚠️ No roles generated, showing empty state');
+                            this.displayEmptyState('roles');
+                            return;
+                        }
+                    }
 
-                // Don't call renderRolesGrid() here - sortRoles() will handle it
-                // Apply current sort after rendering
-                const rolesSort = document.getElementById('roles-sort');
-                if (rolesSort && rolesSort.value) {
-                    console.log(`🔄 Auto-applying roles sort: ${rolesSort.value}`);
-                    this.sortRoles(rolesSort.value);
-                } else {
-                    // If no sort is set, use default sort (frequency) for consistency
-                    console.log(`🔄 No sort selected, applying default sort: frequency`);
-                    this.sortRoles('frequency');
+                    // Don't call renderRolesGrid() here - sortRoles() will handle it
+                    // Apply current sort after rendering with mobile error handling
+                    const rolesSort = document.getElementById('roles-sort');
+                    try {
+                        if (rolesSort && rolesSort.value) {
+                            console.log(`🔄 Auto-applying roles sort: ${rolesSort.value}`);
+                            this.sortRoles(rolesSort.value);
+                        } else {
+                            // If no sort is set, use default sort (frequency) for consistency
+                            console.log(`🔄 No sort selected, applying default sort: frequency`);
+                            this.sortRoles('frequency');
+                        }
+                    } catch (sortError) {
+                        console.error('❌ Error sorting roles, fallback to direct render:', sortError);
+                        // Fallback to direct rendering if sorting fails
+                        this.renderRolesGrid();
+                    }
+                } catch (rolesError) {
+                    console.error('❌ Error loading roles view:', rolesError);
+                    this.displayEmptyState('roles', 'Error loading roles. Please try refreshing the page.');
                 }
                 break;
 
