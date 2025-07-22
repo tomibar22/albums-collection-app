@@ -62,6 +62,7 @@ class RoleCategorizer {
             'adapted by', 'promotion', 'assisting', 'stylist', 'hair',
             'public relations', 'assistants', 'french translation',
             'additional assistant', 'translation', 'assistance', 'assistent',
+            'assisted by', 'assisted',
             'technical support', 'assst. to assocate',
             
             // Physical Album Elements & Layout
