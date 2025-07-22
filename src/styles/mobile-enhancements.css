@@ -16,42 +16,52 @@
     
     .header-content {
         padding: 0 1rem;
-        flex-direction: column;
-        gap: 0.75rem; /* Reduced gap */
+        /* flex-direction and gap removed - using block layout now */
         align-items: stretch;
     }
     
     /* === MOBILE FILTER LAYOUT === */
-    /* Force the header to use flexbox and place filters in a row */
+    /* FORCE FILTERS SIDE BY SIDE - Override all existing styles */
     .header-content {
-        display: flex;
-        flex-direction: column;
+        display: block !important; /* Override flex */
+        font-size: 0; /* Remove whitespace between inline-block elements */
+        line-height: 0;
     }
     
-    /* Create a flex row container for the filters */
-    .year-filter-toggle-container {
-        display: inline-block;
-        width: calc(50% - 0.25rem);
-        vertical-align: top;
+    .header-content > * {
+        font-size: 1rem; /* Restore font size for child elements */
+        line-height: normal;
     }
     
-    .genre-filter-toggle-container {
-        display: inline-block;
-        width: calc(50% - 0.25rem);
-        margin-left: 0.5rem;
-        vertical-align: top;
+    /* Force side-by-side with stronger specificity */
+    .header-content .year-filter-toggle-container {
+        display: inline-block !important;
+        width: calc(50% - 0.25rem) !important;
+        vertical-align: top !important;
+        margin: 0 !important;
+        margin-right: 0.5rem !important;
     }
     
-    /* Ensure the containers don't add extra space */
-    .year-filter-toggle-container,
-    .genre-filter-toggle-container {
-        margin-bottom: 0;
-        line-height: 1;
+    .header-content .genre-filter-toggle-container {
+        display: inline-block !important;
+        width: calc(50% - 0.25rem) !important;
+        vertical-align: top !important;
+        margin: 0 !important;
+        margin-bottom: 0.75rem !important; /* Only bottom margin for spacing */
     }
     
-    /* Add spacing after the filter row */
-    .genre-filter-toggle-container {
-        margin-bottom: 0.5rem;
+    /* Ensure navigation gets proper spacing */
+    .header-content .main-navigation {
+        margin-top: 0.75rem;
+        font-size: 1rem;
+        line-height: normal;
+    }
+    
+    /* Ensure user menu gets proper spacing */
+    .header-content .user-menu-container {
+        margin-top: 0.75rem;
+        font-size: 1rem;
+        line-height: normal;
     }
     
     /* Style filter toggle buttons for compact mobile layout */
