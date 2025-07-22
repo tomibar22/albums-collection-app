@@ -9348,6 +9348,11 @@ class AlbumCollectionApp {
         console.log('🎵 Starting renderTracksGrid...');
         const tracksGrid = document.getElementById('tracks-grid');
 
+        if (!tracksGrid) {
+            console.error('❌ Tracks grid element not found');
+            return;
+        }
+
         // Use existing mobile detection for performance optimization
         const isMobile = this.isMobile;
         console.log(`📱 Mobile device detected: ${isMobile}`);
@@ -9363,13 +9368,26 @@ class AlbumCollectionApp {
                     tracksGrid.innerHTML = '<div class="loading-placeholder">🎵 Generating tracks data...</div>';
                     console.log('🔄 Generating tracks from albums (async for mobile compatibility)...');
 
-                    // Use async generation to prevent blocking the main thread
-                    if (isMobile) {
-                        // For mobile, use smaller batches to prevent memory pressure
-                        this.collection.tracks = await this.generateTracksFromAlbumsAsync();
-                    } else {
-                        // For desktop, can use synchronous method
-                        this.collection.tracks = this.generateTracksFromAlbums();
+                    try {
+                        // Use async generation to prevent blocking the main thread
+                        if (isMobile) {
+                            // For mobile, use smaller batches to prevent memory pressure with timeout
+                            const timeoutPromise = new Promise((_, reject) => {
+                                setTimeout(() => reject(new Error('Track generation timeout')), 30000);
+                            });
+                            
+                            this.collection.tracks = await Promise.race([
+                                this.generateTracksFromAlbumsAsync(),
+                                timeoutPromise
+                            ]);
+                        } else {
+                            // For desktop, can use synchronous method
+                            this.collection.tracks = this.generateTracksFromAlbums();
+                        }
+                    } catch (trackError) {
+                        console.error('❌ Error generating tracks:', trackError);
+                        tracksGrid.innerHTML = '<div class="error-state">Unable to load tracks. Please try refreshing the page.</div>';
+                        return;
                     }
                 }
                 // Use filtered tracks if available, otherwise fall back to collection tracks
@@ -9381,9 +9399,12 @@ class AlbumCollectionApp {
             }
 
             if (!tracksToDisplay || tracksToDisplay.length === 0) {
+                console.log('⚠️ No tracks to display');
                 this.displayEmptyState('tracks');
                 return;
             }
+            
+            console.log(`🎵 Displaying ${tracksToDisplay.length} tracks`);
 
             // 🎯 SMART CACHING: Check if we can reuse the existing rendered grid
             const currentDataHash = this.generateTracksDataHash(tracksToDisplay);
@@ -9552,6 +9573,13 @@ class AlbumCollectionApp {
         console.log('🎭 Starting renderRolesGrid...');
         console.log('📊 Collection albums count:', this.collection.albums?.length || 0);
 
+        // Check if roleCategorizer is available (mobile compatibility)
+        if (!window.roleCategorizer) {
+            console.error('❌ RoleCategorizer not loaded - required for roles view');
+            this.displayEmptyState('roles', 'Role categorizer not loaded. Please refresh the page.');
+            return;
+        }
+
         // Force regeneration of roles to ensure we have latest data with improved logic
         console.log('🔄 Forcing regeneration of roles data...');
         this.activeCollection.roles = this.generateRolesFromAlbums();
@@ -9573,27 +9601,34 @@ class AlbumCollectionApp {
             }
         });
 
-        // Use the role categorizer that categorizes BEFORE expanding brackets
-        const { musicalCredits, technicalCredits } = window.roleCategorizer.separateRoles(allCredits);
+        try {
+            // Use the role categorizer that categorizes BEFORE expanding brackets
+            const { musicalCredits, technicalCredits } = window.roleCategorizer.separateRoles(allCredits);
 
-        // Convert back to role format for display
-        const musicalRoles = this.convertCreditsToRoles(musicalCredits);
-        const technicalRoles = this.convertCreditsToRoles(technicalCredits);
+            // Convert back to role format for display
+            const musicalRoles = this.convertCreditsToRoles(musicalCredits);
+            const technicalRoles = this.convertCreditsToRoles(technicalCredits);
 
-        console.log(`🎵 Separated roles: ${musicalRoles.length} musical, ${technicalRoles.length} technical`);
+            console.log(`🎵 Separated roles: ${musicalRoles.length} musical, ${technicalRoles.length} technical`);
 
-        // Update tab counts
-        document.getElementById('musical-roles-count').textContent = `(${musicalRoles.length})`;
-        document.getElementById('technical-roles-count').textContent = `(${technicalRoles.length})`;
+            // Update tab counts
+            const musicalCountEl = document.getElementById('musical-roles-count');
+            const technicalCountEl = document.getElementById('technical-roles-count');
+            if (musicalCountEl) musicalCountEl.textContent = `(${musicalRoles.length})`;
+            if (technicalCountEl) technicalCountEl.textContent = `(${technicalRoles.length})`;
 
-        // Store roles for tab switching
-        this.musicalRoles = musicalRoles;
-        this.technicalRoles = technicalRoles;
+            // Store roles for tab switching
+            this.musicalRoles = musicalRoles;
+            this.technicalRoles = technicalRoles;
 
-        // Render the active tab content
-        this.renderActiveRolesTab();
+            // Render the active tab content
+            this.renderActiveRolesTab();
 
-        console.log(`✅ Rendered ${this.collection.roles.length} roles in tabbed interface`);
+            console.log(`✅ Rendered ${this.collection.roles.length} roles in tabbed interface`);
+        } catch (error) {
+            console.error('❌ Error processing roles:', error);
+            this.displayEmptyState('roles', 'Error processing roles data');
+        }
     }
 
     // Render the currently active roles tab with Lazy Loading
@@ -9914,6 +9949,15 @@ class AlbumCollectionApp {
             }
         } catch (error) {
             console.error('❌ Error generating tracks from albums (async):', error);
+            
+            // On mobile, provide more detailed error handling
+            if (isMobile) {
+                const loadingElement = document.querySelector('.loading-placeholder');
+                if (loadingElement) {
+                    loadingElement.textContent = '⚠️ Error loading tracks. Please refresh.';
+                }
+            }
+            
             return []; // Return empty array on error
         }
 
@@ -10035,6 +10079,13 @@ class AlbumCollectionApp {
     async showRoleArtists(roleData) {
         // console.log(`🎭 Showing artists for role: ${roleData?.name || 'Unknown'}`, roleData);
 
+        // Mobile-specific check for roleCategorizer availability
+        if (!window.roleCategorizer) {
+            console.error('❌ RoleCategorizer not available');
+            this.showModal('Error', '<p>Role categorizer not loaded. Please refresh the page.</p>');
+            return;
+        }
+
         if (!roleData || !roleData.name) {
             // console.error('❌ Invalid role data - missing role name:', roleData);
             this.showModal('Error', '<p>No role data available.</p>');
@@ -10057,9 +10108,17 @@ class AlbumCollectionApp {
         }
 
         // Determine category for appropriate terminology
-        const category = window.roleCategorizer.categorizeRole(roleData.name);
-        const personTerm = category === 'musical' ? 'Artists' : 'Contributors';
-        const modalTitle = `${personTerm} with role: "${roleData.name}"`;
+        let category, personTerm, modalTitle;
+        try {
+            category = window.roleCategorizer.categorizeRole(roleData.name);
+            personTerm = category === 'musical' ? 'Artists' : 'Contributors';
+            modalTitle = `${personTerm} with role: "${roleData.name}"`;
+        } catch (categorizerError) {
+            console.error('❌ Error categorizing role:', categorizerError);
+            category = 'musical'; // Default fallback
+            personTerm = 'Artists';
+            modalTitle = `Artists with role: "${roleData.name}"`;
+        }
 
         // Show loading indicator for role processing
         const artistCount = roleData.artists.length;
@@ -10073,8 +10132,16 @@ class AlbumCollectionApp {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         try {
-            // Generate modal content with progress tracking
-            const modalContent = await this.generateRoleArtistsModalContentWithProgress(roleData);
+            // Generate modal content with progress tracking with timeout for mobile
+            const timeoutDuration = this.isMobile ? 15000 : 30000;
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Role artists loading timeout')), timeoutDuration);
+            });
+            
+            const modalContent = await Promise.race([
+                this.generateRoleArtistsModalContentWithProgress(roleData),
+                timeoutPromise
+            ]);
             
             // Hide loading modal
             this.hideLoadingModal();
