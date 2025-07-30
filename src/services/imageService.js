@@ -12,6 +12,14 @@ class ImageService {
             // Replace with your actual app website/email for better API etiquette
         };
 
+        // Artist name disambiguation mapping for correct Wikipedia pages
+        // Keys should be normalized (no special chars, lowercase) to match normalizeArtistName output
+        this.artistNameMappings = {
+            'john robinson 2': 'John Robinson (drummer)',
+            'chris potter 2': 'Chris Potter (jazz saxophonist)', 
+            'richard davis 2': 'Richard Davis (bassist)'
+        };
+
         console.log('🖼️ ImageService initialized with direct Wikipedia approach');
     }
 
@@ -74,34 +82,52 @@ class ImageService {
      */
     async fetchFromWikipedia(artistName) {
         try {
-            // Step 1: Search for the artist on Wikipedia to get relevant page titles
-            // Increased srlimit to get more results for better prioritization
-            const searchApiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(artistName)}&srlimit=5&format=json&origin=*`; // Increased srlimit to 5
+            // Check if we have a specific mapping for this artist (using normalized name)
+            const mappedName = this.artistNameMappings[artistName];
+            const searchTerm = mappedName || artistName;
             
-            console.log(`🖼️ Step 1: Searching Wikipedia for: ${artistName}`);
+            console.log(`🖼️ Searching for: ${artistName}${mappedName ? ` (mapped to: ${mappedName})` : ''}`);
+            
+            // Step 1: Search for the artist on Wikipedia to get relevant page titles
+            // Increased srlimit to get more results for better prioritization  
+            const searchApiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTerm)}&srlimit=5&format=json&origin=*`; // Increased srlimit to 5
+            
+            console.log(`🖼️ Step 1: Searching Wikipedia for: ${searchTerm}`);
             const searchResponse = await this.makeRequestWithRetry(searchApiUrl, {
                 method: 'GET',
                 headers: this.headers
             });
 
             if (!searchResponse || !searchResponse.query || !searchResponse.query.search || searchResponse.query.search.length === 0) {
-                console.log(`🖼️ No Wikipedia search results for ${artistName}`);
+                console.log(`🖼️ No Wikipedia search results for ${searchTerm}`);
                 return null;
             }
 
             let pageTitle = null;
             const searchResults = searchResponse.query.search;
 
-            // Prioritize results containing "musician", "band", "singer", etc.
-            const priorityKeywords = ['(musician)', '(band)', '(singer)', '(rapper)', '(composer)', '(group)'];
+            // If we have a mapped name, prioritize exact matches with that name
+            if (mappedName) {
+                for (const result of searchResults) {
+                    if (result.title.toLowerCase() === mappedName.toLowerCase()) {
+                        pageTitle = result.title;
+                        break;
+                    }
+                }
+            }
             
-            for (const result of searchResults) {
-                const title = result.title;
-                // Check for exact match or title containing artistName with a priority keyword
-                if (title.toLowerCase() === artistName.toLowerCase() || 
-                    priorityKeywords.some(keyword => title.toLowerCase().includes(keyword))) {
-                    pageTitle = title;
-                    break; // Found a prioritized title, use this one
+            // If no exact match found for mapped name, use standard prioritization
+            if (!pageTitle) {
+                const priorityKeywords = ['(musician)', '(band)', '(singer)', '(rapper)', '(composer)', '(group)'];
+                
+                for (const result of searchResults) {
+                    const title = result.title;
+                    // Check for exact match or title containing searchTerm with a priority keyword
+                    if (title.toLowerCase() === searchTerm.toLowerCase() || 
+                        priorityKeywords.some(keyword => title.toLowerCase().includes(keyword))) {
+                        pageTitle = title;
+                        break; // Found a prioritized title, use this one
+                    }
                 }
             }
 
@@ -110,7 +136,7 @@ class ImageService {
                 pageTitle = searchResults[0].title;
             }
 
-            console.log(`🖼️ Selected Wikipedia page title: "${pageTitle}" for ${artistName}`);
+            console.log(`🖼️ Selected Wikipedia page title: "${pageTitle}" for ${artistName}${mappedName ? ` (mapped from ${mappedName})` : ''}`);
 
             // Step 2: Use Wikipedia REST API's page/summary to get thumbnail
             const restApiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
