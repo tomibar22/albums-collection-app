@@ -1501,147 +1501,43 @@ class AlbumCollectionApp {
 
 
 
-    // Enhanced album loading with real-time progress
+    // Enhanced album loading with single request
 
     async loadAlbumsWithProgress() {
+        if (!this.dataService?.initialized) {
+            throw new Error('Supabase service not initialized');
+        }
 
-    if (!this.dataService?.initialized) {
+        // Get total count for progress display
+        this.updateLoadingProgress('📊 Calculating collection size...', 'Checking album count...', 30);
 
-    throw new Error('Supabase service not initialized');
 
-    }
 
+        const { count: totalCount, error: countError } = await this.dataService.service.client
+            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+            .select('*', { count: 'exact', head: true });
 
+        if (countError) {
+            console.warn('⚠️ Could not get exact count, proceeding anyway');
+        }
 
-    // First, get the total count to calculate expected batches
 
-    this.updateLoadingProgress('📊 Calculating collection size...', 'Checking album count...', 32);
 
+        console.log(`📊 Total albums: ${totalCount || 'unknown'}, Loading in single request...`);
 
+        // Update progress before loading
+        this.updateLoadingProgress(
+            '🚀 Loading all albums...',
+            `Fetching ${totalCount || 'all'} albums from database...`,
+            40
+        );
 
-    const { count: totalCount, error: countError } = await this.dataService.service.client
+        // Load all albums in single request via the Supabase service
+        const allAlbums = await this.dataService.getAllAlbums();
 
-    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+        console.log(`✅ Successfully loaded ${allAlbums.length} albums in single request`);
 
-    .select('*', { count: 'exact', head: true });
-
-
-
-    if (countError) {
-
-    console.warn('⚠️ Could not get exact count, proceeding with estimation');
-
-    }
-
-
-
-    const batchSize = 1000;
-
-    const estimatedBatches = totalCount ? Math.ceil(totalCount / batchSize) : '?';
-
-
-
-    console.log(`📊 Total albums: ${totalCount || 'unknown'}, Expected batches: ${estimatedBatches}`);
-
-
-
-    let allAlbums = [];
-
-    let start = 0;
-
-    let hasMore = true;
-
-    let batchCount = 0;
-
-
-
-    while (hasMore) {
-
-    batchCount++;
-
-
-
-    // Enhanced progress with batch X/Y format
-
-    const batchProgress = 30 + (batchCount * 15); // More conservative progress increment
-
-    const batchText = estimatedBatches !== '?'
-
-    ? `📚 Loading batch ${batchCount}/${estimatedBatches}...`
-
-    : `📚 Loading batch ${batchCount}...`;
-
-
-
-    this.updateLoadingProgress(
-
-    batchText,
-
-    `${allAlbums.length} albums loaded so far...`,
-
-    Math.min(batchProgress, 50)
-
-    );
-
-
-
-    const { data: batch, error } = await this.dataService.service.client
-
-    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-
-    .select('*')
-
-    .order('year', { ascending: true })
-
-    .range(start, start + batchSize - 1);
-
-
-
-    if (error) throw error;
-
-
-
-    if (batch && batch.length > 0) {
-
-    allAlbums = allAlbums.concat(batch);
-
-    start += batchSize;
-
-    hasMore = batch.length === batchSize;
-
-
-
-    const progressText = estimatedBatches !== '?'
-
-    ? `📚 Loaded batch ${batchCount}/${estimatedBatches}: ${batch.length} albums (total: ${allAlbums.length})`
-
-    : `📚 Loaded batch ${batchCount}: ${batch.length} albums (total: ${allAlbums.length})`;
-
-
-
-    console.log(progressText);
-
-    } else {
-
-    hasMore = false;
-
-    }
-
-    }
-
-
-
-    // Final confirmation with exact totals
-
-    if (estimatedBatches !== '?' && batchCount !== estimatedBatches) {
-
-    console.log(`📊 Actual batches: ${batchCount} (estimated: ${estimatedBatches})`);
-
-    }
-
-
-
-    return allAlbums;
+        return allAlbums;
 
     }
 

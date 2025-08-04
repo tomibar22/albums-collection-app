@@ -519,62 +519,21 @@ class SupabaseService {
         console.log('📚 iPhone Debug: Config tables:', window.CONFIG?.SUPABASE?.TABLES?.ALBUMS);
 
         try {
-            // Mobile detection for optimized batch sizes
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            const batchSize = isMobile ? 250 : 1000; // Smaller batches for mobile
-            console.log(`📱 iPhone Debug: Mobile detected: ${isMobile}, batch size: ${batchSize}`);
+            console.log('🚀 Loading all albums in single request...');
             
-            // Get all albums using pagination to bypass 1000 limit
-            let allAlbums = [];
-            let start = 0;
-            let hasMore = true;
+            // Load all albums in one request - no batching
+            const { data: allAlbums, error } = await this.client
+                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                .select('*')
+                .order('year', { ascending: true });
 
-            while (hasMore) {
-                console.log(`📚 iPhone Debug: Querying batch starting at ${start}...`);
-                
-                const { data: batch, error } = await this.client
-                    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                    .select('*')
-                    .order('year', { ascending: true })
-                    .range(start, start + batchSize - 1);
-
-                console.log(`📚 iPhone Debug: Batch result:`, {
-                    batchData: batch,
-                    batchLength: batch?.length || 0,
-                    error: error,
-                    errorMessage: error?.message,
-                    errorCode: error?.code
-                });
-
-                if (error) {
-                    console.error('❌ iPhone Debug: Supabase query error:', error);
-                    throw error;
-                }
-
-                if (batch && batch.length > 0) {
-                    allAlbums = allAlbums.concat(batch);
-                    start += batchSize;
-                    
-                    // If we got less than batchSize, we're done
-                    hasMore = batch.length === batchSize;
-                    
-                    if (this.debug) {
-                        const deviceType = isMobile ? '📱' : '💻';
-                        console.log(`${deviceType} Loaded batch: ${batch.length} albums (total: ${allAlbums.length})`);
-                    }
-                    
-                    // Yield to main thread more frequently on mobile
-                    if (isMobile) {
-                        await new Promise(resolve => setTimeout(resolve, 10));
-                    }
-                } else {
-                    hasMore = false;
-                }
+            if (error) {
+                console.error('❌ Supabase query error:', error);
+                throw error;
             }
 
             if (this.debug) {
-                const deviceType = isMobile ? '📱 Mobile' : '💻 Desktop';
-                console.log(`${deviceType} retrieved ${allAlbums.length} albums from Supabase (batch size: ${batchSize})`);
+                console.log(`✅ Successfully loaded ${allAlbums.length} albums in single request`);
             }
 
             return allAlbums;
