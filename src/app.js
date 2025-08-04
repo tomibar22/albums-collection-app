@@ -4023,10 +4023,29 @@ class AlbumCollectionApp {
         trackElement.style.opacity = '0.6';
         
         try {
+            // Debug the normalization process
+            const normalizedClickedTrack = this.normalizeTrackName(trackTitle);
+            console.log(`🔍 Normalized clicked track: "${normalizedClickedTrack}"`);
+            console.log(`🔍 Collection has ${this.collection.tracks.length} tracks`);
+            
             // Find the track in the collection using normalized matching
-            const track = this.collection.tracks.find(t => 
-                this.normalizeTrackName(t.title) === this.normalizeTrackName(trackTitle)
-            );
+            const track = this.collection.tracks.find(t => {
+                const normalizedCollectionTrack = this.normalizeTrackName(t.title);
+                const isMatch = normalizedCollectionTrack === normalizedClickedTrack;
+                if (isMatch) {
+                    console.log(`🎯 Match found: "${t.title}" (normalized: "${normalizedCollectionTrack}")`);
+                }
+                return isMatch;
+            });
+            
+            // If no exact match, let's see what tracks are similar
+            if (!track) {
+                const similarTracks = this.collection.tracks.filter(t => 
+                    t.title.toLowerCase().includes(trackTitle.toLowerCase()) ||
+                    trackTitle.toLowerCase().includes(t.title.toLowerCase())
+                );
+                console.log(`🔍 Similar tracks found (${similarTracks.length}):`, similarTracks.slice(0, 5).map(t => t.title));
+            }
             
             if (track) {
                 console.log(`✅ Found track in collection: "${track.title}" (${track.frequency} albums)`);
