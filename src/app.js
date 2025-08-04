@@ -4007,13 +4007,15 @@ class AlbumCollectionApp {
         event.preventDefault();
         event.stopPropagation();
         
-        const trackTitle = event.target.getAttribute('data-track-title');
-        if (!trackTitle) {
+        const rawTrackTitle = event.target.getAttribute('data-track-title');
+        if (!rawTrackTitle) {
             console.warn('No track title found in clicked element');
             return;
         }
 
-        console.log(`🎵 Track link clicked: "${trackTitle}"`);
+        // Unescape HTML entities from the data attribute
+        const trackTitle = this.unescapeHtmlAttribute(rawTrackTitle);
+        console.log(`🎵 Track link clicked: "${trackTitle}" (raw: "${rawTrackTitle}")`);
         
         // Show loading state
         const trackElement = event.target;
@@ -4060,6 +4062,7 @@ class AlbumCollectionApp {
         }
         return str
             .replace(/&quot;/g, '"')
+            .replace(/&#x27;/g, "'")
             .replace(/&#39;/g, "'")
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
