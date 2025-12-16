@@ -501,22 +501,55 @@ class SupabaseService {
             throw new Error('Supabase service not initialized');
         }
 
-        console.log('📚 Loading all albums from Supabase...');
+        console.log('📚 Loading albums from Supabase (parallel batches)...');
 
         try {
             const startTime = performance.now();
+            const batchSize = 1000;
+            const concurrency = 6; // 6 parallel requests
+            const maxBatches = 40;
+            let allAlbums = [];
+            let waveNum = 0;
 
-            // Single request to load all albums (requires statement_timeout >= 60s)
-            const { data: albums, error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .select('*');
+            for (let wave = 0; wave < maxBatches; wave += concurrency) {
+                waveNum++;
+                const promises = [];
 
-            if (error) throw error;
+                for (let i = 0; i < concurrency; i++) {
+                    const start = (wave + i) * batchSize;
+                    promises.push(
+                        this.client
+                            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                            .select('*')
+                            .range(start, start + batchSize - 1)
+                    );
+                }
+
+                const results = await Promise.all(promises);
+                let done = false;
+
+                for (const result of results) {
+                    if (result.error) throw result.error;
+                    if (result.data?.length > 0) {
+                        allAlbums = allAlbums.concat(result.data);
+                    }
+                    if (!result.data || result.data.length < batchSize) {
+                        done = true;
+                    }
+                }
+
+                if (onProgress) {
+                    onProgress(allAlbums.length, Math.min(85, 30 + waveNum * 8));
+                }
+
+                console.log(`📦 Wave ${waveNum}: ${allAlbums.length} albums`);
+                if (done) break;
+            }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Loaded ${albums?.length || 0} albums in ${duration}s`);
+            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s`);
 
-            return albums || [];
+            return allAlbums;
         } catch (error) {
             console.error('❌ Failed to get albums:', error);
             throw error;
