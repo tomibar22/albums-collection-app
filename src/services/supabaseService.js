@@ -510,64 +510,63 @@ class SupabaseService {
 
     async getAlbums() {
         if (!this.initialized) {
-            console.error('❌ Supabase service not initialized!');
+            alert('DEBUG: Supabase not initialized');
             throw new Error('Supabase service not initialized');
         }
 
-        console.log('📚 Loading all albums from Supabase...');
+        alert('DEBUG: Starting getAlbums...');
 
         try {
             const startTime = performance.now();
 
             // First, get total count
+            alert('DEBUG: Getting count...');
             const { count: totalCount, error: countError } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                 .select('*', { count: 'exact', head: true });
 
-            if (countError) throw countError;
+            if (countError) {
+                alert('DEBUG: Count error: ' + JSON.stringify(countError));
+                throw countError;
+            }
 
-            console.log(`📊 Total albums: ${totalCount}`);
+            alert('DEBUG: Total count = ' + totalCount);
 
-            // Load in batches of 2000, 4 at a time (limited parallelism)
-            const batchSize = 2000;
-            const concurrency = 4;
-            const numBatches = Math.ceil(totalCount / batchSize);
+            // Load sequentially in batches of 1000 (simpler, more reliable)
+            const batchSize = 1000;
             let allAlbums = [];
+            let start = 0;
 
-            for (let wave = 0; wave < numBatches; wave += concurrency) {
-                const wavePromises = [];
+            while (start < totalCount) {
+                alert(`DEBUG: Loading batch starting at ${start}...`);
 
-                for (let i = wave; i < Math.min(wave + concurrency, numBatches); i++) {
-                    const start = i * batchSize;
-                    const end = start + batchSize - 1;
+                const { data, error } = await this.client
+                    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                    .select('*')
+                    .range(start, start + batchSize - 1);
 
-                    wavePromises.push(
-                        this.client
-                            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                            .select('*')
-                            .range(start, end)
-                    );
+                if (error) {
+                    alert('DEBUG: Batch error: ' + JSON.stringify(error));
+                    throw error;
                 }
 
-                console.log(`📦 Loading wave ${Math.floor(wave/concurrency) + 1}/${Math.ceil(numBatches/concurrency)} (${wavePromises.length} batches)...`);
-                const results = await Promise.all(wavePromises);
-
-                for (const result of results) {
-                    if (result.error) throw result.error;
-                    if (result.data) {
-                        allAlbums = allAlbums.concat(result.data);
-                    }
+                if (data && data.length > 0) {
+                    allAlbums = allAlbums.concat(data);
+                    alert(`DEBUG: Loaded ${data.length}, total now ${allAlbums.length}`);
                 }
 
-                console.log(`✓ ${allAlbums.length}/${totalCount} albums loaded`);
+                start += batchSize;
+
+                // If we got less than batchSize, we're done
+                if (!data || data.length < batchSize) break;
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s`);
+            alert(`DEBUG: Done! ${allAlbums.length} albums in ${duration}s`);
 
             return allAlbums;
         } catch (error) {
-            console.error('❌ Failed to get albums:', error);
+            alert('DEBUG: getAlbums error: ' + (error.message || JSON.stringify(error)));
             throw error;
         }
     }
