@@ -528,8 +528,8 @@ class SupabaseService {
 
             console.log(`📊 Total albums: ${totalCount}`);
 
-            // Load in parallel batches of 5000 to avoid timeout
-            const batchSize = 5000;
+            // Load in parallel batches of 2000 to stay under 3s anon timeout
+            const batchSize = 2000;
             const numBatches = Math.ceil(totalCount / batchSize);
 
             // Create all batch promises
