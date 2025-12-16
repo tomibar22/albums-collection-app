@@ -95,10 +95,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- User Menu (will be populated by auth middleware) -->
-                <div class="user-menu-container" id="userMenuContainer">
-                    <!-- User menu will be inserted here by authMiddleware -->
-                </div>
             </div>
         </header>
 
@@ -485,10 +481,6 @@
         console.log('✅ Inline configuration loaded successfully');
     </script>
     
-    <!-- Authentication System -->
-    <script src="src/services/authService.js"></script>
-    <script src="src/middleware/authMiddleware.js"></script>
-    
     <!-- Core App Components -->
     <script src="src/utils/secureCredentialLoader.js"></script>
     <script src="src/data/models.js"></script>
@@ -545,46 +537,6 @@
         </div>
     </div>
 
-    <!-- Authentication Guard - Proper Authentication Check -->
-    <script>
-        // Simple authentication check with proper user verification
-        window.authPromise = new Promise(resolve => {
-            document.addEventListener('DOMContentLoaded', async function() {
-                console.log('🔐 Checking authentication status...');
-                
-                try {
-                    // Wait for AuthService to be available
-                    if (!window.AuthService) {
-                        console.log('🔄 AuthService not available - redirecting to auth.html');
-                        window.location.href = '/auth.html';
-                        return;
-                    }
-                    
-                    // Wait for AuthService to initialize
-                    await window.AuthService.initPromise;
-                    
-                    // Check if user is currently authenticated
-                    const currentUser = await window.AuthService.getCurrentUser();
-                    
-                    if (currentUser) {
-                        console.log('✅ User authenticated - proceeding to app');
-                        resolve(true);
-                    } else {
-                        console.log('🔄 User not authenticated - redirecting to auth.html');
-                        window.location.href = '/auth.html';
-                        return;
-                    }
-                    
-                } catch (error) {
-                    console.error('❌ Authentication check failed:', error);
-                    console.log('🔄 Redirecting to auth.html due to error');
-                    window.location.href = '/auth.html';
-                    return;
-                }
-            });
-        });
-    </script>
-    
     <!-- Debug scripts commented for production performance -->
     <!-- Uncomment for debugging specific issues -->
     <!-- 
