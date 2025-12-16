@@ -514,7 +514,7 @@ class SupabaseService {
             throw new Error('Supabase service not initialized');
         }
 
-        console.log('📚 Loading all albums from Supabase (parallel batches)...');
+        console.log('📚 Loading all albums from Supabase...');
 
         try {
             const startTime = performance.now();
@@ -528,40 +528,42 @@ class SupabaseService {
 
             console.log(`📊 Total albums: ${totalCount}`);
 
-            // Load in parallel batches of 2000 to stay under 3s anon timeout
+            // Load in batches of 2000, 4 at a time (limited parallelism)
             const batchSize = 2000;
+            const concurrency = 4;
             const numBatches = Math.ceil(totalCount / batchSize);
-
-            // Create all batch promises
-            const batchPromises = [];
-            for (let i = 0; i < numBatches; i++) {
-                const start = i * batchSize;
-                const end = start + batchSize - 1;
-
-                const promise = this.client
-                    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                    .select('*')
-                    .order('year', { ascending: true })
-                    .range(start, end);
-
-                batchPromises.push(promise);
-            }
-
-            // Execute all batches in parallel
-            console.log(`🚀 Loading ${numBatches} batches in parallel...`);
-            const results = await Promise.all(batchPromises);
-
-            // Combine all results
             let allAlbums = [];
-            for (const result of results) {
-                if (result.error) throw result.error;
-                if (result.data) {
-                    allAlbums = allAlbums.concat(result.data);
+
+            for (let wave = 0; wave < numBatches; wave += concurrency) {
+                const wavePromises = [];
+
+                for (let i = wave; i < Math.min(wave + concurrency, numBatches); i++) {
+                    const start = i * batchSize;
+                    const end = start + batchSize - 1;
+
+                    wavePromises.push(
+                        this.client
+                            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                            .select('*')
+                            .range(start, end)
+                    );
                 }
+
+                console.log(`📦 Loading wave ${Math.floor(wave/concurrency) + 1}/${Math.ceil(numBatches/concurrency)} (${wavePromises.length} batches)...`);
+                const results = await Promise.all(wavePromises);
+
+                for (const result of results) {
+                    if (result.error) throw result.error;
+                    if (result.data) {
+                        allAlbums = allAlbums.concat(result.data);
+                    }
+                }
+
+                console.log(`✓ ${allAlbums.length}/${totalCount} albums loaded`);
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s (${numBatches} parallel batches)`);
+            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s`);
 
             return allAlbums;
         } catch (error) {
