@@ -501,28 +501,20 @@ class SupabaseService {
             throw new Error('Supabase service not initialized');
         }
 
-        alert('DEBUG: getAlbums starting');
-
         try {
             const startTime = performance.now();
             const batchSize = 1000;
             let allAlbums = [];
             let start = 0;
             let hasMore = true;
-            let batchNum = 0;
 
             while (hasMore) {
-                batchNum++;
-
                 const { data, error } = await this.client
                     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                     .select('*')
                     .range(start, start + batchSize - 1);
 
-                if (error) {
-                    alert('DEBUG: Error at batch ' + batchNum + ': ' + JSON.stringify(error));
-                    throw error;
-                }
+                if (error) throw error;
 
                 if (data && data.length > 0) {
                     allAlbums = allAlbums.concat(data);
@@ -536,19 +528,14 @@ class SupabaseService {
                 } else {
                     hasMore = false;
                 }
-
-                // Show progress every 10 batches
-                if (batchNum % 10 === 0) {
-                    alert('DEBUG: Batch ' + batchNum + ', total: ' + allAlbums.length);
-                }
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            alert('DEBUG: Done! ' + allAlbums.length + ' albums in ' + duration + 's');
+            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s`);
 
             return allAlbums;
         } catch (error) {
-            alert('DEBUG: getAlbums error: ' + (error.message || JSON.stringify(error)));
+            console.error('❌ Failed to get albums:', error);
             throw error;
         }
     }

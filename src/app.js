@@ -1259,23 +1259,12 @@ class AlbumCollectionApp {
                     }
                 }
             } else {
-                // No valid cache, load from database and cache it
-                this.updateLoadingProgress('📚 Loading albums...', 'Downloading and caching...', 30);
+                // No valid cache, load from database
+                this.updateLoadingProgress('📚 Loading albums...', 'Downloading...', 30);
                 albums = await this.loadAlbumsWithProgressMobile();
-                
-                // Cache the loaded data for next time
-                try {
-                    console.log('🔍 MOBILE: Attempting to cache albums for future loads...');
-                    await this.saveToCache(albums, scrapedHistory);
-                    console.log('💾 Mobile: Data cached successfully for future loads');
-                    this.updateLoadingProgress('💾 Data cached', 'Albums saved for next time', 95);
-                } catch (cacheError) {
-                    console.error('⚠️ MOBILE CACHE FAILED:', cacheError);
-                    console.error('⚠️ Cache error type:', cacheError.name);
-                    console.error('⚠️ Cache error message:', cacheError.message);
-                    console.log('⚠️ Failed to cache data, but proceeding normally - app will work but reload data next time');
-                    this.updateLoadingProgress('⚠️ Cache unavailable', 'App working without cache', 95);
-                }
+
+                // Skip caching on mobile - it causes reload issues with large datasets
+                console.log('📱 Mobile: Skipping cache to avoid memory issues');
             }
 
             this.updateLoadingProgress('🎯 Albums loaded', 'Setting up interface...', 70);
