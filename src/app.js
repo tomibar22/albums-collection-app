@@ -799,7 +799,7 @@ class AlbumCollectionApp {
     console.error('❌ Failed to initialize app:', error);
 
     // DEBUG: Show error on mobile
-    alert('App Init Error: ' + error.message + '\n\nStack: ' + (error.stack || 'no stack'));
+    alert('App Init Error: ' + JSON.stringify(error, null, 2));
 
     // Enhanced error handling with recovery options
 
