@@ -501,54 +501,54 @@ class SupabaseService {
             throw new Error('Supabase service not initialized');
         }
 
+        alert('DEBUG: getAlbums starting');
+
         try {
             const startTime = performance.now();
             const batchSize = 1000;
-            const concurrency = 4;
-            const maxBatches = 40;
             let allAlbums = [];
+            let start = 0;
+            let hasMore = true;
+            let batchNum = 0;
 
-            for (let wave = 0; wave < maxBatches; wave += concurrency) {
-                const promises = [];
+            while (hasMore) {
+                batchNum++;
 
-                for (let i = 0; i < concurrency; i++) {
-                    const start = (wave + i) * batchSize;
-                    promises.push(
-                        this.client
-                            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                            .select('*')
-                            .range(start, start + batchSize - 1)
-                    );
+                const { data, error } = await this.client
+                    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                    .select('*')
+                    .range(start, start + batchSize - 1);
+
+                if (error) {
+                    alert('DEBUG: Error at batch ' + batchNum + ': ' + JSON.stringify(error));
+                    throw error;
                 }
 
-                const results = await Promise.all(promises);
-                let done = false;
+                if (data && data.length > 0) {
+                    allAlbums = allAlbums.concat(data);
+                    start += batchSize;
+                    hasMore = data.length === batchSize;
 
-                for (const result of results) {
-                    if (result.error) throw result.error;
-                    if (result.data?.length > 0) {
-                        allAlbums = allAlbums.concat(result.data);
+                    if (onProgress) {
+                        const progress = Math.min(85, 30 + Math.floor((allAlbums.length / 32000) * 55));
+                        onProgress(allAlbums.length, progress);
                     }
-                    if (!result.data || result.data.length < batchSize) {
-                        done = true;
-                    }
+                } else {
+                    hasMore = false;
                 }
 
-                // Update progress
-                if (onProgress) {
-                    const progress = Math.min(85, 30 + Math.floor((allAlbums.length / 32000) * 55));
-                    onProgress(allAlbums.length, progress);
+                // Show progress every 10 batches
+                if (batchNum % 10 === 0) {
+                    alert('DEBUG: Batch ' + batchNum + ', total: ' + allAlbums.length);
                 }
-
-                if (done) break;
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s`);
+            alert('DEBUG: Done! ' + allAlbums.length + ' albums in ' + duration + 's');
 
             return allAlbums;
         } catch (error) {
-            console.error('❌ Failed to get albums:', error);
+            alert('DEBUG: getAlbums error: ' + (error.message || JSON.stringify(error)));
             throw error;
         }
     }
