@@ -498,51 +498,42 @@ class SupabaseService {
 
     async getAlbums() {
         if (!this.initialized) {
-            alert('DEBUG: Supabase not initialized');
             throw new Error('Supabase service not initialized');
         }
 
-        alert('DEBUG: Starting getAlbums...\nTable: ' + window.CONFIG.SUPABASE.TABLES.ALBUMS + '\nURL: ' + window.CONFIG.SUPABASE.URL);
+        console.log('📚 Loading albums from Supabase...');
 
         try {
             const startTime = performance.now();
-
-            // Skip count query - just load batches until we get less than batchSize
             const batchSize = 1000;
             let allAlbums = [];
             let start = 0;
             let hasMore = true;
 
             while (hasMore) {
-                alert(`DEBUG: Fetching batch at ${start}...`);
-
                 const { data, error } = await this.client
                     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                     .select('*')
                     .range(start, start + batchSize - 1);
 
-                alert(`DEBUG: Batch response - error: ${error ? JSON.stringify(error) : 'none'}, data length: ${data?.length || 0}`);
-
-                if (error) {
-                    throw error;
-                }
+                if (error) throw error;
 
                 if (data && data.length > 0) {
                     allAlbums = allAlbums.concat(data);
                     start += batchSize;
                     hasMore = data.length === batchSize;
-                    alert(`DEBUG: Total loaded: ${allAlbums.length}`);
+                    console.log(`📦 Loaded ${allAlbums.length} albums...`);
                 } else {
                     hasMore = false;
                 }
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            alert(`DEBUG: Done! ${allAlbums.length} albums in ${duration}s`);
+            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s`);
 
             return allAlbums;
         } catch (error) {
-            alert('DEBUG: getAlbums error: ' + (error.message || JSON.stringify(error)));
+            console.error('❌ Failed to get albums:', error);
             throw error;
         }
     }
