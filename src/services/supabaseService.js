@@ -506,26 +506,43 @@ class SupabaseService {
         try {
             const startTime = performance.now();
             const batchSize = 1000;
+            const concurrency = 4; // Load 4 batches at a time
+            const maxBatches = 40; // Assume max ~40K albums
             let allAlbums = [];
-            let start = 0;
-            let hasMore = true;
 
-            while (hasMore) {
-                const { data, error } = await this.client
-                    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                    .select('*')
-                    .range(start, start + batchSize - 1);
+            // Load in waves of 4 parallel requests
+            for (let wave = 0; wave < maxBatches; wave += concurrency) {
+                const promises = [];
 
-                if (error) throw error;
+                for (let i = 0; i < concurrency; i++) {
+                    const batchNum = wave + i;
+                    const start = batchNum * batchSize;
 
-                if (data && data.length > 0) {
-                    allAlbums = allAlbums.concat(data);
-                    start += batchSize;
-                    hasMore = data.length === batchSize;
-                    console.log(`📦 Loaded ${allAlbums.length} albums...`);
-                } else {
-                    hasMore = false;
+                    promises.push(
+                        this.client
+                            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                            .select('*')
+                            .range(start, start + batchSize - 1)
+                    );
                 }
+
+                const results = await Promise.all(promises);
+                let waveComplete = false;
+
+                for (const result of results) {
+                    if (result.error) throw result.error;
+                    if (result.data && result.data.length > 0) {
+                        allAlbums = allAlbums.concat(result.data);
+                    }
+                    // If any batch returns less than batchSize, we're near the end
+                    if (!result.data || result.data.length < batchSize) {
+                        waveComplete = true;
+                    }
+                }
+
+                console.log(`📦 Loaded ${allAlbums.length} albums...`);
+
+                if (waveComplete) break;
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
