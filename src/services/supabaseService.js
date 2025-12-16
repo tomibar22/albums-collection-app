@@ -496,7 +496,7 @@ class SupabaseService {
         }
     }
 
-    async getAlbums() {
+    async getAlbums(onProgress = null) {
         if (!this.initialized) {
             throw new Error('Supabase service not initialized');
         }
@@ -508,10 +508,13 @@ class SupabaseService {
             const batchSize = 1000;
             const concurrency = 4; // Load 4 batches at a time
             const maxBatches = 40; // Assume max ~40K albums
+            const totalWaves = Math.ceil(maxBatches / concurrency);
             let allAlbums = [];
+            let waveNum = 0;
 
             // Load in waves of 4 parallel requests
             for (let wave = 0; wave < maxBatches; wave += concurrency) {
+                waveNum++;
                 const promises = [];
 
                 for (let i = 0; i < concurrency; i++) {
@@ -541,6 +544,12 @@ class SupabaseService {
                 }
 
                 console.log(`📦 Loaded ${allAlbums.length} albums...`);
+
+                // Report progress
+                if (onProgress) {
+                    const progress = Math.min(90, 30 + (waveNum / totalWaves) * 60);
+                    onProgress(allAlbums.length, progress);
+                }
 
                 if (waveComplete) break;
             }

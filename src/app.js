@@ -1367,16 +1367,17 @@ class AlbumCollectionApp {
             throw new Error('Supabase service not initialized');
         }
 
-        // Use single request (requires max_rows >= 100000 in Supabase settings)
-        console.log('📱 Mobile: Loading all albums in single request...');
-        this.updateLoadingProgress('📚 Loading albums...', 'Fetching from database...', 40);
+        console.log('📱 Mobile: Loading albums...');
+        this.updateLoadingProgress('📚 Loading albums...', 'Starting...', 30);
 
         const startTime = performance.now();
-        const albums = await this.dataService.service.getAlbums();
+        const albums = await this.dataService.service.getAlbums((loaded, progress) => {
+            this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+        });
         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
 
         console.log(`📱 Mobile loading complete: ${albums.length} albums in ${duration}s`);
-        this.updateLoadingProgress('✅ Albums loaded', `${albums.length} albums in ${duration}s`, 60);
+        this.updateLoadingProgress('✅ Albums loaded', `${albums.length.toLocaleString()} albums in ${duration}s`, 60);
 
         return albums;
 
@@ -1422,16 +1423,17 @@ class AlbumCollectionApp {
             throw new Error('Supabase service not initialized');
         }
 
-        // Use single request (requires max_rows >= 100000 in Supabase settings)
-        console.log('💻 Desktop: Loading all albums in single request...');
-        this.updateLoadingProgress('📚 Loading albums...', 'Fetching from database...', 40);
+        console.log('💻 Desktop: Loading albums...');
+        this.updateLoadingProgress('📚 Loading albums...', 'Starting...', 30);
 
         const startTime = performance.now();
-        const albums = await this.dataService.service.getAlbums();
+        const albums = await this.dataService.service.getAlbums((loaded, progress) => {
+            this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+        });
         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
 
         console.log(`💻 Desktop loading complete: ${albums.length} albums in ${duration}s`);
-        this.updateLoadingProgress('✅ Albums loaded', `${albums.length} albums in ${duration}s`, 60);
+        this.updateLoadingProgress('✅ Albums loaded', `${albums.length.toLocaleString()} albums in ${duration}s`, 60);
 
         return albums;
     }
