@@ -504,34 +504,48 @@ class SupabaseService {
         try {
             const startTime = performance.now();
             const batchSize = 1000;
+            const concurrency = 4; // 4 parallel requests
+            const maxBatches = 40; // Support up to 40K albums
             let allAlbums = [];
-            let start = 0;
-            let hasMore = true;
 
-            while (hasMore) {
-                const { data, error } = await this.client
-                    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                    .select('*')
-                    .range(start, start + batchSize - 1);
-
-                if (error) throw error;
-
-                if (data && data.length > 0) {
-                    allAlbums = allAlbums.concat(data);
-                    start += batchSize;
-                    hasMore = data.length === batchSize;
-
-                    if (onProgress) {
-                        const progress = Math.min(85, 30 + Math.floor((allAlbums.length / 32000) * 55));
-                        onProgress(allAlbums.length, progress);
-                    }
-                } else {
-                    hasMore = false;
+            for (let wave = 0; wave < maxBatches; wave += concurrency) {
+                // Create parallel requests
+                const promises = [];
+                for (let i = 0; i < concurrency; i++) {
+                    const start = (wave + i) * batchSize;
+                    promises.push(
+                        this.client
+                            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                            .select('*')
+                            .range(start, start + batchSize - 1)
+                    );
                 }
+
+                // Wait for all parallel requests
+                const results = await Promise.all(promises);
+                let done = false;
+
+                for (const result of results) {
+                    if (result.error) throw result.error;
+                    if (result.data?.length > 0) {
+                        allAlbums = allAlbums.concat(result.data);
+                    }
+                    if (!result.data || result.data.length < batchSize) {
+                        done = true;
+                    }
+                }
+
+                // Update progress
+                if (onProgress) {
+                    const progress = Math.min(85, 30 + Math.floor((allAlbums.length / 32000) * 55));
+                    onProgress(allAlbums.length, progress);
+                }
+
+                if (done) break;
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s`);
+            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s (parallel)`);
 
             return allAlbums;
         } catch (error) {
