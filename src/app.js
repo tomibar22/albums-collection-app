@@ -1370,9 +1370,10 @@ class AlbumCollectionApp {
         console.log('📱 Mobile: Loading albums...');
         this.updateLoadingProgress('📚 Loading albums...', 'Starting...', 30);
 
+        const self = this;
         const startTime = performance.now();
-        const albums = await this.dataService.service.getAlbums((loaded, progress) => {
-            this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+        const albums = await this.dataService.service.getAlbums(function(loaded, progress) {
+            self.updateLoadingProgress('📚 Loading albums...', loaded.toLocaleString() + ' albums loaded', progress);
         });
         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
 
@@ -1426,9 +1427,10 @@ class AlbumCollectionApp {
         console.log('💻 Desktop: Loading albums...');
         this.updateLoadingProgress('📚 Loading albums...', 'Starting...', 30);
 
+        const self = this;
         const startTime = performance.now();
-        const albums = await this.dataService.service.getAlbums((loaded, progress) => {
-            this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+        const albums = await this.dataService.service.getAlbums(function(loaded, progress) {
+            self.updateLoadingProgress('📚 Loading albums...', loaded.toLocaleString() + ' albums loaded', progress);
         });
         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
 

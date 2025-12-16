@@ -501,18 +501,14 @@ class SupabaseService {
             throw new Error('Supabase service not initialized');
         }
 
-        console.log('📚 Loading albums from Supabase (parallel batches)...');
-
         try {
             const startTime = performance.now();
             const batchSize = 1000;
-            const concurrency = 6; // 6 parallel requests
+            const concurrency = 4;
             const maxBatches = 40;
             let allAlbums = [];
-            let waveNum = 0;
 
             for (let wave = 0; wave < maxBatches; wave += concurrency) {
-                waveNum++;
                 const promises = [];
 
                 for (let i = 0; i < concurrency; i++) {
@@ -538,11 +534,12 @@ class SupabaseService {
                     }
                 }
 
+                // Update progress
                 if (onProgress) {
-                    onProgress(allAlbums.length, Math.min(85, 30 + waveNum * 8));
+                    const progress = Math.min(85, 30 + Math.floor((allAlbums.length / 32000) * 55));
+                    onProgress(allAlbums.length, progress);
                 }
 
-                console.log(`📦 Wave ${waveNum}: ${allAlbums.length} albums`);
                 if (done) break;
             }
 
