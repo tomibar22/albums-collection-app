@@ -504,7 +504,7 @@ class SupabaseService {
         try {
             const startTime = performance.now();
             const batchSize = 1000;
-            const concurrency = 6; // 6 parallel requests
+            const concurrency = 8; // 8 parallel requests
             const maxBatches = 40; // Support up to 40K albums
             let allAlbums = [];
 
