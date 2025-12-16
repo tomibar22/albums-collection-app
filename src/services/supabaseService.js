@@ -514,26 +514,56 @@ class SupabaseService {
             throw new Error('Supabase service not initialized');
         }
 
-        console.log('📚 Loading all albums from Supabase...');
+        console.log('📚 Loading all albums from Supabase (parallel batches)...');
 
         try {
             const startTime = performance.now();
 
-            // Single request to load all albums (requires max_rows >= 100000 in Supabase settings)
-            const { data: albums, error } = await this.client
+            // First, get total count
+            const { count: totalCount, error: countError } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .select('*')
-                .order('year', { ascending: true });
+                .select('*', { count: 'exact', head: true });
 
-            if (error) {
-                console.error('❌ Supabase query error:', error);
-                throw error;
+            if (countError) throw countError;
+
+            console.log(`📊 Total albums: ${totalCount}`);
+
+            // Load in parallel batches of 5000 to avoid timeout
+            const batchSize = 5000;
+            const numBatches = Math.ceil(totalCount / batchSize);
+
+            // Create all batch promises
+            const batchPromises = [];
+            for (let i = 0; i < numBatches; i++) {
+                const start = i * batchSize;
+                const end = start + batchSize - 1;
+
+                const promise = this.client
+                    .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                    .select('*')
+                    .order('year', { ascending: true })
+                    .range(start, end);
+
+                batchPromises.push(promise);
+            }
+
+            // Execute all batches in parallel
+            console.log(`🚀 Loading ${numBatches} batches in parallel...`);
+            const results = await Promise.all(batchPromises);
+
+            // Combine all results
+            let allAlbums = [];
+            for (const result of results) {
+                if (result.error) throw result.error;
+                if (result.data) {
+                    allAlbums = allAlbums.concat(result.data);
+                }
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Loaded ${albums?.length || 0} albums in ${duration}s`);
+            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s (${numBatches} parallel batches)`);
 
-            return albums || [];
+            return allAlbums;
         } catch (error) {
             console.error('❌ Failed to get albums:', error);
             throw error;
