@@ -502,51 +502,39 @@ class SupabaseService {
             throw new Error('Supabase service not initialized');
         }
 
-        alert('DEBUG: Starting getAlbums...');
+        alert('DEBUG: Starting getAlbums...\nTable: ' + window.CONFIG.SUPABASE.TABLES.ALBUMS + '\nURL: ' + window.CONFIG.SUPABASE.URL);
 
         try {
             const startTime = performance.now();
 
-            // First, get total count
-            alert('DEBUG: Getting count...');
-            const { count: totalCount, error: countError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .select('*', { count: 'exact', head: true });
-
-            if (countError) {
-                alert('DEBUG: Count error: ' + JSON.stringify(countError));
-                throw countError;
-            }
-
-            alert('DEBUG: Total count = ' + totalCount);
-
-            // Load sequentially in batches of 1000 (simpler, more reliable)
+            // Skip count query - just load batches until we get less than batchSize
             const batchSize = 1000;
             let allAlbums = [];
             let start = 0;
+            let hasMore = true;
 
-            while (start < totalCount) {
-                alert(`DEBUG: Loading batch starting at ${start}...`);
+            while (hasMore) {
+                alert(`DEBUG: Fetching batch at ${start}...`);
 
                 const { data, error } = await this.client
                     .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                     .select('*')
                     .range(start, start + batchSize - 1);
 
+                alert(`DEBUG: Batch response - error: ${error ? JSON.stringify(error) : 'none'}, data length: ${data?.length || 0}`);
+
                 if (error) {
-                    alert('DEBUG: Batch error: ' + JSON.stringify(error));
                     throw error;
                 }
 
                 if (data && data.length > 0) {
                     allAlbums = allAlbums.concat(data);
-                    alert(`DEBUG: Loaded ${data.length}, total now ${allAlbums.length}`);
+                    start += batchSize;
+                    hasMore = data.length === batchSize;
+                    alert(`DEBUG: Total loaded: ${allAlbums.length}`);
+                } else {
+                    hasMore = false;
                 }
-
-                start += batchSize;
-
-                // If we got less than batchSize, we're done
-                if (!data || data.length < batchSize) break;
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
