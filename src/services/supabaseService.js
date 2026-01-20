@@ -504,8 +504,16 @@ class SupabaseService {
         try {
             const startTime = performance.now();
             const batchSize = 1000;
-            const concurrency = 8; // 8 parallel requests
+
+            // Detect mobile for optimized loading strategy
+            const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            // Desktop: Load all at once (no batching), Mobile: 8 parallel batches
+            const concurrency = isMobile ? 8 : 999; // Desktop loads everything immediately
             const maxBatches = 40; // Support up to 40K albums
+
+            console.log(`📦 Loading albums... (${isMobile ? 'Mobile' : 'Desktop'} mode, concurrency: ${concurrency})`);
+
             let allAlbums = [];
 
             for (let wave = 0; wave < maxBatches; wave += concurrency) {
@@ -545,7 +553,7 @@ class SupabaseService {
             }
 
             const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s (parallel)`);
+            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s (${isMobile ? 'mobile' : 'desktop'} parallel)`);
 
             return allAlbums;
         } catch (error) {
