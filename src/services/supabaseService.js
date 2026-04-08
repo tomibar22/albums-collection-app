@@ -220,7 +220,7 @@ class SupabaseService {
             
             // Check if artist exists
             const { data: existingArtist, error: selectError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ARTISTS)
+                .from(this._artistsTable)
                 .select('id')
                 .eq('name', sanitizedName)
                 .maybeSingle(); // Use maybeSingle instead of single to avoid errors for no matches
@@ -231,7 +231,7 @@ class SupabaseService {
 
             // Create new artist
             const { data: newArtist, error: insertError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ARTISTS)
+                .from(this._artistsTable)
                 .insert({
                     name: sanitizedName,
                     album_count: 0,
@@ -267,7 +267,7 @@ class SupabaseService {
             
             // Check if track exists
             const { data: existingTrack, error: selectError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.TRACKS)
+                .from(this._tracksTable)
                 .select('id')
                 .eq('title', sanitizedTitle)
                 .maybeSingle(); // Use maybeSingle instead of single to avoid errors for no matches
@@ -278,7 +278,7 @@ class SupabaseService {
 
             // Create new track
             const { data: newTrack, error: insertError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.TRACKS)
+                .from(this._tracksTable)
                 .insert({
                     title: sanitizedTitle,
                     frequency: 0
@@ -315,7 +315,7 @@ class SupabaseService {
 
             // Check if role exists
             const { data: existingRole, error: selectError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ROLES)
+                .from(this._rolesTable)
                 .select('id')
                 .eq('name', sanitizedRole)
                 .maybeSingle(); // Use maybeSingle instead of single to avoid errors for no matches
@@ -326,7 +326,7 @@ class SupabaseService {
 
             // Create new role
             const { data: newRole, error: insertError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ROLES)
+                .from(this._rolesTable)
                 .insert({
                     name: sanitizedRole,
                     raw_name: roleName,
@@ -363,7 +363,7 @@ class SupabaseService {
 
             // Check if role exists
             const { data: existingRole, error: selectError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ROLES)
+                .from(this._rolesTable)
                 .select('id')
                 .eq('name', sanitizedRole)
                 .maybeSingle(); // Use maybeSingle instead of single to avoid errors for no matches
@@ -374,7 +374,7 @@ class SupabaseService {
 
             // Create new role
             const { data: newRole, error: insertError } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ROLES)
+                .from(this._rolesTable)
                 .insert({
                     name: sanitizedRole,
                     raw_name: roleName,
@@ -601,7 +601,7 @@ class SupabaseService {
 
         try {
             const { data: artists, error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ARTISTS)
+                .from(this._artistsTable)
                 .select('*')
                 .order('album_count', { ascending: false });
 
@@ -625,7 +625,7 @@ class SupabaseService {
 
         try {
             const { data: tracks, error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.TRACKS)
+                .from(this._tracksTable)
                 .select('*')
                 .order('frequency', { ascending: false });
 
@@ -649,7 +649,7 @@ class SupabaseService {
 
         try {
             const { data: roles, error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ROLES)
+                .from(this._rolesTable)
                 .select('*')
                 .order('artist_count', { ascending: false });
 
@@ -771,9 +771,9 @@ class SupabaseService {
             await this.client.from(window.CONFIG.SUPABASE.TABLES.ALBUM_TRACKS).delete().gte('id', 0);
             await this.client.from(window.CONFIG.SUPABASE.TABLES.ARTIST_ROLES).delete().gte('id', 0);
             await this.client.from(window.CONFIG.SUPABASE.TABLES.ALBUMS).delete().gte('id', 0);
-            await this.client.from(window.CONFIG.SUPABASE.TABLES.ARTISTS).delete().gte('id', 0);
-            await this.client.from(window.CONFIG.SUPABASE.TABLES.TRACKS).delete().gte('id', 0);
-            await this.client.from(window.CONFIG.SUPABASE.TABLES.ROLES).delete().gte('id', 0);
+            await this.client.from(this._artistsTable).delete().gte('id', 0);
+            await this.client.from(this._tracksTable).delete().gte('id', 0);
+            await this.client.from(this._rolesTable).delete().gte('id', 0);
 
             console.log('🗑️ All data cleared from Supabase');
         } catch (error) {
@@ -921,7 +921,7 @@ class SupabaseService {
             }
 
             const { data, error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ARTISTS)
+                .from(this._artistsTable)
                 .update({
                     name: updates.name,
                     image: updates.image || null,
@@ -957,7 +957,7 @@ class SupabaseService {
             }
 
             const { data, error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.TRACKS)
+                .from(this._tracksTable)
                 .update({
                     title: updates.title,
                     duration: updates.duration || null,
@@ -989,7 +989,7 @@ class SupabaseService {
             }
 
             const { data, error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ROLES)
+                .from(this._rolesTable)
                 .update({
                     name: updates.name,
                     raw_name: updates.rawName || null,
@@ -1062,7 +1062,7 @@ class SupabaseService {
             }
 
             const { error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ARTISTS)
+                .from(this._artistsTable)
                 .delete()
                 .eq('id', artistId);
 
@@ -1088,7 +1088,7 @@ class SupabaseService {
             }
 
             const { error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.TRACKS)
+                .from(this._tracksTable)
                 .delete()
                 .eq('id', trackId);
 
@@ -1114,7 +1114,7 @@ class SupabaseService {
             }
 
             const { error } = await this.client
-                .from(window.CONFIG.SUPABASE.TABLES.ROLES)
+                .from(this._rolesTable)
                 .delete()
                 .eq('id', roleId);
 
@@ -1137,9 +1137,9 @@ class SupabaseService {
         try {
             const [albumsCount, artistsCount, tracksCount, rolesCount] = await Promise.all([
                 this.client.from(window.CONFIG.SUPABASE.TABLES.ALBUMS).select('id', { count: 'exact' }),
-                this.client.from(window.CONFIG.SUPABASE.TABLES.ARTISTS).select('id', { count: 'exact' }),
-                this.client.from(window.CONFIG.SUPABASE.TABLES.TRACKS).select('id', { count: 'exact' }),
-                this.client.from(window.CONFIG.SUPABASE.TABLES.ROLES).select('id', { count: 'exact' })
+                this.client.from(this._artistsTable).select('id', { count: 'exact' }),
+                this.client.from(this._tracksTable).select('id', { count: 'exact' }),
+                this.client.from(this._rolesTable).select('id', { count: 'exact' })
             ]);
 
             return {
@@ -1270,6 +1270,273 @@ class SupabaseService {
             console.error('❌ Failed to clear scraped history:', error);
             throw error;
         }
+    }
+    // ===============================
+    // PRE-COMPUTED DERIVED DATA
+    // ===============================
+
+    // Table name helpers (fallback to defaults if not in config)
+    get _artistsTable() { return window.CONFIG?.SUPABASE?.TABLES?.ARTISTS || 'artists'; }
+    get _tracksTable() { return window.CONFIG?.SUPABASE?.TABLES?.TRACKS || 'tracks'; }
+    get _rolesTable() { return window.CONFIG?.SUPABASE?.TABLES?.ROLES || 'roles'; }
+
+    /**
+     * Check if derived data exists in Supabase (quick count check)
+     */
+    async hasDerivedData() {
+        if (!this.initialized) return false;
+        try {
+            const { count, error } = await this.client
+                .from(this._artistsTable)
+                .select('id', { count: 'exact', head: true });
+            return !error && count > 0;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Load pre-computed artists from Supabase (lightweight, for tab display)
+     */
+    async getDerivedArtists() {
+        if (!this.initialized) throw new Error('Not initialized');
+        const artists = [];
+        const PAGE_SIZE = 1000;
+        let offset = 0;
+        let done = false;
+
+        while (!done) {
+            const { data, error } = await this.client
+                .from(this._artistsTable)
+                .select('name,image,roles,musical_roles,technical_roles,most_common_role,album_count,top_genres,discogs_id')
+                .order('album_count', { ascending: false })
+                .range(offset, offset + PAGE_SIZE - 1);
+
+            if (error) throw error;
+            if (!data || data.length === 0) { done = true; break; }
+            artists.push(...data);
+            offset += data.length;
+            if (data.length < PAGE_SIZE) done = true;
+        }
+
+        console.log(`🎤 Loaded ${artists.length} pre-computed artists from Supabase`);
+        return artists;
+    }
+
+    /**
+     * Load pre-computed tracks from Supabase
+     */
+    async getDerivedTracks() {
+        if (!this.initialized) throw new Error('Not initialized');
+        const tracks = [];
+        const PAGE_SIZE = 1000;
+        let offset = 0;
+        let done = false;
+
+        while (!done) {
+            const { data, error } = await this.client
+                .from(this._tracksTable)
+                .select('title,frequency,duration')
+                .order('frequency', { ascending: false })
+                .range(offset, offset + PAGE_SIZE - 1);
+
+            if (error) throw error;
+            if (!data || data.length === 0) { done = true; break; }
+            tracks.push(...data);
+            offset += data.length;
+            if (data.length < PAGE_SIZE) done = true;
+        }
+
+        console.log(`🎵 Loaded ${tracks.length} pre-computed tracks from Supabase`);
+        return tracks;
+    }
+
+    /**
+     * Load pre-computed roles from Supabase
+     */
+    async getDerivedRoles() {
+        if (!this.initialized) throw new Error('Not initialized');
+        const roles = [];
+        const PAGE_SIZE = 1000;
+        let offset = 0;
+        let done = false;
+
+        while (!done) {
+            const { data, error } = await this.client
+                .from(this._rolesTable)
+                .select('name,raw_name,category,frequency,artist_count')
+                .order('artist_count', { ascending: false })
+                .range(offset, offset + PAGE_SIZE - 1);
+
+            if (error) throw error;
+            if (!data || data.length === 0) { done = true; break; }
+            roles.push(...data);
+            offset += data.length;
+            if (data.length < PAGE_SIZE) done = true;
+        }
+
+        console.log(`🎭 Loaded ${roles.length} pre-computed roles from Supabase`);
+        return roles;
+    }
+
+    /**
+     * Load all derived data in parallel (artists + tracks + roles)
+     */
+    async getAllDerivedData() {
+        const [artists, tracks, roles] = await Promise.all([
+            this.getDerivedArtists(),
+            this.getDerivedTracks(),
+            this.getDerivedRoles()
+        ]);
+        return { artists, tracks, roles };
+    }
+
+    /**
+     * Push derived artists to Supabase (batch upsert)
+     */
+    async pushDerivedArtists(artists) {
+        if (!this.initialized) throw new Error('Not initialized');
+        const BATCH_SIZE = 500;
+        let pushed = 0;
+
+        // Clear existing data first
+        await this.client.from(this._artistsTable).delete().neq('id', 0);
+
+        for (let i = 0; i < artists.length; i += BATCH_SIZE) {
+            const batch = artists.slice(i, i + BATCH_SIZE).map(a => ({
+                name: a.name,
+                discogs_id: a.discogsId ? parseInt(a.discogsId) : null,
+                image: a.image || null,
+                roles: (a.roles || []).slice(0, 20), // top 20 roles
+                musical_roles: (a.roles || []).filter(r => this._isMusicalRole(r)).slice(0, 10),
+                technical_roles: (a.roles || []).filter(r => !this._isMusicalRole(r)).slice(0, 10),
+                most_common_role: a.roles?.[0] || null,
+                album_count: a.albumCount || 0,
+                total_appearances: a.albumCount || 0,
+                top_genres: (a.topGenres || a.genres || []).slice(0, 5)
+            }));
+
+            const { error } = await this.client
+                .from(this._artistsTable)
+                .insert(batch);
+
+            if (error) {
+                console.warn(`⚠️ Artist batch ${i}-${i + BATCH_SIZE} error:`, error.message);
+            } else {
+                pushed += batch.length;
+            }
+        }
+
+        console.log(`✅ Pushed ${pushed}/${artists.length} artists to Supabase`);
+        return pushed;
+    }
+
+    /**
+     * Push derived tracks to Supabase (batch upsert)
+     */
+    async pushDerivedTracks(tracks) {
+        if (!this.initialized) throw new Error('Not initialized');
+        const BATCH_SIZE = 500;
+        let pushed = 0;
+
+        await this.client.from(this._tracksTable).delete().neq('id', 0);
+
+        for (let i = 0; i < tracks.length; i += BATCH_SIZE) {
+            const batch = tracks.slice(i, i + BATCH_SIZE).map(t => ({
+                title: t.title,
+                frequency: t.frequency || 0,
+                duration: t.albums?.[0]?.trackDuration || null
+            }));
+
+            const { error } = await this.client
+                .from(this._tracksTable)
+                .insert(batch);
+
+            if (error) {
+                console.warn(`⚠️ Track batch ${i}-${i + BATCH_SIZE} error:`, error.message);
+            } else {
+                pushed += batch.length;
+            }
+        }
+
+        console.log(`✅ Pushed ${pushed}/${tracks.length} tracks to Supabase`);
+        return pushed;
+    }
+
+    /**
+     * Push derived roles to Supabase (batch upsert)
+     */
+    async pushDerivedRoles(roles) {
+        if (!this.initialized) throw new Error('Not initialized');
+        const BATCH_SIZE = 500;
+        let pushed = 0;
+
+        await this.client.from(this._rolesTable).delete().neq('id', 0);
+
+        for (let i = 0; i < roles.length; i += BATCH_SIZE) {
+            const batch = roles.slice(i, i + BATCH_SIZE).map(r => ({
+                name: r.name,
+                raw_name: r.name,
+                category: this._isMusicalRole(r.name) ? 'musical' : 'technical',
+                frequency: r.frequency || 0,
+                artist_count: r.artists?.length || r.artistCount || 0
+            }));
+
+            const { error } = await this.client
+                .from(this._rolesTable)
+                .insert(batch);
+
+            if (error) {
+                console.warn(`⚠️ Role batch ${i}-${i + BATCH_SIZE} error:`, error.message);
+            } else {
+                pushed += batch.length;
+            }
+        }
+
+        console.log(`✅ Pushed ${pushed}/${roles.length} roles to Supabase`);
+        return pushed;
+    }
+
+    /**
+     * Push all derived data to Supabase (background operation)
+     */
+    async pushAllDerivedData(artists, tracks, roles) {
+        try {
+            console.log(`📤 Pushing derived data to Supabase: ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles...`);
+            const startTime = performance.now();
+
+            // Push sequentially to avoid overwhelming the connection
+            await this.pushDerivedArtists(artists);
+            await this.pushDerivedTracks(tracks);
+            await this.pushDerivedRoles(roles);
+
+            const duration = ((performance.now() - startTime) / 1000).toFixed(1);
+            console.log(`✅ All derived data pushed to Supabase in ${duration}s`);
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to push derived data to Supabase:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Simple musical role check (subset of the full RoleCategorizer logic)
+     */
+    _isMusicalRole(roleName) {
+        if (!roleName) return false;
+        const musical = ['vocals','voice','guitar','bass','drums','piano','keyboard','saxophone',
+            'trumpet','trombone','violin','cello','flute','harmonica','organ','synthesizer',
+            'percussion','conductor','composed by','written-by','arranged by','featuring',
+            'performer','soloist','ensemble','orchestra','choir','chorus','backing vocals',
+            'lead vocals','rhythm guitar','lead guitar','acoustic guitar','electric guitar',
+            'double bass','upright bass','electric bass','alto saxophone','tenor saxophone',
+            'baritone saxophone','soprano saxophone','french horn','clarinet','oboe','viola',
+            'harp','banjo','mandolin','accordion','vibraphone','marimba','xylophone','tabla',
+            'sitar','congas','bongos','timbales','djembe','tambourine','triangle','cymbals',
+            'featuring','ft.','feat.','rap','mc','dj','turntables','scratches','beatbox',
+            'composed','written','arranged','lyrics','music','songwriting'];
+        const lower = roleName.toLowerCase();
+        return musical.some(m => lower.includes(m));
     }
 }
 

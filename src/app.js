@@ -1060,22 +1060,31 @@ class AlbumCollectionApp {
 
                 this.updateLoadingProgress('📚 Loading albums...', 'Fetching from database...', 30);
 
-                // Phase 1: Load lightweight albums (skip credits, tracklist, images, search_vector)
-                albums = await this.loadAlbumsLightweight();
+                // Phase 1: Load lightweight albums + pre-computed derived data in PARALLEL
+                const [lightweightAlbums, derivedData, fetchedScrapedHistory] = await Promise.all([
+                    this.loadAlbumsLightweight().catch(async () => {
+                        // Fallback
+                        try { return await this.dataService.service.getAlbumsLightweight(); }
+                        catch (e) { console.error('❌ Failed to load albums:', e); return []; }
+                    }),
+                    this._loadDerivedDataFromSupabase().catch(() => null),
+                    this.dataService.getScrapedArtistsHistory().catch(() => [])
+                ]);
 
-                // Fallback if loading fails
-                if (!albums || albums.length === 0) {
-                    try {
-                        albums = await this.dataService.service.getAlbumsLightweight();
-                    } catch (directError) {
-                        console.error('❌ Failed to load lightweight albums:', directError);
-                    }
-                }
-
-                this.updateLoadingProgress('📜 Loading history...', 'Fetching scraping history...', 40);
-
-                const fetchedScrapedHistory = await this.dataService.getScrapedArtistsHistory().catch(() => []);
+                albums = lightweightAlbums || [];
                 scrapedHistory = fetchedScrapedHistory || [];
+
+                // Apply pre-computed derived data if available (instant tabs!)
+                if (derivedData && derivedData.artists && derivedData.artists.length > 0) {
+                    this.collection.artists = derivedData.artists;
+                    this.collection.tracks = derivedData.tracks || [];
+                    this.collection.roles = derivedData.roles || [];
+                    this.artistsNeedRegeneration = false;
+                    console.log(`⚡ INSTANT TABS: ${derivedData.artists.length} artists, ${derivedData.tracks.length} tracks, ${derivedData.roles.length} roles from Supabase`);
+                    this.updateLoadingProgress('⚡ Pre-computed data loaded', 'Artists, Tracks, Roles ready!', 40);
+                } else {
+                    this.updateLoadingProgress('📜 Albums loaded', 'Tabs will be ready after enrichment...', 40);
+                }
 
                 // Save lightweight data to cache for instant next startup
                 this.updateLoadingProgress('💾 Caching data...', 'Saving for faster future startup...', 50);
@@ -1544,8 +1553,11 @@ class AlbumCollectionApp {
                 const duration = ((performance.now() - startTime) / 1000).toFixed(2);
                 console.log(`✅ Derived data generated in ${duration}s: ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
 
-                // Save EVERYTHING to cache in one write: enriched albums + derived data
+                // Save enriched albums to IndexedDB cache
                 this._saveFullCacheWithDerivedData(artists, tracks, roles);
+
+                // Push derived data to Supabase for instant loading on future first visits
+                this._pushDerivedDataToSupabase(artists, tracks, roles);
             } catch (error) {
                 console.error('❌ Failed to auto-generate derived data:', error);
             }
@@ -1556,6 +1568,99 @@ class AlbumCollectionApp {
             requestIdleCallback(generate, { timeout: 2000 });
         } else {
             setTimeout(generate, 500);
+        }
+    }
+
+    /**
+     * Push derived data to Supabase in the background (for future first loads without cache)
+     */
+    _pushDerivedDataToSupabase(artists, tracks, roles) {
+        // Fire and forget — don't block the UI
+        setTimeout(async () => {
+            try {
+                const service = this.dataService?.service;
+                if (!service || !service.initialized) {
+                    console.log('⚠️ Supabase not initialized, skipping derived data push');
+                    return;
+                }
+
+                // Check if data already exists to avoid unnecessary writes
+                const hasData = await service.hasDerivedData();
+                if (hasData) {
+                    console.log('✅ Derived data already exists in Supabase, skipping push');
+                    return;
+                }
+
+                console.log('📤 Pushing derived data to Supabase for future instant loading...');
+                await service.pushAllDerivedData(artists, tracks, roles);
+            } catch (error) {
+                console.warn('⚠️ Failed to push derived data to Supabase (non-critical):', error.message);
+            }
+        }, 3000); // Wait 3s after generation to not compete with UI
+    }
+
+    /**
+     * Load pre-computed derived data from Supabase (for first load without IndexedDB cache)
+     * Returns { artists, tracks, roles } or null if not available
+     */
+    async _loadDerivedDataFromSupabase() {
+        try {
+            const service = this.dataService?.service;
+            if (!service || !service.initialized) return null;
+
+            const hasData = await service.hasDerivedData();
+            if (!hasData) {
+                console.log('💾 No pre-computed derived data in Supabase yet');
+                return null;
+            }
+
+            console.log('📥 Loading pre-computed derived data from Supabase...');
+            const startTime = performance.now();
+            const { artists, tracks, roles } = await service.getAllDerivedData();
+            const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+            console.log(`⚡ Loaded derived data from Supabase in ${duration}s: ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
+
+            // Map Supabase format to client-side format
+            const mappedArtists = artists.map(a => ({
+                id: `artist-${a.name}`,
+                name: a.name,
+                image: a.image,
+                discogsId: a.discogs_id,
+                albumCount: a.album_count || 0,
+                musicalAlbumCount: 0, // Will be updated after enrichment
+                technicalAlbumCount: 0,
+                albums: [], // Populated after enrichment
+                musicalAlbums: [],
+                technicalAlbums: [],
+                roles: a.roles || [],
+                genres: a.top_genres || [],
+                topGenres: (a.top_genres || []).slice(0, 3),
+                mostFrequentGenre: a.top_genres?.[0] || null,
+                _fromSupabase: true // Flag: needs albums populated after enrichment
+            }));
+
+            const mappedTracks = tracks.map(t => ({
+                id: `track-${t.title?.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+                title: t.title,
+                frequency: t.frequency || 0,
+                albums: [], // Populated after enrichment
+                _fromSupabase: true
+            }));
+
+            const mappedRoles = roles.map(r => ({
+                id: `role-${r.name?.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+                name: r.name,
+                frequency: r.frequency || 0,
+                artists: [], // Populated after enrichment
+                artistCount: r.artist_count || 0,
+                category: r.category || 'musical',
+                _fromSupabase: true
+            }));
+
+            return { artists: mappedArtists, tracks: mappedTracks, roles: mappedRoles };
+        } catch (error) {
+            console.warn('⚠️ Failed to load derived data from Supabase:', error.message);
+            return null;
         }
     }
 
