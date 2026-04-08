@@ -175,18 +175,33 @@ class AlbumCollectionApp {
     initializeYearFilter() {
         // Initialize year filter manager with current albums
         this.yearFilterManager.initialize(this.collection.albums);
-        
+
         // Set up active collection to point to filtered data (initially all albums)
         this.activeCollection.albums = this.yearFilterManager.getActiveAlbums();
-        
-        // Generate initial derived data from active collection
+
+        // On mobile, defer expensive derived data generation until tabs are accessed
+        if (this.isMobile) {
+            this.activeCollection.artists = this.collection.artists || [];
+            this.activeCollection.tracks = [];
+            this.activeCollection.roles = [];
+            this.fullDatasetCache = {
+                artists: [],
+                tracks: [],
+                roles: [],
+                categorizedArtists: { musicalArtists: [], technicalArtists: [] }
+            };
+            console.log('📱 Mobile: Deferred derived data generation in initializeYearFilter');
+            return;
+        }
+
+        // Desktop: Generate initial derived data from active collection
         this.activeCollection.artists = this.generateArtistsFromAlbums();
         this.activeCollection.tracks = this.generateTracksFromAlbums();
         this.activeCollection.roles = this.generateRolesFromAlbums();
-        
+
         // Cache the full dataset for performance optimization including categorized artists
         const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(this.activeCollection.artists);
-        
+
         this.fullDatasetCache = {
             artists: [...this.activeCollection.artists],
             tracks: [...this.activeCollection.tracks],
@@ -1171,9 +1186,9 @@ class AlbumCollectionApp {
 
             this.updatePageTitleCounts();
 
-            this.loadInitialView();
+            // loadInitialView() is called by init() after filters are initialized
 
-            
+
 
         } catch (error) {
 
@@ -1263,8 +1278,12 @@ class AlbumCollectionApp {
                 this.updateLoadingProgress('📚 Loading albums...', 'Downloading...', 30);
                 albums = await this.loadAlbumsWithProgressMobile();
 
-                // Skip caching on mobile - it causes reload issues with large datasets
-                console.log('📱 Mobile: Skipping cache to avoid memory issues');
+                // Cache for next time (non-blocking to avoid delaying startup)
+                this.saveToCache(albums, []).then(() => {
+                    console.log('💾 Mobile: Data cached successfully for future loads');
+                }).catch(cacheError => {
+                    console.warn('⚠️ Mobile cache save failed (non-blocking):', cacheError.message);
+                });
             }
 
             this.updateLoadingProgress('🎯 Albums loaded', 'Setting up interface...', 70);
@@ -1329,7 +1348,7 @@ class AlbumCollectionApp {
 
     this.updatePageTitleCounts();
 
-    this.loadInitialView();
+    // loadInitialView() is called by init() after filters are initialized
 
 
 
@@ -1569,15 +1588,18 @@ class AlbumCollectionApp {
 
     if (overlay) {
 
-    overlay.style.animation = 'fadeOut 0.5s ease-out forwards';
+    // Allow interaction immediately while fading out visually
+    overlay.style.pointerEvents = 'none';
+    overlay.style.animation = 'fadeOut 0.3s ease-out forwards';
 
     setTimeout(() => {
 
     overlay.classList.add('hidden');
 
     overlay.style.animation = '';
+    overlay.style.pointerEvents = '';
 
-    }, 500);
+    }, 300);
 
     }
 
