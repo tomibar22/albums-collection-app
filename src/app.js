@@ -114,6 +114,14 @@ class AlbumCollectionApp {
 
     this.artistsNeedRegeneration = true; // Flag to track when artists need to be regenerated
 
+    // Two-phase loading: enrichment state tracking
+    this.enrichmentState = {
+        completed: false,     // true once all albums have credits/tracklist/images
+        inProgress: false,    // true while background enrichment is running
+        enrichedCount: 0,     // how many albums have been enriched so far
+        promise: null         // resolves when enrichment completes (for tabs that need it)
+    };
+
 
 
     // Selection mode state
@@ -153,7 +161,7 @@ class AlbumCollectionApp {
         DB_NAME: 'AlbumsCollectionDB',
         DB_VERSION: 1,
         STORE_NAME: 'albumsCache',
-        CACHE_VERSION: '2.0', // Upgraded for IndexedDB
+        CACHE_VERSION: '3.0', // v3: two-phase loading (lightweight + enriched)
         MAX_AGE_HOURS: 24 // Cache expires after 24 hours
     };
 
@@ -179,39 +187,18 @@ class AlbumCollectionApp {
         // Set up active collection to point to filtered data (initially all albums)
         this.activeCollection.albums = this.yearFilterManager.getActiveAlbums();
 
-        // On mobile, defer expensive derived data generation until tabs are accessed
-        if (this.isMobile) {
-            this.activeCollection.artists = this.collection.artists || [];
-            this.activeCollection.tracks = [];
-            this.activeCollection.roles = [];
-            this.fullDatasetCache = {
-                artists: [],
-                tracks: [],
-                roles: [],
-                categorizedArtists: { musicalArtists: [], technicalArtists: [] }
-            };
-            console.log('📱 Mobile: Deferred derived data generation in initializeYearFilter');
-            return;
-        }
-
-        // Desktop: Generate initial derived data from active collection
-        this.activeCollection.artists = this.generateArtistsFromAlbums();
-        this.activeCollection.tracks = this.generateTracksFromAlbums();
-        this.activeCollection.roles = this.generateRolesFromAlbums();
-
-        // Cache the full dataset for performance optimization including categorized artists
-        const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(this.activeCollection.artists);
-
+        // Defer derived data generation until enrichment completes and tabs are accessed
+        // (credits/tracklist may not be available yet during two-phase loading)
+        this.activeCollection.artists = this.collection.artists || [];
+        this.activeCollection.tracks = [];
+        this.activeCollection.roles = [];
         this.fullDatasetCache = {
-            artists: [...this.activeCollection.artists],
-            tracks: [...this.activeCollection.tracks],
-            roles: [...this.activeCollection.roles],
-            categorizedArtists: {
-                musicalArtists: [...musicalArtists],
-                technicalArtists: [...technicalArtists]
-            }
+            artists: [],
+            tracks: [],
+            roles: [],
+            categorizedArtists: { musicalArtists: [], technicalArtists: [] }
         };
-        console.log('💾 Full dataset cached for filter performance optimization (including categorized artists)');
+        console.log('⚡ Deferred derived data generation in initializeYearFilter (two-phase loading)');
         
         // Update UI elements with actual data range
         this.updateYearFilterUI();
@@ -807,7 +794,9 @@ class AlbumCollectionApp {
     // Hide loading modal immediately after everything is ready
     this.hideLoadingModal();
 
-
+    // Phase 2: Start background enrichment AFTER UI is visible
+    // This fetches credits, tracklist, images without blocking interaction
+    this.startBackgroundEnrichment();
 
     } catch (error) {
 
@@ -1063,127 +1052,56 @@ class AlbumCollectionApp {
 
             
 
-            // Step 2: If no cache or cache invalid, load from database
-
+            // Step 2: If no cache or cache invalid, load LIGHTWEIGHT data from database
             if (!albums || albums.length === 0) {
 
                 this.updateLoadingProgress('📚 Loading albums...', 'Fetching from database...', 30);
 
-                
-
-                // Load albums with optimized loading
-
-                albums = await this.loadAlbumsWithProgress();
-
-                
+                // Phase 1: Load lightweight albums (skip credits, tracklist, images, search_vector)
+                albums = await this.loadAlbumsLightweight();
 
                 // Fallback if loading fails
-
                 if (!albums || albums.length === 0) {
-
                     try {
-
-                        albums = await this.dataService.getAllAlbums();
-
+                        albums = await this.dataService.service.getAlbumsLightweight();
                     } catch (directError) {
-
-                        console.error('❌ Failed to load albums:', directError);
-
+                        console.error('❌ Failed to load lightweight albums:', directError);
                     }
-
                 }
-
-                
 
                 this.updateLoadingProgress('📜 Loading history...', 'Fetching scraping history...', 40);
 
-                
-
-                // Load scraped history
-
-                const [fetchedScrapedHistory] = await Promise.all([
-
-                    this.dataService.getScrapedArtistsHistory()
-
-                ]);
-
-                
-
+                const fetchedScrapedHistory = await this.dataService.getScrapedArtistsHistory().catch(() => []);
                 scrapedHistory = fetchedScrapedHistory || [];
 
-                
-
-                // Save to IndexedDB cache for next time (after successful database load)
-
+                // Save lightweight data to cache for instant next startup
                 this.updateLoadingProgress('💾 Caching data...', 'Saving for faster future startup...', 50);
-
                 await this.saveToCache(albums, scrapedHistory);
-
-                console.log(`💾 Saved ${albums.length} albums to IndexedDB cache for next startup`);
+                console.log(`💾 Saved ${albums.length} lightweight albums to IndexedDB cache`);
 
             } else {
-
-                // Using cached data, skip database loading
-
+                // Using cached data
                 this.updateLoadingProgress('⚡ Cache loaded', 'Skipped database download!', 50);
-
             }
 
-            
+            // Step 3: Assign data and prepare UI (no heavy processing needed)
+            this.updateLoadingProgress('🔄 Preparing collection...', 'Organizing your music...', 60);
 
-            // Step 3: Always generate derived data (tracks, roles, artists)
-
-            this.updateLoadingProgress('🔄 Processing data...', 'Organizing your collection...', 60);
-
-            
-
-            // Update collection (faster assignment)
-
-            // Update collection (avoid overwriting if already assigned from cache + newer albums)
             if (!this.collection.albums || this.collection.albums.length === 0) {
                 this.collection.albums = albums || [];
             }
 
             this.scrapedHistory = scrapedHistory;
-            console.log('🎭 Loaded scrapedHistory on startup:', this.scrapedHistory);
-            console.log('🎭 scrapedHistory length:', this.scrapedHistory?.length);
 
-            
+            // Defer all derived data - will be generated after enrichment or on-demand
+            this.collection.tracks = [];
+            this.collection.roles = [];
+            this.collection.artists = [];
+            this.artistsNeedRegeneration = true;
 
-            // Skip tracks generation at startup for faster load - generate on-demand when tracks tab is accessed
-            this.updateLoadingProgress('📊 Preparing tracks...', 'Ready for on-demand generation...', 70);
-            
-            this.collection.tracks = []; // Will be generated when tracks tab is first accessed
-
-            
-
-            // Skip roles generation at startup for faster load - generate on-demand when roles tab is accessed
-            this.updateLoadingProgress('🎭 Preparing roles...', 'Ready for on-demand generation...', 80);
-            
-            this.collection.roles = []; // Will be generated when roles tab is first accessed
-
-            
-
-            this.updateLoadingProgress('👥 Generating artists...', 'Processing artist relationships...', 90);
-
-            this.collection.artists = this.generateArtistsFromAlbums();
-
-            this.artistsNeedRegeneration = false; // Mark as freshly generated
-
-            
-
-            this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 95);
-
-            
-
-            // Generate collection statistics
+            this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
 
             this.generateCollectionStats();
-
-            
-
-            // Update UI elements
-
             this.updatePageTitleCounts();
 
             // loadInitialView() is called by init() after filters are initialized
@@ -1257,30 +1175,26 @@ class AlbumCollectionApp {
                 } else {
                     // Cache invalid, load from database and cache it
                     this.updateLoadingProgress('📚 Loading albums...', 'Downloading and caching...', 30);
-                    albums = await this.loadAlbumsWithProgressMobile();
-                    
+                    albums = await this.loadAlbumsLightweight();
+
                     // Cache the loaded data for next time
                     try {
-                        console.log('🔍 MOBILE: Attempting to cache albums for future loads...');
                         await this.saveToCache(albums, scrapedHistory);
-                        console.log('💾 Mobile: Data cached successfully for future loads');
+                        console.log('💾 Mobile: Lightweight data cached successfully');
                         this.updateLoadingProgress('💾 Data cached', 'Albums saved for next time', 95);
                     } catch (cacheError) {
-                        console.error('⚠️ MOBILE CACHE FAILED:', cacheError);
-                        console.error('⚠️ Cache error type:', cacheError.name);
-                        console.error('⚠️ Cache error message:', cacheError.message);
-                        console.log('⚠️ Failed to cache data, but proceeding normally - app will work but reload data next time');
+                        console.warn('⚠️ Mobile cache save failed:', cacheError.message);
                         this.updateLoadingProgress('⚠️ Cache unavailable', 'App working without cache', 95);
                     }
                 }
             } else {
-                // No valid cache, load from database
+                // No valid cache, load lightweight from database
                 this.updateLoadingProgress('📚 Loading albums...', 'Downloading...', 30);
-                albums = await this.loadAlbumsWithProgressMobile();
+                albums = await this.loadAlbumsLightweight();
 
-                // Cache for next time (non-blocking to avoid delaying startup)
+                // Cache for next time (non-blocking)
                 this.saveToCache(albums, []).then(() => {
-                    console.log('💾 Mobile: Data cached successfully for future loads');
+                    console.log('💾 Mobile: Lightweight data cached for future loads');
                 }).catch(cacheError => {
                     console.warn('⚠️ Mobile cache save failed (non-blocking):', cacheError.message);
                 });
@@ -1450,6 +1364,145 @@ class AlbumCollectionApp {
 
 
 
+    // Phase 1: Load lightweight album data (no credits, tracklist, images, search_vector)
+    async loadAlbumsLightweight() {
+        if (!this.dataService?.initialized) {
+            throw new Error('Supabase service not initialized');
+        }
+
+        console.log('⚡ Loading lightweight albums (Phase 1)...');
+        this.updateLoadingProgress('⚡ Loading albums...', 'Fast lightweight mode...', 30);
+
+        const self = this;
+        const startTime = performance.now();
+        const albums = await this.dataService.service.getAlbumsLightweight(function(loaded, progress) {
+            self.updateLoadingProgress('⚡ Loading albums...', loaded.toLocaleString() + ' albums loaded', progress);
+        });
+        const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+
+        console.log(`⚡ Lightweight load complete: ${albums.length} albums in ${duration}s`);
+        this.updateLoadingProgress('✅ Albums loaded', `${albums.length.toLocaleString()} albums in ${duration}s`, 60);
+
+        return albums;
+    }
+
+    /**
+     * Phase 2: Background enrichment - fetches credits, tracklist, images
+     * and merges them into existing album objects without blocking the UI.
+     * Uses requestIdleCallback + small batches to stay smooth.
+     */
+    startBackgroundEnrichment() {
+        if (this.enrichmentState.completed || this.enrichmentState.inProgress) {
+            return this.enrichmentState.promise;
+        }
+
+        // Check if albums already have credits (loaded from enriched cache)
+        if (this.collection.albums.length > 0 && this.collection.albums[0].credits) {
+            console.log('✅ Albums already enriched (from cache), skipping background fetch');
+            this.enrichmentState.completed = true;
+            this.enrichmentState.promise = Promise.resolve();
+            return this.enrichmentState.promise;
+        }
+
+        this.enrichmentState.inProgress = true;
+
+        this.enrichmentState.promise = new Promise(async (resolve) => {
+            try {
+                console.log('🔄 Phase 2: Starting background enrichment...');
+                const startTime = performance.now();
+
+                // Fetch heavy fields from Supabase
+                const details = await this.dataService.service.getAlbumDetails();
+
+                if (!details || details.length === 0) {
+                    console.warn('⚠️ No enrichment data received');
+                    this.enrichmentState.completed = true;
+                    this.enrichmentState.inProgress = false;
+                    resolve();
+                    return;
+                }
+
+                // Build lookup map for fast merging
+                const detailsMap = new Map();
+                for (const d of details) {
+                    detailsMap.set(d.id, d);
+                }
+
+                // Merge in small batches using requestIdleCallback to avoid jank
+                const albums = this.collection.albums;
+                const BATCH_SIZE = 500;
+                let i = 0;
+
+                const mergeBatch = () => {
+                    const end = Math.min(i + BATCH_SIZE, albums.length);
+                    for (; i < end; i++) {
+                        const detail = detailsMap.get(albums[i].id);
+                        if (detail) {
+                            albums[i].credits = detail.credits;
+                            albums[i].tracklist = detail.tracklist;
+                            albums[i].images = detail.images;
+                        }
+                    }
+                    this.enrichmentState.enrichedCount = i;
+
+                    if (i < albums.length) {
+                        // Schedule next batch during idle time
+                        if (typeof requestIdleCallback !== 'undefined') {
+                            requestIdleCallback(mergeBatch, { timeout: 200 });
+                        } else {
+                            setTimeout(mergeBatch, 50);
+                        }
+                    } else {
+                        // Enrichment complete
+                        const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+                        console.log(`✅ Background enrichment complete: ${albums.length} albums enriched in ${duration}s`);
+                        this.enrichmentState.completed = true;
+                        this.enrichmentState.inProgress = false;
+                        this.artistsNeedRegeneration = true;
+
+                        // Update cache with enriched data (non-blocking)
+                        this.saveToCache(albums, this.scrapedHistory).then(() => {
+                            console.log('💾 Cache updated with enriched album data');
+                        }).catch(err => {
+                            console.warn('⚠️ Failed to update cache with enriched data:', err.message);
+                        });
+
+                        resolve();
+                    }
+                };
+
+                // Start first batch
+                if (typeof requestIdleCallback !== 'undefined') {
+                    requestIdleCallback(mergeBatch, { timeout: 200 });
+                } else {
+                    setTimeout(mergeBatch, 100);
+                }
+
+            } catch (error) {
+                console.error('❌ Background enrichment failed:', error);
+                this.enrichmentState.inProgress = false;
+                resolve(); // Don't reject - app should work without enrichment
+            }
+        });
+
+        return this.enrichmentState.promise;
+    }
+
+    /**
+     * Wait for enrichment to complete (used by tabs that need credits/tracklist)
+     * Shows a brief inline loading indicator, not a full-screen modal
+     */
+    async waitForEnrichment() {
+        if (this.enrichmentState.completed) return;
+
+        // If enrichment hasn't started yet, start it now
+        if (!this.enrichmentState.inProgress) {
+            this.startBackgroundEnrichment();
+        }
+
+        return this.enrichmentState.promise;
+    }
+
     // Optimized collection stats (moved out of critical loading path)
 
     generateCollectionStats() {
@@ -1529,6 +1582,31 @@ class AlbumCollectionApp {
 
 
     // Loading Modal Control Methods
+
+    /**
+     * Show a lightweight inline loading indicator inside a view container
+     * (NOT a full-screen modal - just a small message in the tab content area)
+     */
+    showInlineLoading(viewName, message = 'Loading...') {
+        const viewContainer = document.getElementById(`${viewName}-view`);
+        if (!viewContainer) return;
+
+        // Don't duplicate if already showing
+        if (viewContainer.querySelector('.inline-enrichment-loading')) return;
+
+        const loader = document.createElement('div');
+        loader.className = 'inline-enrichment-loading';
+        loader.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:40px;gap:12px;color:#aaa;font-size:16px;';
+        loader.innerHTML = `<div style="width:20px;height:20px;border:2px solid #555;border-top-color:#4a9eff;border-radius:50%;animation:spin 0.8s linear infinite;"></div><span>${message}</span>`;
+        viewContainer.prepend(loader);
+    }
+
+    hideInlineLoading(viewName) {
+        const viewContainer = document.getElementById(`${viewName}-view`);
+        if (!viewContainer) return;
+        const loader = viewContainer.querySelector('.inline-enrichment-loading');
+        if (loader) loader.remove();
+    }
 
     showLoadingModal(message = 'Loading...', step = 'Please wait...', progress = 0) {
 
@@ -4239,12 +4317,16 @@ class AlbumCollectionApp {
                     ${track.duration ? `<span class="track-duration">${track.duration}</span>` : ''}
                 </div>
             `).join('')
-            : '<p class="no-content">No tracklist available</p>';
+            : (this.enrichmentState.completed
+                ? '<p class="no-content">No tracklist available</p>'
+                : '<p class="no-content" style="color:#4a9eff">⏳ Tracklist loading in background...</p>');
 
         // Separate musical and technical credits using role categorizer
         const { musicalCreditsHtml, technicalCreditsHtml } = album.credits && album.credits.length > 0
             ? this.generateSeparatedCreditsHtml(album.credits)
-            : { musicalCreditsHtml: '<p class="no-content">No credits available</p>', technicalCreditsHtml: '' };
+            : { musicalCreditsHtml: (this.enrichmentState.completed
+                ? '<p class="no-content">No credits available</p>'
+                : '<p class="no-content" style="color:#4a9eff">⏳ Credits loading in background...</p>'), technicalCreditsHtml: '' };
 
         // Generate genres and styles tags
         const genreStyleTags = [];
@@ -4264,8 +4346,8 @@ class AlbumCollectionApp {
             <div class="album-modal-content">
                 <div class="album-modal-header">
                     <div class="album-modal-image">
-                        ${album.images && album.images[0] ?
-                            `<img src="${album.images[0].uri}" alt="Cover art for ${album.title}" class="modal-cover-image" data-album-id="${album.id}">` :
+                        ${(album.cover_image || (album.images && album.images[0])) ?
+                            `<img src="${album.cover_image || album.images[0].uri}" alt="Cover art for ${album.title}" class="modal-cover-image" data-album-id="${album.id}">` :
                             `<div class="modal-placeholder-image">
                                 <div class="placeholder-icon">🎵</div>
                                 <div class="placeholder-text">No Cover</div>
@@ -8820,15 +8902,16 @@ class AlbumCollectionApp {
                 break;
 
             case 'artists':
-                // MOBILE FIX: Check if artists need to be generated first
-                if (!this.activeCollection.artists || this.activeCollection.artists.length === 0) {
-                    console.log(`📱 Mobile: Generating artists data from active collection before rendering...`);
-                    this.activeCollection.artists = this.generateArtistsFromAlbums();
-                    this.artistsNeedRegeneration = false;
+                // Wait for enrichment (credits needed for artist generation)
+                if (!this.enrichmentState.completed) {
+                    this.showInlineLoading('artists', 'Loading artist data...');
+                    await this.waitForEnrichment();
+                    this.hideInlineLoading('artists');
                 }
-                
-                // Mobile lazy loading for artists
-                if (isMobile && this.artistsNeedRegeneration) {
+
+                // Check if artists need to be generated
+                if (!this.activeCollection.artists || this.activeCollection.artists.length === 0 || this.artistsNeedRegeneration) {
+                    console.log(`🎭 Generating artists data from active collection...`);
                     this.activeCollection.artists = this.generateArtistsFromAlbums();
                     this.artistsNeedRegeneration = false;
                 }
@@ -8847,6 +8930,13 @@ class AlbumCollectionApp {
 
             case 'tracks':
                 try {
+                    // Wait for enrichment (tracklist needed for track generation)
+                    if (!this.enrichmentState.completed) {
+                        this.showInlineLoading('tracks', 'Loading track data...');
+                        await this.waitForEnrichment();
+                        this.hideInlineLoading('tracks');
+                    }
+
                     // 🚀 OPTIMIZATION 3: Smart tracks caching to prevent unnecessary regeneration
                     const albumsHash = this.collection.albums?.length || 0;
                     const needsTracksRegeneration = !this.collection.tracks || 
@@ -8912,14 +9002,21 @@ class AlbumCollectionApp {
 
             case 'roles':
                 try {
+                    // Wait for enrichment (credits needed for role generation)
+                    if (!this.enrichmentState.completed) {
+                        this.showInlineLoading('roles', 'Loading role data...');
+                        await this.waitForEnrichment();
+                        this.hideInlineLoading('roles');
+                    }
+
                     // Check if roleCategorizer is available first (critical for roles)
                     if (!window.roleCategorizer) {
                         console.error('❌ RoleCategorizer not loaded - cannot display roles');
                         this.displayEmptyState('roles', 'Role categorizer not loaded. Please refresh the page.');
                         return;
                     }
-                    
-                    // MOBILE FIX: Check if roles need to be generated first
+
+                    // Check if roles need to be generated first
                     if (!this.collection.roles || this.collection.roles.length === 0) {
                         console.log(`📱 Mobile: Generating roles data before rendering...`);
                         

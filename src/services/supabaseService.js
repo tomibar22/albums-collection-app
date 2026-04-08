@@ -455,7 +455,7 @@ class SupabaseService {
             
             const { data: albums, error } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .select('*')
+                .select(SupabaseService.LIGHTWEIGHT_COLUMNS)
                 .gt('created_at', utcTimestamp)
                 .order('created_at', { ascending: false }); // Newest first
 
@@ -481,7 +481,7 @@ class SupabaseService {
             
             const { data: albums, error } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .select('*')
+                .select(SupabaseService.LIGHTWEIGHT_COLUMNS)
                 .order('created_at', { ascending: false }) // Newest first
                 .limit(count);
 
@@ -496,66 +496,99 @@ class SupabaseService {
         }
     }
 
-    async getAlbums(onProgress = null) {
-        if (!this.initialized) {
-            throw new Error('Supabase service not initialized');
-        }
+    // Lightweight columns for grid display (skips credits, tracklist, images, search_vector)
+    static LIGHTWEIGHT_COLUMNS = 'id,title,artist,year,genres,styles,formats,cover_image,track_count,created_at,updated_at,formatted_year,role,type';
 
-        try {
-            const startTime = performance.now();
-            const batchSize = 1000;
+    // Heavy columns fetched during background enrichment
+    static HEAVY_COLUMNS = 'id,credits,tracklist,images';
 
-            // Detect mobile for optimized loading strategy
-            const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    /**
+     * Internal batch loader - shared by lightweight and full loaders
+     */
+    async _batchLoad(columns, onProgress = null, label = 'albums') {
+        const startTime = performance.now();
+        const batchSize = 1000;
+        const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const concurrency = isMobile ? 4 : 5;
+        const maxBatches = 40;
 
-            // Stay within browser's ~6 connection-per-host limit to avoid queuing/timeouts
-            const concurrency = isMobile ? 4 : 5;
-            const maxBatches = 40; // Support up to 40K albums
+        console.log(`📦 Loading ${label}... (${isMobile ? 'Mobile' : 'Desktop'} mode, concurrency: ${concurrency})`);
 
-            console.log(`📦 Loading albums... (${isMobile ? 'Mobile' : 'Desktop'} mode, concurrency: ${concurrency})`);
+        let allData = [];
 
-            let allAlbums = [];
-
-            for (let wave = 0; wave < maxBatches; wave += concurrency) {
-                // Create parallel requests
-                const promises = [];
-                for (let i = 0; i < concurrency; i++) {
-                    const start = (wave + i) * batchSize;
-                    promises.push(
-                        this.client
-                            .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                            .select('*')
-                            .range(start, start + batchSize - 1)
-                    );
-                }
-
-                // Wait for all parallel requests
-                const results = await Promise.all(promises);
-                let done = false;
-
-                for (const result of results) {
-                    if (result.error) throw result.error;
-                    if (result.data?.length > 0) {
-                        allAlbums = allAlbums.concat(result.data);
-                    }
-                    if (!result.data || result.data.length < batchSize) {
-                        done = true;
-                    }
-                }
-
-                // Update progress
-                if (onProgress) {
-                    const progress = Math.min(85, 30 + Math.floor((allAlbums.length / 32000) * 55));
-                    onProgress(allAlbums.length, progress);
-                }
-
-                if (done) break;
+        for (let wave = 0; wave < maxBatches; wave += concurrency) {
+            const promises = [];
+            for (let i = 0; i < concurrency; i++) {
+                const start = (wave + i) * batchSize;
+                promises.push(
+                    this.client
+                        .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                        .select(columns)
+                        .range(start, start + batchSize - 1)
+                );
             }
 
-            const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-            console.log(`✅ Loaded ${allAlbums.length} albums in ${duration}s (${isMobile ? 'mobile' : 'desktop'} parallel)`);
+            const results = await Promise.all(promises);
+            let done = false;
 
-            return allAlbums;
+            for (const result of results) {
+                if (result.error) throw result.error;
+                if (result.data?.length > 0) {
+                    allData = allData.concat(result.data);
+                }
+                if (!result.data || result.data.length < batchSize) {
+                    done = true;
+                }
+            }
+
+            if (onProgress) {
+                const progress = Math.min(85, 30 + Math.floor((allData.length / 32000) * 55));
+                onProgress(allData.length, progress);
+            }
+
+            if (done) break;
+        }
+
+        const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+        console.log(`✅ Loaded ${allData.length} ${label} in ${duration}s`);
+        return allData;
+    }
+
+    /**
+     * Load lightweight album data for grid display (~12 MB instead of ~185 MB)
+     * Skips: credits, tracklist, images, search_vector
+     */
+    async getAlbumsLightweight(onProgress = null) {
+        if (!this.initialized) throw new Error('Supabase service not initialized');
+        try {
+            return await this._batchLoad(SupabaseService.LIGHTWEIGHT_COLUMNS, onProgress, 'lightweight albums');
+        } catch (error) {
+            console.error('❌ Failed to get lightweight albums:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load heavy fields (credits, tracklist, images) for background enrichment
+     * Returns only id + heavy fields so they can be merged into existing albums
+     */
+    async getAlbumDetails(onProgress = null) {
+        if (!this.initialized) throw new Error('Supabase service not initialized');
+        try {
+            return await this._batchLoad(SupabaseService.HEAVY_COLUMNS, onProgress, 'album details');
+        } catch (error) {
+            console.error('❌ Failed to get album details:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Legacy full load - kept for cache sync operations that need complete data
+     */
+    async getAlbums(onProgress = null) {
+        if (!this.initialized) throw new Error('Supabase service not initialized');
+        try {
+            return await this._batchLoad('*', onProgress, 'albums (full)');
         } catch (error) {
             console.error('❌ Failed to get albums:', error);
             throw error;

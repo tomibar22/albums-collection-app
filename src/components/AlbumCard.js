@@ -397,15 +397,18 @@ class AlbumCard {
      * @returns {string} Cover image URL
      */
     getCoverImageUrl() {
+        // Prefer cover_image (lightweight field, always available)
+        if (this.album.cover_image) {
+            return this.album.cover_image;
+        }
+
+        // Fallback to images array (available after enrichment)
         if (this.album.images && this.album.images.length > 0) {
-            // Prefer medium size, fallback to first available
             const mediumImage = this.album.images.find(img => img.type === 'primary' && img.width >= 200);
             if (mediumImage) return mediumImage.uri;
-            
-            // Fallback to first image
             return this.album.images[0].uri || this.album.images[0];
         }
-        
+
         // Default placeholder - return empty string to trigger onerror
         return '';
     }
