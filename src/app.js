@@ -187,18 +187,17 @@ class AlbumCollectionApp {
         // Set up active collection to point to filtered data (initially all albums)
         this.activeCollection.albums = this.yearFilterManager.getActiveAlbums();
 
-        // Defer derived data generation until enrichment completes and tabs are accessed
-        // (credits/tracklist may not be available yet during two-phase loading)
+        // Defer derived data generation — will be generated after enrichment completes
         this.activeCollection.artists = this.collection.artists || [];
-        this.activeCollection.tracks = [];
-        this.activeCollection.roles = [];
+        this.activeCollection.tracks = this.collection.tracks || [];
+        this.activeCollection.roles = this.collection.roles || [];
         this.fullDatasetCache = {
             artists: [],
             tracks: [],
             roles: [],
             categorizedArtists: { musicalArtists: [], technicalArtists: [] }
         };
-        console.log('⚡ Deferred derived data generation in initializeYearFilter (two-phase loading)');
+        console.log('⚡ Deferred derived data generation in initializeYearFilter');
         
         // Update UI elements with actual data range
         this.updateYearFilterUI();
@@ -921,13 +920,17 @@ class AlbumCollectionApp {
                 if (cached && cached.albums && cached.albums.length > 0) {
                     albums = cached.albums;
                     scrapedHistory = cached.scrapedHistory || [];
-                    
-                    // ✅ FIX: Assign to collection immediately so checkForNewerAlbums() has data to work with
+
+                    // Assign to collection immediately
                     this.collection.albums = albums;
-                    
-                    // ✅ FIX: Assign scraped history immediately for UI updates
                     this.scrapedHistory = scrapedHistory;
-                    
+
+                    // Check if albums have enriched data (credits)
+                    if (albums[0]?.credits) {
+                        this.enrichmentState.completed = true;
+                        this.enrichmentState.promise = Promise.resolve();
+                    }
+
                     console.log(`🚀 CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
                     
@@ -1093,11 +1096,13 @@ class AlbumCollectionApp {
 
             this.scrapedHistory = scrapedHistory;
 
-            // Defer all derived data - will be generated after enrichment or on-demand
-            this.collection.tracks = [];
-            this.collection.roles = [];
-            this.collection.artists = [];
-            this.artistsNeedRegeneration = true;
+            // Only reset derived data if not already loaded from cache
+            if (!this.collection.artists || this.collection.artists.length === 0) {
+                this.collection.tracks = [];
+                this.collection.roles = [];
+                this.collection.artists = [];
+                this.artistsNeedRegeneration = true;
+            }
 
             this.updateLoadingProgress('🎯 Finalizing...', 'Preparing interface...', 90);
 
@@ -1140,11 +1145,16 @@ class AlbumCollectionApp {
                 if (cached && cached.albums && cached.albums.length > 0) {
                     albums = cached.albums;
                     scrapedHistory = cached.scrapedHistory || [];
-                    
+
                     // Assign to collection immediately
                     this.collection.albums = albums;
                     this.scrapedHistory = scrapedHistory;
-                    
+
+                    if (albums[0]?.credits) {
+                        this.enrichmentState.completed = true;
+                        this.enrichmentState.promise = Promise.resolve();
+                    }
+
                     console.log(`🚀 MOBILE CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     this.updateLoadingProgress('⚡ Mobile cache loaded', `${albums.length} albums from cache`, 25);
 
@@ -1220,13 +1230,12 @@ class AlbumCollectionApp {
 
 
 
-    // For mobile, defer expensive operations until needed
-
-    this.collection.artists = []; // Will be generated on-demand
-
-    this.collection.tracks = []; // Will be generated on-demand
-
-    this.collection.roles = []; // Will be generated on-demand
+    // Use cached derived data if available, otherwise defer until needed
+    if (!this.collection.artists || this.collection.artists.length === 0) {
+        this.collection.artists = [];
+        this.collection.tracks = [];
+        this.collection.roles = [];
+    }
 
 
 
@@ -1393,6 +1402,11 @@ class AlbumCollectionApp {
      */
     startBackgroundEnrichment() {
         if (this.enrichmentState.completed || this.enrichmentState.inProgress) {
+            // If enrichment is done but derived data is missing, generate it
+            if (this.enrichmentState.completed && (!this.collection.artists || this.collection.artists.length === 0)) {
+                console.log('🔄 Enrichment complete but derived data missing — generating now...');
+                this._generateAndCacheDerivedData();
+            }
             return this.enrichmentState.promise;
         }
 
@@ -1401,6 +1415,13 @@ class AlbumCollectionApp {
             console.log('✅ Albums already enriched (from cache), skipping background fetch');
             this.enrichmentState.completed = true;
             this.enrichmentState.promise = Promise.resolve();
+
+            // If derived data wasn't in cache, generate it now
+            if (!this.collection.artists || this.collection.artists.length === 0) {
+                console.log('🔄 Enriched albums cached but derived data missing — generating now...');
+                this._generateAndCacheDerivedData();
+            }
+
             return this.enrichmentState.promise;
         }
 
@@ -1460,12 +1481,8 @@ class AlbumCollectionApp {
                         this.enrichmentState.inProgress = false;
                         this.artistsNeedRegeneration = true;
 
-                        // Update cache with enriched data (non-blocking)
-                        this.saveToCache(albums, this.scrapedHistory).then(() => {
-                            console.log('💾 Cache updated with enriched album data');
-                        }).catch(err => {
-                            console.warn('⚠️ Failed to update cache with enriched data:', err.message);
-                        });
+                        // Auto-generate derived data, then save EVERYTHING to cache in one write
+                        this._generateAndCacheDerivedData();
 
                         resolve();
                     }
@@ -1486,6 +1503,60 @@ class AlbumCollectionApp {
         });
 
         return this.enrichmentState.promise;
+    }
+
+    /**
+     * Auto-generate artists/tracks/roles after enrichment and cache them.
+     * Runs in idle time so it doesn't block UI interaction.
+     */
+    _generateAndCacheDerivedData() {
+        const generate = () => {
+            try {
+                console.log('🔄 Auto-generating derived data after enrichment...');
+                const startTime = performance.now();
+
+                // Generate all derived data
+                const artists = this.generateArtistsFromAlbums();
+                const tracks = this.generateTracksFromAlbums();
+                const roles = this.generateRolesFromAlbums();
+
+                // Assign to collections
+                this.collection.artists = artists;
+                this.collection.tracks = tracks;
+                this.collection.roles = roles;
+                this.activeCollection.artists = artists;
+                this.activeCollection.tracks = tracks;
+                this.activeCollection.roles = roles;
+                this.artistsNeedRegeneration = false;
+
+                // Update fullDatasetCache for filters
+                const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(artists);
+                this.fullDatasetCache = {
+                    artists: [...artists],
+                    tracks: [...tracks],
+                    roles: [...roles],
+                    categorizedArtists: {
+                        musicalArtists: [...musicalArtists],
+                        technicalArtists: [...technicalArtists]
+                    }
+                };
+
+                const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+                console.log(`✅ Derived data generated in ${duration}s: ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
+
+                // Save EVERYTHING to cache in one write: enriched albums + derived data
+                this._saveFullCacheWithDerivedData(artists, tracks, roles);
+            } catch (error) {
+                console.error('❌ Failed to auto-generate derived data:', error);
+            }
+        };
+
+        // Run during idle time to avoid blocking current interactions
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(generate, { timeout: 2000 });
+        } else {
+            setTimeout(generate, 500);
+        }
     }
 
     /**
@@ -2667,8 +2738,7 @@ class AlbumCollectionApp {
                         return;
                     }
 
-                    const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
-                    console.log(`✅ IndexedDB cache valid (${ageHours.toFixed(1)}h old, ${cacheData.albums?.length || 0} albums, ${sizeMB}MB)`);
+                    console.log(`✅ IndexedDB cache valid (${ageHours.toFixed(1)}h old, ${cacheData.albums?.length || 0} albums)`);
                     resolve(true);
                 };
                 
@@ -2708,22 +2778,16 @@ class AlbumCollectionApp {
                     }
 
                     const ageMinutes = Math.round((Date.now() - cacheData.timestamp) / (1000 * 60));
-                    const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
-                    
-                    console.log(`🚀 Loaded ${cacheData.albums?.length || 0} albums from IndexedDB cache (${ageMinutes}m ago, ${sizeMB}MB) - COMPLETE data preserved`);
-                    
-                    // 🔍 DEBUG: Log cache contents
-                    if (cacheData.albums && cacheData.albums.length > 0) {
-                        console.log(`🔍 CACHE LOAD DEBUG - Cache contents:`);
-                        console.log(`🔍 Cache first 3 album IDs: ${cacheData.albums.slice(0, 3).map(a => a.id).join(', ')}`);
-                        console.log(`🔍 Cache last 3 album IDs: ${cacheData.albums.slice(-3).map(a => a.id).join(', ')}`);
-                    }
+
+                    console.log(`🚀 Loaded ${cacheData.albums?.length || 0} albums from IndexedDB cache (${ageMinutes}m ago)`);
+
                     
                     resolve({
                         albums: cacheData.albums || [],
                         scrapedHistory: cacheData.scrapedHistory || [],
-                        timestamp: cacheData.timestamp, // ✅ CRITICAL FIX: Include timestamp for new album detection
-                        timestampUTC: cacheData.timestampUTC // Include UTC string for debugging
+                        timestamp: cacheData.timestamp,
+                        timestampUTC: cacheData.timestampUTC,
+                        derivedData: cacheData.derivedData || null
                     });
                 };
                 
@@ -2757,11 +2821,12 @@ class AlbumCollectionApp {
                 timestampUTC: new Date().toISOString(), // Explicit UTC ISO string for debugging
                 albums: albums || [],
                 scrapedHistory: scrapedHistory || [],
-                albumCount: albums?.length || 0
+                albumCount: albums?.length || 0,
+                // Derived data is NOT cached (too large) — regenerated on startup
+                derivedData: null
             };
 
-            const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
-            console.log(`🔍 CACHE DEBUG: Data to cache - ${cacheData.albumCount} albums (${sizeMB}MB)`);
+            console.log(`🔍 CACHE DEBUG: Data to cache - ${cacheData.albumCount} albums`);
 
             // Check storage quota (if available)
             if (navigator.storage && navigator.storage.estimate) {
@@ -2781,7 +2846,7 @@ class AlbumCollectionApp {
             
             return new Promise((resolve, reject) => {
                 request.onsuccess = () => {
-                    console.log(`💾 IndexedDB cached ${cacheData.albumCount} albums (${sizeMB}MB) - COMPLETE data preserved for future startup`);
+                    console.log(`💾 IndexedDB cached ${cacheData.albumCount} albums - COMPLETE data preserved for future startup`);
                     resolve();
                 };
                 
@@ -2809,6 +2874,40 @@ class AlbumCollectionApp {
             console.error('❌ Error message:', error.message);
             console.error('❌ Error stack:', error.stack);
             throw error;
+        }
+    }
+
+    /**
+     * Save enriched albums + derived data to cache in ONE atomic write.
+     * This avoids race conditions between separate cache writes.
+     */
+    async _saveFullCacheWithDerivedData(artists, tracks, roles) {
+        // Save enriched albums to cache (derived data is NOT cached — too large, regenerated on startup)
+        try {
+            if (!this.db) await this.initializeIndexedDB();
+
+            const cacheData = {
+                id: 'cache_data',
+                version: this.cacheConfig.CACHE_VERSION,
+                timestamp: Date.now(),
+                timestampUTC: new Date().toISOString(),
+                albums: this.collection.albums || [],
+                scrapedHistory: this.scrapedHistory || [],
+                albumCount: this.collection.albums?.length || 0,
+                derivedData: null
+            };
+
+            console.log(`💾 Saving enriched albums cache: ${cacheData.albumCount} albums (derived data: ${artists?.length || 0} artists, ${tracks?.length || 0} tracks, ${roles?.length || 0} roles kept in-memory only)`);
+
+            const tx = this.db.transaction([this.cacheConfig.STORE_NAME], 'readwrite');
+            const store = tx.objectStore(this.cacheConfig.STORE_NAME);
+            const req = store.put(cacheData);
+
+            req.onsuccess = () => console.log('✅ Enriched albums cache saved successfully');
+            req.onerror = () => console.warn('⚠️ Failed to save cache:', req.error?.message);
+            tx.onerror = () => console.warn('⚠️ Cache transaction error:', tx.error?.message);
+        } catch (error) {
+            console.warn('⚠️ Failed to save enriched albums cache:', error.message);
         }
     }
 
@@ -2878,13 +2977,11 @@ class AlbumCollectionApp {
                         return;
                     }
 
-                    const sizeMB = Math.round((JSON.stringify(cacheData).length / (1024 * 1024)) * 100) / 100;
                     const ageHours = (Date.now() - cacheData.timestamp) / (1000 * 60 * 60);
-                    
+
                     resolve({
                         exists: true,
                         albumCount: cacheData.albums?.length || 0,
-                        sizeMB: sizeMB,
                         ageHours: ageHours.toFixed(1),
                         version: cacheData.version,
                         isValid: ageHours <= this.cacheConfig.MAX_AGE_HOURS
