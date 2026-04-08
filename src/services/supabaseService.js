@@ -508,8 +508,8 @@ class SupabaseService {
             // Detect mobile for optimized loading strategy
             const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-            // Desktop: 20 parallel batches, Mobile: 8 parallel batches
-            const concurrency = isMobile ? 8 : 20;
+            // Stay within browser's ~6 connection-per-host limit to avoid queuing/timeouts
+            const concurrency = isMobile ? 4 : 5;
             const maxBatches = 40; // Support up to 40K albums
 
             console.log(`📦 Loading albums... (${isMobile ? 'Mobile' : 'Desktop'} mode, concurrency: ${concurrency})`);
