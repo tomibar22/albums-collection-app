@@ -3,8 +3,6 @@
 
 class SpotifyAPI {
     constructor() {
-        this.clientId = window.CONFIG?.SPOTIFY?.CLIENT_ID || '';
-        this.redirectUri = window.CONFIG?.SPOTIFY?.REDIRECT_URI || window.location.origin + window.location.pathname;
         this.baseUrl = 'https://api.spotify.com/v1';
         this.authUrl = 'https://accounts.spotify.com/authorize';
         this.tokenUrl = 'https://accounts.spotify.com/api/token';
@@ -13,10 +11,16 @@ class SpotifyAPI {
         this.tokenExpiry = parseInt(sessionStorage.getItem('spotify_token_expiry') || '0');
 
         console.log('🎵 SpotifyAPI initialized', {
-            hasClientId: !!this.clientId,
-            hasToken: !!this.accessToken,
-            redirectUri: this.redirectUri
+            hasToken: !!this.accessToken
         });
+    }
+
+    get clientId() {
+        return window.CONFIG?.SPOTIFY?.CLIENT_ID || '';
+    }
+
+    get redirectUri() {
+        return window.CONFIG?.SPOTIFY?.REDIRECT_URI || window.location.origin + window.location.pathname;
     }
 
     // ─── PKCE Auth Flow ───────────────────────────────────────────
@@ -49,7 +53,8 @@ class SpotifyAPI {
      */
     async authorize() {
         if (!this.clientId) {
-            throw new Error('Spotify Client ID not configured. Add it to config.js under SPOTIFY.CLIENT_ID');
+            console.error('CONFIG.SPOTIFY:', window.CONFIG?.SPOTIFY, 'All CONFIG keys:', Object.keys(window.CONFIG || {}));
+            throw new Error('Spotify Client ID not configured. Add SPOTIFY.CLIENT_ID to config.js. Current CONFIG keys: ' + Object.keys(window.CONFIG || {}).join(', '));
         }
 
         const codeVerifier = this.generateCodeVerifier();
