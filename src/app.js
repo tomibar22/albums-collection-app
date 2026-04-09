@@ -1103,7 +1103,19 @@ class AlbumCollectionApp {
             this.updateLoadingProgress('🔄 Preparing collection...', 'Organizing your music...', 60);
 
             if (!this.collection.albums || this.collection.albums.length === 0) {
-                this.collection.albums = albums || [];
+                // Dedup albums by ID before assigning (cache + newer albums may overlap)
+                const seen = new Set();
+                const dedupedAlbums = [];
+                for (const album of (albums || [])) {
+                    if (!seen.has(album.id)) {
+                        seen.add(album.id);
+                        dedupedAlbums.push(album);
+                    }
+                }
+                if (dedupedAlbums.length < (albums || []).length) {
+                    console.log(`🧹 Deduped albums: ${albums.length} → ${dedupedAlbums.length} (removed ${albums.length - dedupedAlbums.length} duplicates)`);
+                }
+                this.collection.albums = dedupedAlbums;
             }
 
             this.scrapedHistory = scrapedHistory;
@@ -4462,12 +4474,17 @@ class AlbumCollectionApp {
 
         // IMPORTANT: Generate complete unfiltered artist data for modal (ignore global filters)
         // Find all albums where this artist appears in the UNFILTERED collection
+        const seenIds = new Set();
         const unfilteredAlbums = this.collection.albums.filter(album => {
             if (!album.credits || !Array.isArray(album.credits)) return false;
-            
-            return album.credits.some(credit => 
+            // Dedup by album ID (collection may have duplicate entries)
+            if (seenIds.has(album.id)) return false;
+
+            const hasArtist = album.credits.some(credit =>
                 credit.name && credit.name.toLowerCase().trim() === artist.name.toLowerCase().trim()
             );
+            if (hasArtist) seenIds.add(album.id);
+            return hasArtist;
         });
         
         console.log(`📀 Found ${unfilteredAlbums.length} total unfiltered albums for ${artist.name} (ignoring global filters)`);
