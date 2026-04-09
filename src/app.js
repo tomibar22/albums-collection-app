@@ -8298,9 +8298,15 @@ class AlbumCollectionApp {
             // CRITICAL FIX: Actually save to Supabase database FIRST
             if (this.dataService && this.dataService.initialized) {
                 console.log(`💾 Saving to Supabase: ${album.title}`);
-                await this.dataService.addAlbum(album);
+                const savedAlbum = await this.dataService.addAlbum(album);
                 console.log(`✅ Saved to Supabase: ${album.title}`);
-                
+
+                // Copy Supabase-generated fields (created_at, updated_at) back to local album
+                if (savedAlbum) {
+                    album.created_at = savedAlbum.created_at;
+                    album.updated_at = savedAlbum.updated_at;
+                }
+
                 // Only add to local collection AFTER successful database save
                 this.collection.albums.push(album);
                 console.log(`✅ Added to local collection: ${album.title}`);
@@ -9746,9 +9752,12 @@ class AlbumCollectionApp {
             case 'recently-added':
                 albumsToDisplay.sort((a, b) => {
                     // Sort by created_at timestamp (newest first)
-                    const dateA = new Date(a.created_at || 0);
-                    const dateB = new Date(b.created_at || 0);
-                    return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+                    // Albums without created_at go to the end
+                    const hasA = a.created_at ? 1 : 0;
+                    const hasB = b.created_at ? 1 : 0;
+                    if (hasA !== hasB) return hasB - hasA; // Albums with dates first
+                    if (!hasA) return 0; // Both missing — keep order
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
                 });
                 break;
             case 'random':
