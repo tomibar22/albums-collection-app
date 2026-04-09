@@ -162,7 +162,7 @@ class AlbumCollectionApp {
         DB_NAME: 'AlbumsCollectionDB',
         DB_VERSION: 1,
         STORE_NAME: 'albumsCache',
-        CACHE_VERSION: '4.0', // v4: full data + cached derived data (artists/tracks/roles)
+        CACHE_VERSION: '4.1', // v4.1: force fresh load after duplicate cleanup
         MAX_AGE_HOURS: 24 // Cache expires after 24 hours
     };
 
