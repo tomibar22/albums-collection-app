@@ -7553,6 +7553,13 @@ class AlbumCollectionApp {
                 );
 
                 try {
+                    // Rate-limit delay BEFORE each Discogs request cycle
+                    // Discogs allows ~60 req/min for authenticated users
+                    if (i > 0) {
+                        const delay = window.CONFIG.DISCOGS.RATE_LIMIT.SCRAPER_DELAY || 3000;
+                        await this.sleep(delay);
+                    }
+
                     // Search Discogs for this album
                     const query = `${albumArtist} ${albumTitle}`;
                     const searchResults = await this.discogsAPI.searchReleases(query, 'release', 5);
@@ -7570,6 +7577,9 @@ class AlbumCollectionApp {
                         stats.errors++;
                         continue;
                     }
+
+                    // Delay between search and release fetch to respect rate limits
+                    await this.sleep(1500);
 
                     // Get full release details
                     const releaseData = await this.discogsAPI.getRelease(match.id);
@@ -7608,9 +7618,6 @@ class AlbumCollectionApp {
 
                     stats.scraped++;
                     console.log(`✅ Spotify Sync added: ${album.title} (${album.year})`);
-
-                    // Rate limiting for Discogs
-                    await this.sleep(window.CONFIG.DISCOGS.RATE_LIMIT.SCRAPER_DELAY);
                 } catch (err) {
                     console.warn(`❌ Error scraping ${albumTitle}:`, err);
                     stats.errors++;
