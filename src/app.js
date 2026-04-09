@@ -4426,8 +4426,8 @@ class AlbumCollectionApp {
             this.modalStack = [];
         }
 
-        // If credits/tracklist not yet loaded (enrichment still running), fetch on demand
-        if (!album.credits && !this.enrichmentState.completed && this.dataService?.service?.getAlbumDetailsById) {
+        // If credits/tracklist not loaded, fetch on demand from Supabase
+        if (!album.credits && this.dataService?.service?.getAlbumDetailsById) {
             // Show modal immediately with loading placeholders
             const modalContent = this.generateAlbumModalContent(album);
             this.showModal(`${album.title} (${album.year})`, modalContent, isModalCurrentlyOpen);
