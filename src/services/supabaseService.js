@@ -84,26 +84,28 @@ class SupabaseService {
                 console.log('📀 Adding album to Supabase:', albumData.title);
             }
 
-            // Insert album
+            // Insert album (upsert with ignoreDuplicates to handle 409 conflicts gracefully)
+            const albumRow = {
+                id: albumData.id,
+                title: albumData.title,
+                year: albumData.year,
+                artist: albumData.artist,
+                role: albumData.role,
+                type: albumData.type || 'release',
+                genres: albumData.genres || [],
+                styles: albumData.styles || [],
+                formats: albumData.formats || [],
+                images: albumData.images || [],
+                tracklist: albumData.tracklist || [],
+                track_count: albumData.trackCount || 0,
+                credits: albumData.credits || [],
+                cover_image: albumData.images?.[0]?.uri || null,
+                formatted_year: albumData.year?.toString() || null
+            };
+
             const { data: album, error: albumError } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .insert({
-                    id: albumData.id,
-                    title: albumData.title,
-                    year: albumData.year,
-                    artist: albumData.artist,
-                    role: albumData.role,
-                    type: albumData.type || 'release',
-                    genres: albumData.genres || [],
-                    styles: albumData.styles || [],
-                    formats: albumData.formats || [],
-                    images: albumData.images || [],
-                    tracklist: albumData.tracklist || [],
-                    track_count: albumData.trackCount || 0,
-                    credits: albumData.credits || [],
-                    cover_image: albumData.images?.[0]?.uri || null,
-                    formatted_year: albumData.year?.toString() || null
-                })
+                .upsert(albumRow, { onConflict: 'id', ignoreDuplicates: true })
                 .select()
                 .single();
 

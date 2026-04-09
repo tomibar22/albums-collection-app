@@ -7430,6 +7430,13 @@ class AlbumCollectionApp {
                 } catch (err) {
                     console.warn(`⚠️ Error fetching Spotify albums for ${artist.name}:`, err);
                     stats.errors++;
+
+                    // If Spotify disconnected (token expired), stop the entire sync
+                    if (!this.spotifyAPI.isConnected()) {
+                        console.error('🔌 Spotify token expired mid-sync. Stopping sync and saving progress.');
+                        this.updateSpotifyProgress(95, `Spotify token expired after ${artistIdx + 1} artists. Saving progress...`);
+                        break;
+                    }
                     continue;
                 }
 
