@@ -7570,7 +7570,8 @@ class AlbumCollectionApp {
                     const query = `${albumArtist} ${albumTitle}`;
                     const searchResults = await this.discogsAPI.searchReleases(query, 'release', 5);
 
-                    if (!searchResults?.results?.length) {
+                    // searchReleases returns the results array directly (not a wrapper object)
+                    if (!searchResults?.length) {
                         console.log(`⚠️ No Discogs results for: ${query}`);
                         syncStats.noResults++;
                         stats.errors++;
@@ -7578,7 +7579,7 @@ class AlbumCollectionApp {
                     }
 
                     // Find the best match from Discogs results
-                    const match = this.findBestDiscogsMatch(searchResults.results, albumArtist, albumTitle);
+                    const match = this.findBestDiscogsMatch(searchResults, albumArtist, albumTitle);
                     if (!match) {
                         console.log(`⚠️ No good Discogs match for: ${query}`);
                         syncStats.noMatch++;
