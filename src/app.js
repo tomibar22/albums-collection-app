@@ -7384,7 +7384,14 @@ class AlbumCollectionApp {
         // Connect button
         const connectBtn = document.getElementById('spotify-connect-btn');
         if (connectBtn) {
-            connectBtn.addEventListener('click', () => this.spotifyAPI.authorize());
+            connectBtn.addEventListener('click', async () => {
+                try {
+                    await this.spotifyAPI.authorize();
+                } catch (err) {
+                    console.error('❌ Spotify connect error:', err);
+                    alert(err.message);
+                }
+            });
         }
 
         // Disconnect button
