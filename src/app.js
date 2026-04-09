@@ -981,18 +981,24 @@ class AlbumCollectionApp {
                         // Only check for newer albums if we have a valid timestamp
                         if (cached.timestamp && !isNaN(cached.timestamp)) {
                             const newerAlbums = await this.checkForNewerAlbums(cached.timestamp);
-                            
-                            if (newerAlbums && newerAlbums.length > 0) {
+
+                            if (newerAlbums === 'CACHE_INVALIDATED') {
+                                // Database has fewer albums than cache (deletions) — force full reload
+                                console.log('🔄 Cache invalidated due to database changes — forcing full reload');
+                                this.updateLoadingProgress('🔄 Syncing changes...', 'Database changed, reloading...', 30);
+                                albums = []; // Will trigger full reload below
+                                this.collection.albums = [];
+                            } else if (newerAlbums && newerAlbums.length > 0) {
                                 console.log(`📈 Found ${newerAlbums.length} new albums since cache created!`);
                                 albums = [...albums, ...newerAlbums];
-                                
+
                                 // 🔧 CRITICAL FIX: Update collection.albums with new albums
                                 this.collection.albums = albums;
-                                
+
                                 // Update cache with complete album list
                                 console.log(`💾 Updating cache with ${newerAlbums.length} new albums...`);
                                 await this.saveToCache(albums, scrapedHistory);
-                                
+
                                 this.updateLoadingProgress('✅ New albums added', `Cache updated with ${newerAlbums.length} new albums`, 35);
                             } else {
                                 console.log('✅ Cache is up to date - no newer albums found');
@@ -8668,9 +8674,17 @@ class AlbumCollectionApp {
             const currentCacheCount = this.collection.albums.length;
             console.log(`📊 Database: ${totalInDatabase}, Cache: ${currentCacheCount}`);
 
-            if (totalInDatabase <= currentCacheCount) {
-                console.log('✅ Cache is up to date (or has more than DB)');
+            if (totalInDatabase === currentCacheCount) {
+                console.log('✅ Cache is up to date');
                 return [];
+            }
+
+            if (totalInDatabase < currentCacheCount) {
+                // Database has fewer albums (deletions happened) — invalidate cache for full reload
+                console.log(`⚠️ Database has ${currentCacheCount - totalInDatabase} fewer albums than cache — clearing stale cache`);
+                await this.clearCache();
+                // Return special marker so caller knows to do a full reload
+                return 'CACHE_INVALIDATED';
             }
 
             const albumsToAdd = totalInDatabase - currentCacheCount;
