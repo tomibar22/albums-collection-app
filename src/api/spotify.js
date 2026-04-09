@@ -152,15 +152,23 @@ class SpotifyAPI {
                 })
             });
 
+            const responseText = await response.text();
+            console.log('🔄 Token response status:', response.status, 'body:', responseText.substring(0, 500));
+
             if (!response.ok) {
-                const errData = await response.json();
-                console.error('❌ Token exchange failed:', errData);
+                console.error('❌ Token exchange failed:', responseText);
                 this.clearAuthParams();
                 return false;
             }
 
-            const data = await response.json();
-            console.log('✅ Token received, expires_in:', data.expires_in);
+            const data = JSON.parse(responseText);
+            console.log('✅ Token received:', {
+                expires_in: data.expires_in,
+                token_type: data.token_type,
+                scope: data.scope,
+                hasAccessToken: !!data.access_token,
+                tokenPreview: data.access_token?.substring(0, 20) + '...'
+            });
             this.accessToken = data.access_token;
             this.tokenExpiry = Date.now() + (data.expires_in * 1000);
 
@@ -214,11 +222,17 @@ class SpotifyAPI {
 
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
+                console.log(`🎵 API request: ${endpoint}`, {
+                    tokenPreview: this.accessToken?.substring(0, 20) + '...',
+                    expiresIn: Math.round((this.tokenExpiry - Date.now()) / 1000) + 's'
+                });
                 const response = await fetch(`${this.baseUrl}${endpoint}`, {
                     headers: { 'Authorization': `Bearer ${this.accessToken}` }
                 });
 
                 if (response.status === 401) {
+                    const errBody = await response.text();
+                    console.error('❌ Spotify 401:', errBody);
                     this.disconnect();
                     throw new Error('Spotify token expired. Please reconnect.');
                 }
