@@ -1145,21 +1145,16 @@ class AlbumCollectionApp {
             this.updateLoadingProgress('🔄 Preparing collection...', 'Organizing your music...', 60);
 
             if (!this.collection.albums || this.collection.albums.length === 0) {
-                // Dedup albums by ID AND by title+artist+year (catches different Discogs IDs for same album)
+                // Dedup albums by ID only (title-based dedup is too aggressive for loading)
                 const seenIds = new Set();
-                const seenTitleKeys = new Set();
-                const norm = s => (s || '').toLowerCase().replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
                 const dedupedAlbums = [];
                 for (const album of (albums || [])) {
                     if (seenIds.has(album.id)) continue;
-                    const titleKey = `${norm(album.title)}|${norm(album.artist)}|${album.year || ''}`;
-                    if (seenTitleKeys.has(titleKey)) continue;
                     seenIds.add(album.id);
-                    seenTitleKeys.add(titleKey);
                     dedupedAlbums.push(album);
                 }
                 if (dedupedAlbums.length < (albums || []).length) {
-                    console.log(`🧹 Deduped albums: ${albums.length} → ${dedupedAlbums.length} (removed ${albums.length - dedupedAlbums.length} duplicates)`);
+                    console.log(`🧹 Deduped albums: ${albums.length} → ${dedupedAlbums.length} (removed ${albums.length - dedupedAlbums.length} ID duplicates)`);
                 }
                 this.collection.albums = dedupedAlbums;
             }
