@@ -1096,19 +1096,29 @@ class AlbumCollectionApp {
                     this.dataService.service.getAlbums((loaded, progress, info) => {
                         const elapsed = ((performance.now() - loadStartTime) / 1000).toFixed(1);
                         if (info?.retrying) {
-                            this.updateLoadingProgress('⚠️ Connection issue, retrying...', `Attempt ${info.retryAttempt + 1} · ${loaded.toLocaleString()} albums so far · ${elapsed}s`, progress || 30);
+                            this.updateLoadingProgress('⚠️ Connection issue, retrying...', `Retry ${info.retryAttempt}/${info.maxRetries || 3} · ${loaded.toLocaleString()} albums so far · ${elapsed}s`, progress || 30);
                         } else if (info) {
                             const stepText = `${loaded.toLocaleString()} albums loaded · Wave ${info.wave} (${info.waveRows.toLocaleString()} rows in ${info.waveDuration}s) · ${elapsed}s elapsed`;
                             this.updateLoadingProgress('📚 Loading from database...', stepText, progress, `${loaded.toLocaleString()} albums`);
                         } else {
                             this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded · ${elapsed}s`, progress);
                         }
-                    }).catch(e => { console.error('❌ Failed to load albums:', e); return []; }),
+                    }).catch(e => {
+                        console.error('❌ Failed to load albums:', e);
+                        this.updateLoadingProgress('❌ Database connection failed', `Error: ${e.message || 'Network error'}. Try refreshing the page.`, 30);
+                        return [];
+                    }),
                     this.dataService.getScrapedArtistsHistory().catch(() => [])
                 ]);
 
                 const totalLoadTime = ((performance.now() - loadStartTime) / 1000).toFixed(2);
-                this.updateLoadingProgress('✅ Download complete', `${(fullAlbums || []).length.toLocaleString()} albums loaded in ${totalLoadTime}s`, 88);
+
+                if ((fullAlbums || []).length === 0) {
+                    this.updateLoadingProgress('❌ No albums loaded', 'Database may be unreachable. Try refreshing in a few seconds.', 30);
+                    // Still continue — UI will show empty state
+                } else {
+                    this.updateLoadingProgress('✅ Download complete', `${fullAlbums.length.toLocaleString()} albums loaded in ${totalLoadTime}s`, 88);
+                }
 
                 albums = fullAlbums || [];
                 scrapedHistory = fetchedScrapedHistory || [];

@@ -546,7 +546,9 @@ class SupabaseService {
             const waveStart = performance.now();
 
             let results = null;
+            let waveError = null;
             for (let retry = 0; retry < maxRetries; retry++) {
+                waveError = null;
                 try {
                     const promises = [];
                     for (let i = 0; i < concurrency; i++) {
@@ -559,32 +561,37 @@ class SupabaseService {
                         );
                     }
                     results = await Promise.all(promises);
-                    break; // Success
+
+                    // Supabase client doesn't throw on CORS/network errors — check results
+                    const failedResult = results.find(r => r.error);
+                    if (failedResult) {
+                        throw failedResult.error;
+                    }
+                    break; // All succeeded
                 } catch (err) {
-                    console.warn(`⚠️ Wave ${waveNumber} attempt ${retry + 1} failed:`, err.message);
+                    waveError = err;
+                    console.warn(`⚠️ Wave ${waveNumber} attempt ${retry + 1}/${maxRetries} failed:`, err.message || err);
                     if (retry < maxRetries - 1) {
                         const delay = (retry + 1) * 2000;
-                        console.log(`⏳ Retrying in ${delay / 1000}s...`);
+                        console.log(`⏳ Retrying wave ${waveNumber} in ${delay / 1000}s...`);
                         if (onProgress) {
                             onProgress(allData.length, null, {
                                 wave: waveNumber, waveRows: 0,
                                 waveDuration: 0, elapsedTotal: ((performance.now() - startTime) / 1000),
                                 done: false, batchSize, concurrency,
-                                retrying: true, retryAttempt: retry + 1
+                                retrying: true, retryAttempt: retry + 1, maxRetries
                             });
                         }
                         await new Promise(r => setTimeout(r, delay));
-                    } else {
-                        throw err;
                     }
                 }
             }
+            if (waveError) throw waveError; // All retries exhausted
 
             let done = false;
             let waveRows = 0;
 
             for (const result of results) {
-                if (result.error) throw result.error;
                 if (result.data?.length > 0) {
                     allData = allData.concat(result.data);
                     waveRows += result.data.length;
