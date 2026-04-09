@@ -1,10 +1,6 @@
 # Netlify Configuration for Albums Collection App
 # Phase 2: Authentication-Required Setup
 
-[build]
-  command = "bash build-config.sh"
-  publish = "."
-
 # Authentication-first routing
 # 1. Allow direct access to auth.html (login page)
 # 2. Redirect everything else to index.html (which requires authentication)

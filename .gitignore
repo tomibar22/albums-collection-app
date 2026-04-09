@@ -60,7 +60,6 @@ temp/
 
 # Local configuration overrides
 src/config.local.js
-src/config.js
 
 # Server process files
 *.pid
