@@ -11,7 +11,8 @@ class SpotifyAPI {
         this.tokenExpiry = parseInt(sessionStorage.getItem('spotify_token_expiry') || '0');
 
         console.log('🎵 SpotifyAPI initialized', {
-            hasToken: !!this.accessToken
+            hasToken: !!this.accessToken,
+            tokenExpired: this.accessToken ? Date.now() >= this.tokenExpiry : 'n/a'
         });
     }
 
@@ -28,9 +29,6 @@ class SpotifyAPI {
 
     // ─── PKCE Auth Flow ───────────────────────────────────────────
 
-    /**
-     * Generate a random string for PKCE code verifier
-     */
     generateCodeVerifier(length = 128) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
         const array = new Uint8Array(length);
@@ -38,9 +36,6 @@ class SpotifyAPI {
         return Array.from(array, b => chars[b % chars.length]).join('');
     }
 
-    /**
-     * Generate SHA-256 code challenge from verifier
-     */
     async generateCodeChallenge(verifier) {
         const encoder = new TextEncoder();
         const data = encoder.encode(verifier);
@@ -51,9 +46,6 @@ class SpotifyAPI {
             .replace(/=+$/, '');
     }
 
-    /**
-     * Start the OAuth PKCE authorization flow
-     */
     async authorize() {
         if (!this.clientId) {
             console.error('CONFIG.SPOTIFY:', window.CONFIG?.SPOTIFY, 'All CONFIG keys:', Object.keys(window.CONFIG || {}));
@@ -63,9 +55,9 @@ class SpotifyAPI {
         const codeVerifier = this.generateCodeVerifier();
         const codeChallenge = await this.generateCodeChallenge(codeVerifier);
         const state = this.generateCodeVerifier(32);
+        const redirectUri = this.redirectUri;
 
         // Store for callback
-        const redirectUri = this.redirectUri;
         sessionStorage.setItem('spotify_code_verifier', codeVerifier);
         sessionStorage.setItem('spotify_auth_state', state);
         sessionStorage.setItem('spotify_redirect_uri', redirectUri);
@@ -84,9 +76,16 @@ class SpotifyAPI {
     }
 
     /**
-     * Handle the OAuth callback - exchange code for token
+     * Handle the OAuth callback - exchange code for token.
+     * Called on every page load. Only acts if there's a fresh auth code to exchange.
      */
     async handleCallback() {
+        // If we already have a valid token, skip - don't re-exchange a stale code
+        if (this.isConnected()) {
+            console.log('🎵 Already connected, skipping handleCallback');
+            return false;
+        }
+
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         const state = params.get('state');
@@ -96,19 +95,18 @@ class SpotifyAPI {
         if (code && state) {
             sessionStorage.setItem('spotify_auth_code', code);
             sessionStorage.setItem('spotify_auth_state_from_url', state);
+            // Clean URL immediately so a refresh doesn't re-trigger
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Try URL params first, then fall back to saved params (in case auth guard stripped the URL)
+        // Try URL params first, then fall back to saved params
         const authCode = code || sessionStorage.getItem('spotify_auth_code');
         const authState = state || sessionStorage.getItem('spotify_auth_state_from_url');
 
-        console.log('🎵 handleCallback check:', {
+        console.log('🎵 handleCallback:', {
             codeFromUrl: !!code,
             codeFromStorage: !!sessionStorage.getItem('spotify_auth_code'),
-            hasState: !!authState,
-            hasError: !!error,
-            url: window.location.href.substring(0, 100),
-            hasSavedVerifier: !!sessionStorage.getItem('spotify_code_verifier')
+            hasVerifier: !!sessionStorage.getItem('spotify_code_verifier')
         });
 
         if (error) {
@@ -119,9 +117,10 @@ class SpotifyAPI {
 
         if (!authCode) return false;
 
+        // Verify we have the matching state and verifier (proves this is our auth flow)
         const savedState = sessionStorage.getItem('spotify_auth_state');
         if (authState !== savedState) {
-            console.error('❌ Spotify auth state mismatch', { authState, savedState });
+            console.error('❌ Spotify auth state mismatch');
             this.clearAuthParams();
             return false;
         }
@@ -133,11 +132,13 @@ class SpotifyAPI {
             return false;
         }
 
+        // Clear auth code BEFORE exchanging - codes are single-use
+        sessionStorage.removeItem('spotify_auth_code');
+        sessionStorage.removeItem('spotify_auth_state_from_url');
+
         try {
             console.log('🔄 Exchanging code for token...', {
-                redirectUri: this.redirectUri,
-                hasCode: !!authCode,
-                hasVerifier: !!codeVerifier
+                redirectUri: this.redirectUri
             });
 
             const response = await fetch(this.tokenUrl, {
@@ -153,10 +154,9 @@ class SpotifyAPI {
             });
 
             const responseText = await response.text();
-            console.log('🔄 Token response status:', response.status, 'body:', responseText.substring(0, 500));
 
             if (!response.ok) {
-                console.error('❌ Token exchange failed:', responseText);
+                console.error('❌ Token exchange failed:', response.status, responseText);
                 this.clearAuthParams();
                 return false;
             }
@@ -167,18 +167,16 @@ class SpotifyAPI {
                 token_type: data.token_type,
                 scope: data.scope,
                 hasAccessToken: !!data.access_token,
-                tokenPreview: data.access_token?.substring(0, 20) + '...'
+                tokenLength: data.access_token?.length
             });
+
             this.accessToken = data.access_token;
             this.tokenExpiry = Date.now() + (data.expires_in * 1000);
 
             sessionStorage.setItem('spotify_access_token', this.accessToken);
             sessionStorage.setItem('spotify_token_expiry', this.tokenExpiry.toString());
 
-            // Clean URL
             this.clearAuthParams();
-            window.history.replaceState({}, document.title, window.location.pathname);
-
             console.log('✅ Spotify authenticated successfully');
             return true;
         } catch (err) {
@@ -201,12 +199,12 @@ class SpotifyAPI {
         this.tokenExpiry = 0;
         sessionStorage.removeItem('spotify_access_token');
         sessionStorage.removeItem('spotify_token_expiry');
+        this.clearAuthParams();
         console.log('🔌 Spotify disconnected');
     }
 
     isConnected() {
         if (!this.accessToken || Date.now() >= this.tokenExpiry) {
-            // Clean up stale session data
             if (this.accessToken) this.disconnect();
             return false;
         }
@@ -222,10 +220,6 @@ class SpotifyAPI {
 
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
-                console.log(`🎵 API request: ${endpoint}`, {
-                    tokenPreview: this.accessToken?.substring(0, 20) + '...',
-                    expiresIn: Math.round((this.tokenExpiry - Date.now()) / 1000) + 's'
-                });
                 const response = await fetch(`${this.baseUrl}${endpoint}`, {
                     headers: { 'Authorization': `Bearer ${this.accessToken}` }
                 });
@@ -258,9 +252,6 @@ class SpotifyAPI {
 
     // ─── Data Fetching ────────────────────────────────────────────
 
-    /**
-     * Get all followed artists (paginated)
-     */
     async getFollowedArtists(onProgress) {
         const artists = [];
         let after = null;
@@ -283,10 +274,6 @@ class SpotifyAPI {
         return artists;
     }
 
-    /**
-     * Get an artist's own albums (studio albums only)
-     * Uses include_groups=album to exclude singles, compilations, EPs
-     */
     async getArtistAlbums(artistId, artistName) {
         const albums = [];
         let offset = 0;
@@ -303,7 +290,7 @@ class SpotifyAPI {
             if (offset >= data.total) break;
         } while (true);
 
-        // Deduplicate by name (Spotify often has multiple versions of same album)
+        // Deduplicate by name
         const seen = new Map();
         const unique = [];
         for (const album of albums) {
@@ -317,10 +304,6 @@ class SpotifyAPI {
         return unique;
     }
 
-    /**
-     * Get albums where the artist appears on other artists' releases
-     * Filters to only album_type === 'album' (no compilations/singles)
-     */
     async getArtistAppearances(artistId, artistName) {
         const appearances = [];
         let offset = 0;
@@ -331,7 +314,6 @@ class SpotifyAPI {
                 `/artists/${artistId}/albums?include_groups=appears_on&market=US&limit=${limit}&offset=${offset}`
             );
 
-            // Filter: only include actual albums (not compilations or singles)
             const filtered = data.items.filter(a => a.album_type === 'album');
             appearances.push(...filtered);
             offset += limit;
@@ -354,9 +336,6 @@ class SpotifyAPI {
         return unique;
     }
 
-    /**
-     * Get the current user's Spotify profile
-     */
     async getProfile() {
         return await this.apiRequest('/me');
     }
