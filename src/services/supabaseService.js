@@ -530,9 +530,9 @@ class SupabaseService {
      */
     async _batchLoad(columns, onProgress = null, label = 'albums') {
         const startTime = performance.now();
-        const batchSize = 2000;
+        const batchSize = 3000;
         const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const concurrency = isMobile ? 4 : 6;
+        const concurrency = isMobile ? 4 : 8;
         const maxBatches = 30;
 
         console.log(`📦 Loading ${label}... (${isMobile ? 'Mobile' : 'Desktop'} mode, concurrency: ${concurrency})`);

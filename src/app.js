@@ -162,7 +162,7 @@ class AlbumCollectionApp {
         DB_NAME: 'AlbumsCollectionDB',
         DB_VERSION: 1,
         STORE_NAME: 'albumsCache',
-        CACHE_VERSION: '3.0', // v3: two-phase loading (lightweight + enriched)
+        CACHE_VERSION: '4.0', // v4: full data + cached derived data (artists/tracks/roles)
         MAX_AGE_HOURS: 24 // Cache expires after 24 hours
     };
 
@@ -930,6 +930,32 @@ class AlbumCollectionApp {
 
                     console.log(`🚀 CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
+
+                    // Restore derived data from cache (artists/tracks/roles) — skips expensive regeneration
+                    if (cached.derivedData) {
+                        const dd = cached.derivedData;
+                        if (dd.artists?.length > 0) {
+                            this.collection.artists = dd.artists;
+                            this.collection.tracks = dd.tracks || [];
+                            this.collection.roles = dd.roles || [];
+                            this.activeCollection.artists = dd.artists;
+                            this.activeCollection.tracks = dd.tracks || [];
+                            this.activeCollection.roles = dd.roles || [];
+                            this.artistsNeedRegeneration = false;
+
+                            // Restore categorized artists cache
+                            if (dd.categorizedArtists) {
+                                this.fullDatasetCache = {
+                                    artists: [...dd.artists],
+                                    tracks: [...(dd.tracks || [])],
+                                    roles: [...(dd.roles || [])],
+                                    categorizedArtists: dd.categorizedArtists
+                                };
+                            }
+
+                            console.log(`⚡ Restored derived data from cache: ${dd.artists.length} artists, ${dd.tracks?.length || 0} tracks, ${dd.roles?.length || 0} roles`);
+                        }
+                    }
                     
                     // Safe timestamp logging with validation
                     if (cached.timestamp && !isNaN(cached.timestamp)) {
@@ -1073,10 +1099,10 @@ class AlbumCollectionApp {
 
                 this.updateLoadingProgress('🔄 Generating collection data...', 'Processing artists, tracks, roles...', 70);
 
-                // Save full data to cache for instant next startup
-                this.updateLoadingProgress('💾 Caching data...', 'Saving for faster future startup...', 85);
-                await this.saveToCache(albums, scrapedHistory);
-                console.log(`💾 Saved ${albums.length} full albums to IndexedDB cache`);
+                // Save full data to cache in background (don't block UI rendering)
+                this.saveToCache(albums, scrapedHistory)
+                    .then(() => console.log(`💾 Saved ${albums.length} full albums to IndexedDB cache`))
+                    .catch(e => console.warn('⚠️ Cache save failed (non-blocking):', e.message));
 
             } else {
                 // Using cached data
@@ -1159,6 +1185,27 @@ class AlbumCollectionApp {
                     this.scrapedHistory = scrapedHistory;
 
                     console.log(`🚀 MOBILE CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
+
+                    // Restore derived data from cache
+                    if (cached.derivedData?.artists?.length > 0) {
+                        const dd = cached.derivedData;
+                        this.collection.artists = dd.artists;
+                        this.collection.tracks = dd.tracks || [];
+                        this.collection.roles = dd.roles || [];
+                        this.activeCollection.artists = dd.artists;
+                        this.activeCollection.tracks = dd.tracks || [];
+                        this.activeCollection.roles = dd.roles || [];
+                        this.artistsNeedRegeneration = false;
+                        if (dd.categorizedArtists) {
+                            this.fullDatasetCache = {
+                                artists: [...dd.artists],
+                                tracks: [...(dd.tracks || [])],
+                                roles: [...(dd.roles || [])],
+                                categorizedArtists: dd.categorizedArtists
+                            };
+                        }
+                        console.log(`⚡ Mobile: Restored derived data from cache: ${dd.artists.length} artists`);
+                    }
                     this.updateLoadingProgress('⚡ Mobile cache loaded', `${albums.length} albums from cache`, 25);
 
                     // Check for newer albums since cache was created (lightweight check)
@@ -2815,6 +2862,18 @@ class AlbumCollectionApp {
                 await this.initializeIndexedDB();
             }
 
+            // Include derived data if available (avoids expensive regeneration on next load)
+            let derivedData = null;
+            if (this.collection.artists?.length > 0) {
+                const { musicalArtists, technicalArtists } = this.fullDatasetCache?.categorizedArtists || {};
+                derivedData = {
+                    artists: this.collection.artists,
+                    tracks: this.collection.tracks || [],
+                    roles: this.collection.roles || [],
+                    categorizedArtists: musicalArtists ? { musicalArtists, technicalArtists } : null
+                };
+            }
+
             const cacheData = {
                 id: 'cache_data', // Fixed key for IndexedDB
                 version: this.cacheConfig.CACHE_VERSION,
@@ -2823,8 +2882,7 @@ class AlbumCollectionApp {
                 albums: albums || [],
                 scrapedHistory: scrapedHistory || [],
                 albumCount: albums?.length || 0,
-                // Derived data is NOT cached (too large) — regenerated on startup
-                derivedData: null
+                derivedData: derivedData
             };
 
             console.log(`🔍 CACHE DEBUG: Data to cache - ${cacheData.albumCount} albums`);
@@ -2883,9 +2941,11 @@ class AlbumCollectionApp {
      * This avoids race conditions between separate cache writes.
      */
     async _saveFullCacheWithDerivedData(artists, tracks, roles) {
-        // Save enriched albums to cache (derived data is NOT cached — too large, regenerated on startup)
+        // Save albums + derived data to cache for instant next startup
         try {
             if (!this.db) await this.initializeIndexedDB();
+
+            const { musicalArtists, technicalArtists } = this.fullDatasetCache?.categorizedArtists || {};
 
             const cacheData = {
                 id: 'cache_data',
@@ -2895,10 +2955,15 @@ class AlbumCollectionApp {
                 albums: this.collection.albums || [],
                 scrapedHistory: this.scrapedHistory || [],
                 albumCount: this.collection.albums?.length || 0,
-                derivedData: null
+                derivedData: {
+                    artists: artists || [],
+                    tracks: tracks || [],
+                    roles: roles || [],
+                    categorizedArtists: musicalArtists ? { musicalArtists, technicalArtists } : null
+                }
             };
 
-            console.log(`💾 Saving enriched albums cache: ${cacheData.albumCount} albums (derived data: ${artists?.length || 0} artists, ${tracks?.length || 0} tracks, ${roles?.length || 0} roles kept in-memory only)`);
+            console.log(`💾 Saving full cache: ${cacheData.albumCount} albums + derived data (${artists?.length || 0} artists, ${tracks?.length || 0} tracks, ${roles?.length || 0} roles)`);
 
             const tx = this.db.transaction([this.cacheConfig.STORE_NAME], 'readwrite');
             const store = tx.objectStore(this.cacheConfig.STORE_NAME);
