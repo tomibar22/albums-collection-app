@@ -7541,6 +7541,7 @@ class AlbumCollectionApp {
             }
 
             // Step 4: For each new album, search Discogs and scrape
+            const syncStats = { noResults: 0, noMatch: 0, noRelease: 0, noMusicalRole: 0, parseFail: 0, duplicate: 0, added: 0, replaced: 0, error: 0 };
             for (let i = 0; i < toScrape.length; i++) {
                 const entry = toScrape[i];
                 const sa = entry.spotifyAlbum;
@@ -7551,6 +7552,11 @@ class AlbumCollectionApp {
                 this.updateSpotifyProgress(progress,
                     `Scraping ${i + 1}/${toScrape.length}: ${albumTitle} by ${albumArtist}`
                 );
+
+                // Log running stats every 25 albums
+                if (i > 0 && i % 25 === 0) {
+                    console.log(`📊 Spotify Sync stats at ${i}/${toScrape.length}: added=${syncStats.added}, replaced=${syncStats.replaced}, noResults=${syncStats.noResults}, noMatch=${syncStats.noMatch}, noRelease=${syncStats.noRelease}, noMusicalRole=${syncStats.noMusicalRole}, duplicate=${syncStats.duplicate}, parseFail=${syncStats.parseFail}, error=${syncStats.error}`);
+                }
 
                 try {
                     // Rate-limit delay BEFORE each Discogs request cycle
@@ -7566,6 +7572,7 @@ class AlbumCollectionApp {
 
                     if (!searchResults?.results?.length) {
                         console.log(`⚠️ No Discogs results for: ${query}`);
+                        syncStats.noResults++;
                         stats.errors++;
                         continue;
                     }
@@ -7574,6 +7581,7 @@ class AlbumCollectionApp {
                     const match = this.findBestDiscogsMatch(searchResults.results, albumArtist, albumTitle);
                     if (!match) {
                         console.log(`⚠️ No good Discogs match for: ${query}`);
+                        syncStats.noMatch++;
                         stats.errors++;
                         continue;
                     }
@@ -7584,6 +7592,7 @@ class AlbumCollectionApp {
                     // Get full release details
                     const releaseData = await this.discogsAPI.getRelease(match.id);
                     if (!releaseData) {
+                        syncStats.noRelease++;
                         stats.errors++;
                         continue;
                     }
@@ -7591,6 +7600,8 @@ class AlbumCollectionApp {
                     // For own albums: check musical role
                     if (entry.type === 'own') {
                         if (!window.hasScrapedArtistMusicalRole(releaseData, entry.followedArtistName)) {
+                            console.log(`⏭️ No musical role for ${entry.followedArtistName} on: ${albumTitle}`);
+                            syncStats.noMusicalRole++;
                             stats.skipped++;
                             continue;
                         }
@@ -7599,6 +7610,7 @@ class AlbumCollectionApp {
                     // Parse album
                     const album = this.parser.parseAlbum(releaseData);
                     if (!album) {
+                        syncStats.parseFail++;
                         stats.errors++;
                         continue;
                     }
@@ -7606,14 +7618,18 @@ class AlbumCollectionApp {
                     // Check duplicates (by Discogs ID / title+artist+year)
                     const duplicateStatus = this.checkAlbumDuplicateStatus(album);
                     if (duplicateStatus.isDuplicate && !duplicateStatus.shouldReplace) {
+                        console.log(`⏭️ Duplicate: ${album.title} by ${album.artist}`);
+                        syncStats.duplicate++;
                         stats.skipped++;
                         continue;
                     }
 
                     if (duplicateStatus.shouldReplace) {
                         await this.replaceAlbumWithEarlierVersion(album, duplicateStatus.existingIndex);
+                        syncStats.replaced++;
                     } else {
                         await this.addAlbumToCollection(album);
+                        syncStats.added++;
                     }
 
                     stats.scraped++;
