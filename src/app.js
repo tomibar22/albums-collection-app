@@ -7422,6 +7422,9 @@ class AlbumCollectionApp {
         } catch (err) {
             console.error('❌ Failed to get Spotify profile:', err);
             this.spotifyAPI.disconnect();
+            // Show connect button again
+            document.getElementById('spotify-connect-area')?.classList.remove('hidden');
+            document.getElementById('spotify-connected-area')?.classList.add('hidden');
         }
     }
 

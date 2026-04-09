@@ -173,6 +173,28 @@ class SpotifyAPI {
             this.accessToken = data.access_token;
             this.tokenExpiry = Date.now() + (data.expires_in * 1000);
 
+            // Verify the token actually works before saving
+            try {
+                const verifyResponse = await fetch(`${this.baseUrl}/me`, {
+                    headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                });
+                if (!verifyResponse.ok) {
+                    const verifyErr = await verifyResponse.text();
+                    console.error('❌ Token verification failed:', verifyResponse.status, verifyErr);
+                    this.accessToken = null;
+                    this.tokenExpiry = 0;
+                    this.clearAuthParams();
+                    return false;
+                }
+                console.log('✅ Token verified with /me endpoint');
+            } catch (verifyErr) {
+                console.error('❌ Token verification error:', verifyErr);
+                this.accessToken = null;
+                this.tokenExpiry = 0;
+                this.clearAuthParams();
+                return false;
+            }
+
             sessionStorage.setItem('spotify_access_token', this.accessToken);
             sessionStorage.setItem('spotify_token_expiry', this.tokenExpiry.toString());
 
