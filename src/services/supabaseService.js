@@ -503,14 +503,35 @@ class SupabaseService {
     static HEAVY_COLUMNS = 'id,credits,tracklist,images';
 
     /**
+     * Fetch credits, tracklist, and images for a single album on demand.
+     * Used when an album modal is opened before background enrichment is complete.
+     */
+    async getAlbumDetailsById(albumId) {
+        if (!this.initialized) throw new Error('Supabase service not initialized');
+        try {
+            const { data, error } = await this.client
+                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                .select(SupabaseService.HEAVY_COLUMNS)
+                .eq('id', albumId)
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error(`❌ Failed to get details for album ${albumId}:`, error);
+            return null;
+        }
+    }
+
+    /**
      * Internal batch loader - shared by lightweight and full loaders
      */
     async _batchLoad(columns, onProgress = null, label = 'albums') {
         const startTime = performance.now();
-        const batchSize = 1000;
+        const batchSize = 2000;
         const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const concurrency = isMobile ? 4 : 5;
-        const maxBatches = 40;
+        const concurrency = isMobile ? 4 : 6;
+        const maxBatches = 30;
 
         console.log(`📦 Loading ${label}... (${isMobile ? 'Mobile' : 'Desktop'} mode, concurrency: ${concurrency})`);
 

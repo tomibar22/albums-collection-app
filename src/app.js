@@ -1458,51 +1458,27 @@ class AlbumCollectionApp {
                     detailsMap.set(d.id, d);
                 }
 
-                // Merge in small batches using requestIdleCallback to avoid jank
+                // Merge all at once — Map.get() is O(1), this loop is fast even for 32k albums
                 const albums = this.collection.albums;
-                const BATCH_SIZE = 500;
-                let i = 0;
-
-                const mergeBatch = () => {
-                    const end = Math.min(i + BATCH_SIZE, albums.length);
-                    for (; i < end; i++) {
-                        const detail = detailsMap.get(albums[i].id);
-                        if (detail) {
-                            albums[i].credits = detail.credits;
-                            albums[i].tracklist = detail.tracklist;
-                            albums[i].images = detail.images;
-                        }
+                for (let i = 0; i < albums.length; i++) {
+                    const detail = detailsMap.get(albums[i].id);
+                    if (detail) {
+                        albums[i].credits = detail.credits;
+                        albums[i].tracklist = detail.tracklist;
+                        albums[i].images = detail.images;
                     }
-                    this.enrichmentState.enrichedCount = i;
-
-                    if (i < albums.length) {
-                        // Schedule next batch during idle time
-                        if (typeof requestIdleCallback !== 'undefined') {
-                            requestIdleCallback(mergeBatch, { timeout: 200 });
-                        } else {
-                            setTimeout(mergeBatch, 50);
-                        }
-                    } else {
-                        // Enrichment complete
-                        const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-                        console.log(`✅ Background enrichment complete: ${albums.length} albums enriched in ${duration}s`);
-                        this.enrichmentState.completed = true;
-                        this.enrichmentState.inProgress = false;
-                        this.artistsNeedRegeneration = true;
-
-                        // Auto-generate derived data, then save EVERYTHING to cache in one write
-                        this._generateAndCacheDerivedData();
-
-                        resolve();
-                    }
-                };
-
-                // Start first batch
-                if (typeof requestIdleCallback !== 'undefined') {
-                    requestIdleCallback(mergeBatch, { timeout: 200 });
-                } else {
-                    setTimeout(mergeBatch, 100);
                 }
+
+                const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+                console.log(`✅ Background enrichment complete: ${albums.length} albums enriched in ${duration}s`);
+                this.enrichmentState.completed = true;
+                this.enrichmentState.inProgress = false;
+                this.artistsNeedRegeneration = true;
+
+                // Generate derived data immediately (no idle delay)
+                this._generateAndCacheDerivedData();
+
+                resolve();
 
             } catch (error) {
                 console.error('❌ Background enrichment failed:', error);
@@ -1519,55 +1495,46 @@ class AlbumCollectionApp {
      * Runs in idle time so it doesn't block UI interaction.
      */
     _generateAndCacheDerivedData() {
-        const generate = () => {
-            try {
-                console.log('🔄 Auto-generating derived data after enrichment...');
-                const startTime = performance.now();
+        try {
+            console.log('🔄 Auto-generating derived data after enrichment...');
+            const startTime = performance.now();
 
-                // Generate all derived data
-                const artists = this.generateArtistsFromAlbums();
-                const tracks = this.generateTracksFromAlbums();
-                const roles = this.generateRolesFromAlbums();
+            // Generate all derived data
+            const artists = this.generateArtistsFromAlbums();
+            const tracks = this.generateTracksFromAlbums();
+            const roles = this.generateRolesFromAlbums();
 
-                // Assign to collections
-                this.collection.artists = artists;
-                this.collection.tracks = tracks;
-                this.collection.roles = roles;
-                this.activeCollection.artists = artists;
-                this.activeCollection.tracks = tracks;
-                this.activeCollection.roles = roles;
-                this.artistsNeedRegeneration = false;
+            // Assign to collections
+            this.collection.artists = artists;
+            this.collection.tracks = tracks;
+            this.collection.roles = roles;
+            this.activeCollection.artists = artists;
+            this.activeCollection.tracks = tracks;
+            this.activeCollection.roles = roles;
+            this.artistsNeedRegeneration = false;
 
-                // Update fullDatasetCache for filters
-                const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(artists);
-                this.fullDatasetCache = {
-                    artists: [...artists],
-                    tracks: [...tracks],
-                    roles: [...roles],
-                    categorizedArtists: {
-                        musicalArtists: [...musicalArtists],
-                        technicalArtists: [...technicalArtists]
-                    }
-                };
+            // Update fullDatasetCache for filters
+            const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(artists);
+            this.fullDatasetCache = {
+                artists: [...artists],
+                tracks: [...tracks],
+                roles: [...roles],
+                categorizedArtists: {
+                    musicalArtists: [...musicalArtists],
+                    technicalArtists: [...technicalArtists]
+                }
+            };
 
-                const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-                console.log(`✅ Derived data generated in ${duration}s: ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
+            const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+            console.log(`✅ Derived data generated in ${duration}s: ${artists.length} artists, ${tracks.length} tracks, ${roles.length} roles`);
 
-                // Save enriched albums to IndexedDB cache
-                this._saveFullCacheWithDerivedData(artists, tracks, roles);
+            // Save enriched albums to IndexedDB cache (async, non-blocking)
+            this._saveFullCacheWithDerivedData(artists, tracks, roles);
 
-                // Push derived data to Supabase for instant loading on future first visits
-                this._pushDerivedDataToSupabase(artists, tracks, roles);
-            } catch (error) {
-                console.error('❌ Failed to auto-generate derived data:', error);
-            }
-        };
-
-        // Run during idle time to avoid blocking current interactions
-        if (typeof requestIdleCallback !== 'undefined') {
-            requestIdleCallback(generate, { timeout: 2000 });
-        } else {
-            setTimeout(generate, 500);
+            // Push derived data to Supabase for instant loading on future first visits
+            this._pushDerivedDataToSupabase(artists, tracks, roles);
+        } catch (error) {
+            console.error('❌ Failed to auto-generate derived data:', error);
         }
     }
 
@@ -4438,13 +4405,11 @@ class AlbumCollectionApp {
         });
     }
 
-    // Show detailed album modal
-    showAlbumModal(album) {
-        const modalContent = this.generateAlbumModalContent(album);
-
+    // Show detailed album modal — fetches credits/tracklist on demand if missing
+    async showAlbumModal(album) {
         // Use reliable modal state tracking instead of DOM classes
         const isModalCurrentlyOpen = this.isModalCurrentlyOpen;
-        
+
         console.log(`🎭 showAlbumModal: isModalCurrentlyOpen=${isModalCurrentlyOpen}, modalStack.length=${this.modalStack.length}`);
 
         // Force clear modal stack if opening from main page (not nested)
@@ -4453,6 +4418,33 @@ class AlbumCollectionApp {
             this.modalStack = [];
         }
 
+        // If credits/tracklist not yet loaded (enrichment still running), fetch on demand
+        if (!album.credits && !this.enrichmentState.completed && this.dataService?.service?.getAlbumDetailsById) {
+            // Show modal immediately with loading placeholders
+            const modalContent = this.generateAlbumModalContent(album);
+            this.showModal(`${album.title} (${album.year})`, modalContent, isModalCurrentlyOpen);
+
+            // Fetch details in background and update modal in-place
+            try {
+                console.log(`⚡ On-demand fetch for album: ${album.title}`);
+                const details = await this.dataService.service.getAlbumDetailsById(album.id);
+                if (details) {
+                    album.credits = details.credits;
+                    album.tracklist = details.tracklist;
+                    album.images = details.images;
+                    // Re-render the modal content in place
+                    const modalBody = document.querySelector('.modal-body');
+                    if (modalBody) {
+                        modalBody.innerHTML = this.generateAlbumModalContent(album);
+                    }
+                }
+            } catch (err) {
+                console.warn('⚠️ On-demand album fetch failed:', err);
+            }
+            return;
+        }
+
+        const modalContent = this.generateAlbumModalContent(album);
         this.showModal(`${album.title} (${album.year})`, modalContent, isModalCurrentlyOpen);
     }
 
@@ -10131,9 +10123,18 @@ class AlbumCollectionApp {
             return;
         }
 
-        // Force regeneration of roles to ensure we have latest data with improved logic
-        console.log('🔄 Forcing regeneration of roles data...');
-        this.activeCollection.roles = this.generateRolesFromAlbums();
+        // Use cached roles if available, only regenerate when needed
+        const albumsHash = this.collection.albums?.length || 0;
+        const needsRolesRegeneration = !this.activeCollection.roles ||
+                                       this.activeCollection.roles.length === 0 ||
+                                       this.lastRolesAlbumsHash !== albumsHash;
+        if (needsRolesRegeneration) {
+            console.log('🔄 Regenerating roles data...');
+            this.activeCollection.roles = this.generateRolesFromAlbums();
+            this.lastRolesAlbumsHash = albumsHash;
+        } else {
+            console.log('⚡ Using cached roles data');
+        }
 
         console.log('🎭 Total roles found:', this.activeCollection.roles?.length || 0);
 
