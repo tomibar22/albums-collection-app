@@ -106,20 +106,23 @@ class SupabaseService {
             const { data: album, error: albumError } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                 .upsert(albumRow, { onConflict: 'id', ignoreDuplicates: true })
-                .select()
-                .single();
+                .select();
 
             if (albumError) throw albumError;
 
-            // Process relationships
-            // PHASE 1a: Disable relationship processing for BOTH scrapers
-            // await this.processAlbumRelationships(album.id, albumData);
-
-            if (this.debug) {
-                console.log('✅ Album added successfully:', album.title);
+            // ignoreDuplicates returns 0 rows when album already exists — that's fine
+            if (!album || album.length === 0) {
+                console.log(`⏭️ Album already exists in database: ${albumData.title} (id: ${albumData.id})`);
+                return albumRow; // Return the input data as-is
             }
 
-            return album;
+            const savedAlbum = album[0];
+
+            if (this.debug) {
+                console.log('✅ Album added successfully:', savedAlbum.title);
+            }
+
+            return savedAlbum;
         } catch (error) {
             console.error('❌ Failed to add album:', error);
             throw error;
