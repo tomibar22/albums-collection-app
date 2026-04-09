@@ -92,17 +92,36 @@ class SpotifyAPI {
         const state = params.get('state');
         const error = params.get('error');
 
+        // If we have a code in the URL, save it in case auth guard redirects us away
+        if (code && state) {
+            sessionStorage.setItem('spotify_auth_code', code);
+            sessionStorage.setItem('spotify_auth_state_from_url', state);
+        }
+
+        // Try URL params first, then fall back to saved params (in case auth guard stripped the URL)
+        const authCode = code || sessionStorage.getItem('spotify_auth_code');
+        const authState = state || sessionStorage.getItem('spotify_auth_state_from_url');
+
+        console.log('🎵 handleCallback check:', {
+            codeFromUrl: !!code,
+            codeFromStorage: !!sessionStorage.getItem('spotify_auth_code'),
+            hasState: !!authState,
+            hasError: !!error,
+            url: window.location.href.substring(0, 100),
+            hasSavedVerifier: !!sessionStorage.getItem('spotify_code_verifier')
+        });
+
         if (error) {
             console.error('❌ Spotify auth error:', error);
             this.clearAuthParams();
             return false;
         }
 
-        if (!code) return false;
+        if (!authCode) return false;
 
         const savedState = sessionStorage.getItem('spotify_auth_state');
-        if (state !== savedState) {
-            console.error('❌ Spotify auth state mismatch');
+        if (authState !== savedState) {
+            console.error('❌ Spotify auth state mismatch', { authState, savedState });
             this.clearAuthParams();
             return false;
         }
@@ -117,7 +136,7 @@ class SpotifyAPI {
         try {
             console.log('🔄 Exchanging code for token...', {
                 redirectUri: this.redirectUri,
-                hasCode: !!code,
+                hasCode: !!authCode,
                 hasVerifier: !!codeVerifier
             });
 
@@ -127,7 +146,7 @@ class SpotifyAPI {
                 body: new URLSearchParams({
                     client_id: this.clientId,
                     grant_type: 'authorization_code',
-                    code: code,
+                    code: authCode,
                     redirect_uri: this.redirectUri,
                     code_verifier: codeVerifier
                 })
@@ -165,6 +184,8 @@ class SpotifyAPI {
         sessionStorage.removeItem('spotify_code_verifier');
         sessionStorage.removeItem('spotify_auth_state');
         sessionStorage.removeItem('spotify_redirect_uri');
+        sessionStorage.removeItem('spotify_auth_code');
+        sessionStorage.removeItem('spotify_auth_state_from_url');
     }
 
     disconnect() {
@@ -176,7 +197,12 @@ class SpotifyAPI {
     }
 
     isConnected() {
-        return !!this.accessToken && Date.now() < this.tokenExpiry;
+        if (!this.accessToken || Date.now() >= this.tokenExpiry) {
+            // Clean up stale session data
+            if (this.accessToken) this.disconnect();
+            return false;
+        }
+        return true;
     }
 
     // ─── API Requests ─────────────────────────────────────────────
