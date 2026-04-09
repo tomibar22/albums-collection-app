@@ -1113,14 +1113,18 @@ class AlbumCollectionApp {
             this.updateLoadingProgress('🔄 Preparing collection...', 'Organizing your music...', 60);
 
             if (!this.collection.albums || this.collection.albums.length === 0) {
-                // Dedup albums by ID before assigning (cache + newer albums may overlap)
-                const seen = new Set();
+                // Dedup albums by ID AND by title+artist+year (catches different Discogs IDs for same album)
+                const seenIds = new Set();
+                const seenTitleKeys = new Set();
+                const norm = s => (s || '').toLowerCase().replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
                 const dedupedAlbums = [];
                 for (const album of (albums || [])) {
-                    if (!seen.has(album.id)) {
-                        seen.add(album.id);
-                        dedupedAlbums.push(album);
-                    }
+                    if (seenIds.has(album.id)) continue;
+                    const titleKey = `${norm(album.title)}|${norm(album.artist)}|${album.year || ''}`;
+                    if (seenTitleKeys.has(titleKey)) continue;
+                    seenIds.add(album.id);
+                    seenTitleKeys.add(titleKey);
+                    dedupedAlbums.push(album);
                 }
                 if (dedupedAlbums.length < (albums || []).length) {
                     console.log(`🧹 Deduped albums: ${albums.length} → ${dedupedAlbums.length} (removed ${albums.length - dedupedAlbums.length} duplicates)`);
@@ -4452,15 +4456,23 @@ class AlbumCollectionApp {
         // IMPORTANT: Generate complete unfiltered artist data for modal (ignore global filters)
         // Find all albums where this artist appears in the UNFILTERED collection
         const seenIds = new Set();
+        const seenTitleKeys = new Set();
+        const normalize = s => (s || '').toLowerCase().replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
         const unfilteredAlbums = this.collection.albums.filter(album => {
             if (!album.credits || !Array.isArray(album.credits)) return false;
-            // Dedup by album ID (collection may have duplicate entries)
+            // Dedup by album ID
             if (seenIds.has(album.id)) return false;
+            // Dedup by title+artist+year (catches different Discogs release IDs for same album)
+            const titleKey = `${normalize(album.title)}|${normalize(album.artist)}|${album.year || ''}`;
+            if (seenTitleKeys.has(titleKey)) return false;
 
             const hasArtist = album.credits.some(credit =>
                 credit.name && credit.name.toLowerCase().trim() === artist.name.toLowerCase().trim()
             );
-            if (hasArtist) seenIds.add(album.id);
+            if (hasArtist) {
+                seenIds.add(album.id);
+                seenTitleKeys.add(titleKey);
+            }
             return hasArtist;
         });
         
