@@ -7468,11 +7468,14 @@ class AlbumCollectionApp {
             }
 
             // Build existing titles set for duplicate filtering
+            // Primary: artist+title. Secondary: Discogs ID set for post-scrape dedup.
             const existingTitles = new Set();
+            const existingIds = new Set();
             for (const album of this.collection.albums) {
                 const key = `${album.artist}-${album.title}`.toLowerCase()
                     .replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
                 existingTitles.add(key);
+                if (album.id) existingIds.add(album.id);
             }
 
             let totalAlbumsScraping = 0;
@@ -8265,11 +8268,21 @@ class AlbumCollectionApp {
             return { isDuplicate: true, shouldReplace: false, existingIndex: exactMatch };
         }
 
-        // Check for same title with same or different year
-        const titleMatch = this.collection.albums.findIndex(existingAlbum =>
-            existingAlbum.title === album.title &&
-            existingAlbum.artist === album.artist // Also match primary artist to avoid false positives
-        );
+        // Normalize for fuzzy matching (handles artist name differences between Spotify/Discogs)
+        const normalize = s => (s || '').toLowerCase().replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
+        const albumTitleNorm = normalize(album.title);
+
+        // Check for same title (normalized) — first try with artist match, then title-only
+        const titleMatch = this.collection.albums.findIndex(existingAlbum => {
+            if (normalize(existingAlbum.title) !== albumTitleNorm) return false;
+            // Same title — check if artist matches or overlaps
+            const existArtist = normalize(existingAlbum.artist);
+            const newArtist = normalize(album.artist);
+            // Exact match, or one contains the other (handles "Mark Ronson" vs "Mark Ronson feat. X")
+            return existArtist === newArtist ||
+                   existArtist.includes(newArtist) ||
+                   newArtist.includes(existArtist);
+        });
 
         if (titleMatch !== -1) {
             const existingAlbum = this.collection.albums[titleMatch];
