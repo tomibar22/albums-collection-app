@@ -287,6 +287,37 @@
                         </div>
                     </div>
                     
+                    <!-- Spotify Sync - Primary method for keeping collection up to date -->
+                    <div class="scraper-section spotify-sync-section">
+                        <h3><span class="spotify-icon">🎧</span> Spotify Sync</h3>
+                        <p class="scraper-description">Sync your followed artists from Spotify. Discovers new albums and appearances, then scrapes full metadata from Discogs.</p>
+
+                        <div id="spotify-connect-area">
+                            <button id="spotify-connect-btn" class="spotify-btn">
+                                <svg viewBox="0 0 24 24" width="20" height="20" class="spotify-logo"><path fill="currentColor" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                                Connect to Spotify
+                            </button>
+                        </div>
+
+                        <div id="spotify-connected-area" class="hidden">
+                            <div class="spotify-profile">
+                                <span id="spotify-user-name" class="spotify-user"></span>
+                                <button id="spotify-disconnect-btn" class="secondary-btn small-btn">Disconnect</button>
+                            </div>
+                            <button id="spotify-sync-btn" class="spotify-btn spotify-sync-start-btn">
+                                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                                Sync New Albums
+                            </button>
+                            <div id="spotify-sync-progress" class="hidden">
+                                <div class="spotify-progress-bar">
+                                    <div class="spotify-progress-fill" id="spotify-progress-fill"></div>
+                                </div>
+                                <p id="spotify-sync-status" class="sync-status-text"></p>
+                            </div>
+                            <div id="spotify-sync-results" class="hidden"></div>
+                        </div>
+                    </div>
+
                     <div class="scraper-section">
                         <h3>Artist Discography Scraper</h3>
                         <div class="search-container">
@@ -485,6 +516,7 @@
     <script src="src/utils/secureCredentialLoader.js"></script>
     <script src="src/data/models.js"></script>
     <script src="src/api/discogs.js"></script>
+    <script src="src/api/spotify.js"></script>
     <script src="src/data/parser.js"></script>
     <script src="src/utils/roleCategorizer.js"></script>
     <script src="src/utils/yearFilterManager.js"></script>

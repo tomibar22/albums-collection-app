@@ -100,6 +100,12 @@ window.CONFIG = {
         }
     },
 
+    // Spotify API Configuration (for Spotify Sync scraper)
+    SPOTIFY: {
+        CLIENT_ID: 'YOUR_SPOTIFY_CLIENT_ID', // Get from https://developer.spotify.com/dashboard
+        REDIRECT_URI: '' // Leave empty to auto-detect, or set to your app URL (e.g. http://localhost:8000)
+    },
+
     // Development settings
     DEBUG: {
         ENABLED: true,
