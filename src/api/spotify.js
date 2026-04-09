@@ -20,7 +20,10 @@ class SpotifyAPI {
     }
 
     get redirectUri() {
-        return window.CONFIG?.SPOTIFY?.REDIRECT_URI || window.location.origin + window.location.pathname;
+        // Use saved redirect URI from authorization step if available (must match exactly)
+        const saved = sessionStorage.getItem('spotify_redirect_uri');
+        if (saved) return saved;
+        return window.CONFIG?.SPOTIFY?.REDIRECT_URI || window.location.origin + '/';
     }
 
     // ─── PKCE Auth Flow ───────────────────────────────────────────
@@ -62,13 +65,15 @@ class SpotifyAPI {
         const state = this.generateCodeVerifier(32);
 
         // Store for callback
+        const redirectUri = this.redirectUri;
         sessionStorage.setItem('spotify_code_verifier', codeVerifier);
         sessionStorage.setItem('spotify_auth_state', state);
+        sessionStorage.setItem('spotify_redirect_uri', redirectUri);
 
         const params = new URLSearchParams({
             client_id: this.clientId,
             response_type: 'code',
-            redirect_uri: this.redirectUri,
+            redirect_uri: redirectUri,
             scope: this.scopes,
             state: state,
             code_challenge_method: 'S256',
@@ -110,6 +115,12 @@ class SpotifyAPI {
         }
 
         try {
+            console.log('🔄 Exchanging code for token...', {
+                redirectUri: this.redirectUri,
+                hasCode: !!code,
+                hasVerifier: !!codeVerifier
+            });
+
             const response = await fetch(this.tokenUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -130,6 +141,7 @@ class SpotifyAPI {
             }
 
             const data = await response.json();
+            console.log('✅ Token received, expires_in:', data.expires_in);
             this.accessToken = data.access_token;
             this.tokenExpiry = Date.now() + (data.expires_in * 1000);
 
@@ -152,6 +164,7 @@ class SpotifyAPI {
     clearAuthParams() {
         sessionStorage.removeItem('spotify_code_verifier');
         sessionStorage.removeItem('spotify_auth_state');
+        sessionStorage.removeItem('spotify_redirect_uri');
     }
 
     disconnect() {
