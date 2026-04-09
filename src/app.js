@@ -114,12 +114,13 @@ class AlbumCollectionApp {
 
     this.artistsNeedRegeneration = true; // Flag to track when artists need to be regenerated
 
-    // Two-phase loading: enrichment state tracking
+    // Full data loading — all albums load with complete data (credits, tracklist, images)
+    // No more two-phase enrichment. enrichmentState kept for backward compat (always completed).
     this.enrichmentState = {
-        completed: false,     // true once all albums have credits/tracklist/images
-        inProgress: false,    // true while background enrichment is running
-        enrichedCount: 0,     // how many albums have been enriched so far
-        promise: null         // resolves when enrichment completes (for tabs that need it)
+        completed: true,
+        inProgress: false,
+        enrichedCount: 0,
+        promise: Promise.resolve()
     };
 
 
@@ -793,9 +794,11 @@ class AlbumCollectionApp {
     // Hide loading modal immediately after everything is ready
     this.hideLoadingModal();
 
-    // Phase 2: Start background enrichment AFTER UI is visible
-    // This fetches credits, tracklist, images without blocking interaction
-    this.startBackgroundEnrichment();
+    // Full data already loaded — generate derived data if not already done
+    if (!this.collection.artists || this.collection.artists.length === 0) {
+        console.log('🔄 Generating derived data (artists, tracks, roles)...');
+        this._generateAndCacheDerivedData();
+    }
 
     } catch (error) {
 
@@ -925,12 +928,6 @@ class AlbumCollectionApp {
                     this.collection.albums = albums;
                     this.scrapedHistory = scrapedHistory;
 
-                    // Check if albums have enriched data (credits)
-                    if (albums[0]?.credits) {
-                        this.enrichmentState.completed = true;
-                        this.enrichmentState.promise = Promise.resolve();
-                    }
-
                     console.log(`🚀 CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     console.log(`📊 Cache stats: ${albums.length} albums, ${scrapedHistory.length} scraped history entries`);
                     
@@ -1058,41 +1055,28 @@ class AlbumCollectionApp {
 
             
 
-            // Step 2: If no cache or cache invalid, load LIGHTWEIGHT data from database
+            // Step 2: If no cache or cache invalid, load FULL data from database
             if (!albums || albums.length === 0) {
 
-                this.updateLoadingProgress('📚 Loading albums...', 'Fetching from database...', 30);
+                this.updateLoadingProgress('📚 Loading albums...', 'Fetching complete data from database...', 30);
 
-                // Phase 1: Load lightweight albums + pre-computed derived data in PARALLEL
-                const [lightweightAlbums, derivedData, fetchedScrapedHistory] = await Promise.all([
-                    this.loadAlbumsLightweight().catch(async () => {
-                        // Fallback
-                        try { return await this.dataService.service.getAlbumsLightweight(); }
-                        catch (e) { console.error('❌ Failed to load albums:', e); return []; }
-                    }),
-                    this._loadDerivedDataFromSupabase().catch(() => null),
+                // Load ALL album data (including credits, tracklist, images) in one shot
+                const [fullAlbums, fetchedScrapedHistory] = await Promise.all([
+                    this.dataService.service.getAlbums((loaded, progress) => {
+                        this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+                    }).catch(e => { console.error('❌ Failed to load albums:', e); return []; }),
                     this.dataService.getScrapedArtistsHistory().catch(() => [])
                 ]);
 
-                albums = lightweightAlbums || [];
+                albums = fullAlbums || [];
                 scrapedHistory = fetchedScrapedHistory || [];
 
-                // Apply pre-computed derived data if available (instant tabs!)
-                if (derivedData && derivedData.artists && derivedData.artists.length > 0) {
-                    this.collection.artists = derivedData.artists;
-                    this.collection.tracks = derivedData.tracks || [];
-                    this.collection.roles = derivedData.roles || [];
-                    this.artistsNeedRegeneration = false;
-                    console.log(`⚡ INSTANT TABS: ${derivedData.artists.length} artists, ${derivedData.tracks.length} tracks, ${derivedData.roles.length} roles from Supabase`);
-                    this.updateLoadingProgress('⚡ Pre-computed data loaded', 'Artists, Tracks, Roles ready!', 40);
-                } else {
-                    this.updateLoadingProgress('📜 Albums loaded', 'Tabs will be ready after enrichment...', 40);
-                }
+                this.updateLoadingProgress('🔄 Generating collection data...', 'Processing artists, tracks, roles...', 70);
 
-                // Save lightweight data to cache for instant next startup
-                this.updateLoadingProgress('💾 Caching data...', 'Saving for faster future startup...', 50);
+                // Save full data to cache for instant next startup
+                this.updateLoadingProgress('💾 Caching data...', 'Saving for faster future startup...', 85);
                 await this.saveToCache(albums, scrapedHistory);
-                console.log(`💾 Saved ${albums.length} lightweight albums to IndexedDB cache`);
+                console.log(`💾 Saved ${albums.length} full albums to IndexedDB cache`);
 
             } else {
                 // Using cached data
@@ -1174,11 +1158,6 @@ class AlbumCollectionApp {
                     this.collection.albums = albums;
                     this.scrapedHistory = scrapedHistory;
 
-                    if (albums[0]?.credits) {
-                        this.enrichmentState.completed = true;
-                        this.enrichmentState.promise = Promise.resolve();
-                    }
-
                     console.log(`🚀 MOBILE CACHE HIT! Loaded ${albums.length} albums from IndexedDB cache`);
                     this.updateLoadingProgress('⚡ Mobile cache loaded', `${albums.length} albums from cache`, 25);
 
@@ -1207,9 +1186,11 @@ class AlbumCollectionApp {
                         this.updateLoadingProgress('📱 Using cached data...', 'Setting up interface...', 50);
                     }
                 } else {
-                    // Cache invalid, load from database and cache it
-                    this.updateLoadingProgress('📚 Loading albums...', 'Downloading and caching...', 30);
-                    albums = await this.loadAlbumsLightweight();
+                    // Cache invalid, load full data from database and cache it
+                    this.updateLoadingProgress('📚 Loading albums...', 'Downloading complete data...', 30);
+                    albums = await this.dataService.service.getAlbums((loaded, progress) => {
+                        this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+                    });
 
                     // Cache the loaded data for next time
                     try {
@@ -1222,13 +1203,15 @@ class AlbumCollectionApp {
                     }
                 }
             } else {
-                // No valid cache, load lightweight from database
-                this.updateLoadingProgress('📚 Loading albums...', 'Downloading...', 30);
-                albums = await this.loadAlbumsLightweight();
+                // No valid cache, load full data from database
+                this.updateLoadingProgress('📚 Loading albums...', 'Downloading complete data...', 30);
+                albums = await this.dataService.service.getAlbums((loaded, progress) => {
+                    this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+                });
 
                 // Cache for next time (non-blocking)
                 this.saveToCache(albums, []).then(() => {
-                    console.log('💾 Mobile: Lightweight data cached for future loads');
+                    console.log('💾 Mobile: Full data cached for future loads');
                 }).catch(cacheError => {
                     console.warn('⚠️ Mobile cache save failed (non-blocking):', cacheError.message);
                 });
@@ -1424,89 +1407,15 @@ class AlbumCollectionApp {
      * and merges them into existing album objects without blocking the UI.
      * Uses requestIdleCallback + small batches to stay smooth.
      */
+    // Legacy no-op — full data is now loaded upfront, no enrichment needed
     startBackgroundEnrichment() {
-        if (this.enrichmentState.completed || this.enrichmentState.inProgress) {
-            // If enrichment is done but derived data is missing, generate it
-            if (this.enrichmentState.completed && (!this.collection.artists || this.collection.artists.length === 0)) {
-                console.log('🔄 Enrichment complete but derived data missing — generating now...');
-                this._generateAndCacheDerivedData();
-            }
-            return this.enrichmentState.promise;
+        this.enrichmentState.completed = true;
+        this.enrichmentState.promise = Promise.resolve();
+
+        // Generate derived data if missing
+        if (!this.collection.artists || this.collection.artists.length === 0) {
+            this._generateAndCacheDerivedData();
         }
-
-        // Check if albums already have credits (loaded from enriched cache)
-        if (this.collection.albums.length > 0 && this.collection.albums[0].credits) {
-            console.log('✅ Albums already enriched (from cache), skipping background fetch');
-            this.enrichmentState.completed = true;
-            this.enrichmentState.promise = Promise.resolve();
-
-            // If derived data wasn't in cache, generate it now
-            if (!this.collection.artists || this.collection.artists.length === 0) {
-                console.log('🔄 Enriched albums cached but derived data missing — generating now...');
-                this._generateAndCacheDerivedData();
-            }
-
-            return this.enrichmentState.promise;
-        }
-
-        this.enrichmentState.inProgress = true;
-
-        this.enrichmentState.promise = new Promise(async (resolve) => {
-            try {
-                console.log('🔄 Phase 2: Starting background enrichment...');
-                const startTime = performance.now();
-
-                // Fetch heavy fields from Supabase
-                const details = await this.dataService.service.getAlbumDetails();
-
-                if (!details || details.length === 0) {
-                    console.warn('⚠️ No enrichment data received');
-                    this.enrichmentState.completed = true;
-                    this.enrichmentState.inProgress = false;
-                    resolve();
-                    return;
-                }
-
-                // Build lookup map for fast merging
-                const detailsMap = new Map();
-                for (const d of details) {
-                    detailsMap.set(d.id, d);
-                }
-
-                // Merge all at once — Map.get() is O(1), this loop is fast even for 32k albums
-                const albums = this.collection.albums;
-                for (let i = 0; i < albums.length; i++) {
-                    const detail = detailsMap.get(albums[i].id);
-                    if (detail) {
-                        albums[i].credits = detail.credits;
-                        albums[i].tracklist = detail.tracklist;
-                        albums[i].images = detail.images;
-                    }
-                }
-
-                const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-                console.log(`✅ Background enrichment complete: ${albums.length} albums enriched in ${duration}s`);
-                this.enrichmentState.completed = true;
-                this.enrichmentState.inProgress = false;
-                this.artistsNeedRegeneration = true;
-
-                // Clear any stale cached derived data so it regenerates with enriched credits
-                this.clearDataGenerationCache();
-
-                // Generate derived data after a microtask to let the promise resolve first
-                // This ensures waitForEnrichment() resolves before heavy CPU work
-                resolve();
-
-                // Generate derived data after resolve, so tabs waiting on enrichment can proceed
-                setTimeout(() => this._generateAndCacheDerivedData(), 50);
-
-            } catch (error) {
-                console.error('❌ Background enrichment failed:', error);
-                this.enrichmentState.inProgress = false;
-                resolve(); // Don't reject - app should work without enrichment
-            }
-        });
-
         return this.enrichmentState.promise;
     }
 
@@ -4539,16 +4448,12 @@ class AlbumCollectionApp {
                     ${track.duration ? `<span class="track-duration">${track.duration}</span>` : ''}
                 </div>
             `).join('')
-            : (this.enrichmentState.completed
-                ? '<p class="no-content">No tracklist available</p>'
-                : '<p class="no-content" style="color:#4a9eff">⏳ Tracklist loading in background...</p>');
+            : '<p class="no-content">No tracklist available</p>';
 
         // Separate musical and technical credits using role categorizer
         const { musicalCreditsHtml, technicalCreditsHtml } = album.credits && album.credits.length > 0
             ? this.generateSeparatedCreditsHtml(album.credits)
-            : { musicalCreditsHtml: (this.enrichmentState.completed
-                ? '<p class="no-content">No credits available</p>'
-                : '<p class="no-content" style="color:#4a9eff">⏳ Credits loading in background...</p>'), technicalCreditsHtml: '' };
+            : { musicalCreditsHtml: '<p class="no-content">No credits available</p>', technicalCreditsHtml: '' };
 
         // Generate genres and styles tags
         const genreStyleTags = [];
@@ -9477,13 +9382,6 @@ class AlbumCollectionApp {
                 break;
 
             case 'artists':
-                // Wait for enrichment (credits needed for artist generation)
-                if (!this.enrichmentState.completed) {
-                    this.showInlineLoading('artists', 'Loading artist data...');
-                    await this.waitForEnrichment();
-                    this.hideInlineLoading('artists');
-                }
-
                 // Check if artists need to be generated
                 if (!this.activeCollection.artists || this.activeCollection.artists.length === 0 || this.artistsNeedRegeneration) {
                     console.log(`🎭 Generating artists data from active collection...`);
@@ -9505,13 +9403,6 @@ class AlbumCollectionApp {
 
             case 'tracks':
                 try {
-                    // Wait for enrichment (tracklist needed for track generation)
-                    if (!this.enrichmentState.completed) {
-                        this.showInlineLoading('tracks', 'Loading track data...');
-                        await this.waitForEnrichment();
-                        this.hideInlineLoading('tracks');
-                    }
-
                     // 🚀 OPTIMIZATION 3: Smart tracks caching to prevent unnecessary regeneration
                     const albumsHash = this.collection.albums?.length || 0;
                     const needsTracksRegeneration = !this.collection.tracks || 
@@ -9577,13 +9468,6 @@ class AlbumCollectionApp {
 
             case 'roles':
                 try {
-                    // Wait for enrichment (credits needed for role generation)
-                    if (!this.enrichmentState.completed) {
-                        this.showInlineLoading('roles', 'Loading role data...');
-                        await this.waitForEnrichment();
-                        this.hideInlineLoading('roles');
-                    }
-
                     // Check if roleCategorizer is available first (critical for roles)
                     if (!window.roleCategorizer) {
                         console.error('❌ RoleCategorizer not loaded - cannot display roles');

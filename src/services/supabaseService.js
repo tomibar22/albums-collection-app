@@ -481,7 +481,7 @@ class SupabaseService {
             
             const { data: albums, error } = await this.client
                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                .select(SupabaseService.LIGHTWEIGHT_COLUMNS)
+                .select('*')
                 .order('created_at', { ascending: false }) // Newest first
                 .limit(count);
 
