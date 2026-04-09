@@ -985,13 +985,16 @@ class AlbumCollectionApp {
                                 if (totalInDatabase > currentCacheCount) {
                                     const missingCount = totalInDatabase - currentCacheCount;
                                     console.log(`📈 Found ${missingCount} missing albums - fetching newest albums`);
-                                    
-                                    // Get the newest albums that aren't in cache
-                                    const newestAlbums = await this.dataService.getNewestAlbums(missingCount);
-                                    
-                                    if (newestAlbums && newestAlbums.length > 0) {
-                                        console.log(`📈 Fallback: Found ${newestAlbums.length} new albums!`);
-                                        albums = [...albums, ...newestAlbums];
+
+                                    // Get newest albums and dedup against cache
+                                    const fetchCount = Math.min(missingCount + 50, 500);
+                                    const newestAlbums = await this.dataService.getNewestAlbums(fetchCount);
+                                    const cachedIds = new Set(albums.map(a => a.id));
+                                    const dedupedAlbums = newestAlbums ? newestAlbums.filter(a => !cachedIds.has(a.id)) : [];
+
+                                    if (dedupedAlbums.length > 0) {
+                                        console.log(`📈 Fallback: Found ${dedupedAlbums.length} new albums (fetched ${newestAlbums.length}, deduped)`);
+                                        albums = [...albums, ...dedupedAlbums];
                                         
                                         // 🔧 CRITICAL FIX: Update collection.albums with new albums  
                                         this.collection.albums = albums;
@@ -8593,61 +8596,46 @@ class AlbumCollectionApp {
     // Check for albums added to database since cache was created
     async checkForNewerAlbums(cacheTimestamp) {
         try {
-            console.log(`🔍 Checking for albums newer than cache (count-based approach)`);
-            
-            // Validate timestamp
-            if (!cacheTimestamp || isNaN(cacheTimestamp)) {
-                console.log(`❌ Invalid cache timestamp: ${cacheTimestamp}`);
+            console.log(`🔍 Checking for albums newer than cache`);
+
+            // Get total count from database
+            const totalInDatabase = await this.dataService.getAlbumsCount();
+            const currentCacheCount = this.collection.albums.length;
+            console.log(`📊 Database: ${totalInDatabase}, Cache: ${currentCacheCount}`);
+
+            if (totalInDatabase <= currentCacheCount) {
+                console.log('✅ Cache is up to date (or has more than DB)');
                 return [];
             }
-            
-            console.log(`📅 Cache timestamp: ${cacheTimestamp} (${new Date(cacheTimestamp).toISOString()})`);
-            console.log(`📅 Current time: ${new Date().toISOString()}`);
-            
-            // Get total count from database first
-            const totalInDatabase = await this.dataService.getAlbumsCount();
-            console.log(`📊 Database has ${totalInDatabase} total albums`);
-            
-            // If database has more albums than we know about, fetch the newest ones
-            if (totalInDatabase > 0) {
-                // Get current cache count
-                const currentCacheCount = this.collection.albums.length;
-                console.log(`📊 Cache has ${currentCacheCount} albums`);
-                
-                const albumsToAdd = totalInDatabase - currentCacheCount;
-                
-                if (albumsToAdd > 0) {
-                    console.log(`📈 Database has ${albumsToAdd} more albums than cache - fetching newest albums`);
-                    
-                    // ✅ EFFICIENT: Get only albums created after cache timestamp
-                    const newerAlbums = await this.dataService.getAlbumsAfterTimestamp(cacheTimestamp);
-                    
-                    console.log(`📈 Found ${newerAlbums.length} albums created after cache timestamp`);
-                    
-                    if (newerAlbums.length > 0) {
-                        console.log(`📅 Newest album: ${newerAlbums[0]?.title} (${newerAlbums[0]?.created_at})`);
-                        
-                        // Safety check: only return the expected number of albums
-                        const safeNewerAlbums = newerAlbums.slice(0, albumsToAdd);
-                        if (safeNewerAlbums.length !== newerAlbums.length) {
-                            console.log(`⚠️ SAFETY: Limiting to ${safeNewerAlbums.length} albums (expected ${albumsToAdd})`);
-                        }
-                        
-                        return safeNewerAlbums;
-                    }
+
+            const albumsToAdd = totalInDatabase - currentCacheCount;
+            console.log(`📈 Database has ${albumsToAdd} more albums than cache`);
+
+            // Build a Set of cached album IDs for dedup
+            const cachedIds = new Set(this.collection.albums.map(a => a.id));
+
+            // Fetch the newest albums (more than needed to account for edge cases)
+            const fetchCount = Math.min(albumsToAdd + 50, 500);
+            const newestAlbums = await this.dataService.getNewestAlbums(fetchCount);
+
+            // Filter out any that are already in cache
+            const newAlbums = newestAlbums.filter(a => !cachedIds.has(a.id));
+            console.log(`📈 Found ${newAlbums.length} genuinely new albums (fetched ${newestAlbums.length}, deduped against cache)`);
+
+            if (newAlbums.length > 0) {
+                console.log(`📅 Newest: ${newAlbums[0]?.title} (${newAlbums[0]?.created_at})`);
+                return newAlbums;
+            } else {
                     
                     return [];
                 } else {
-                    console.log('✅ Cache count matches database - no new albums to add');
-                    return [];
-                }
+                console.log('✅ All fetched albums already in cache');
+                return [];
             }
-            
-            return [];
-            
+
         } catch (error) {
             console.error('❌ Error checking for newer albums:', error);
-            return []; // Return empty array to continue with cached data
+            return [];
         }
     }
 
