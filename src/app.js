@@ -796,8 +796,12 @@ class AlbumCollectionApp {
 
     // Full data already loaded — generate derived data if not already done
     if (!this.collection.artists || this.collection.artists.length === 0) {
+        this.updateLoadingProgress('🔄 Processing collection...', `Generating artists, tracks & roles from ${this.collection.albums.length.toLocaleString()} albums...`, 92);
         console.log('🔄 Generating derived data (artists, tracks, roles)...');
         this._generateAndCacheDerivedData();
+        this.updateLoadingProgress('✅ Collection ready!', `${this.collection.albums.length.toLocaleString()} albums · ${this.collection.artists.length.toLocaleString()} artists · ${this.collection.tracks.length.toLocaleString()} tracks · ${this.collection.roles.length.toLocaleString()} roles`, 98);
+    } else {
+        this.updateLoadingProgress('⚡ Ready!', `${this.collection.albums.length.toLocaleString()} albums · ${this.collection.artists.length.toLocaleString()} artists (from cache)`, 98);
     }
 
     } catch (error) {
@@ -1085,14 +1089,24 @@ class AlbumCollectionApp {
             if (!albums || albums.length === 0) {
 
                 this.updateLoadingProgress('📚 Loading albums...', 'Fetching complete data from database...', 30);
+                const loadStartTime = performance.now();
 
                 // Load ALL album data (including credits, tracklist, images) in one shot
                 const [fullAlbums, fetchedScrapedHistory] = await Promise.all([
-                    this.dataService.service.getAlbums((loaded, progress) => {
-                        this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+                    this.dataService.service.getAlbums((loaded, progress, info) => {
+                        const elapsed = ((performance.now() - loadStartTime) / 1000).toFixed(1);
+                        if (info) {
+                            const stepText = `${loaded.toLocaleString()} albums loaded · Wave ${info.wave} (${info.waveRows.toLocaleString()} rows in ${info.waveDuration}s) · ${elapsed}s elapsed`;
+                            this.updateLoadingProgress('📚 Loading from database...', stepText, progress, `${loaded.toLocaleString()} albums`);
+                        } else {
+                            this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded · ${elapsed}s`, progress);
+                        }
                     }).catch(e => { console.error('❌ Failed to load albums:', e); return []; }),
                     this.dataService.getScrapedArtistsHistory().catch(() => [])
                 ]);
+
+                const totalLoadTime = ((performance.now() - loadStartTime) / 1000).toFixed(2);
+                this.updateLoadingProgress('✅ Download complete', `${(fullAlbums || []).length.toLocaleString()} albums loaded in ${totalLoadTime}s`, 88);
 
                 albums = fullAlbums || [];
                 scrapedHistory = fetchedScrapedHistory || [];
@@ -1239,8 +1253,14 @@ class AlbumCollectionApp {
                 } else {
                     // Cache invalid, load full data from database and cache it
                     this.updateLoadingProgress('📚 Loading albums...', 'Downloading complete data...', 30);
-                    albums = await this.dataService.service.getAlbums((loaded, progress) => {
-                        this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+                    const mobileLoadStart = performance.now();
+                    albums = await this.dataService.service.getAlbums((loaded, progress, info) => {
+                        const elapsed = ((performance.now() - mobileLoadStart) / 1000).toFixed(1);
+                        if (info) {
+                            this.updateLoadingProgress('📚 Loading from database...', `${loaded.toLocaleString()} albums · Wave ${info.wave} · ${elapsed}s`, progress, `${loaded.toLocaleString()} albums`);
+                        } else {
+                            this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums · ${elapsed}s`, progress);
+                        }
                     });
 
                     // Cache the loaded data for next time
@@ -1256,8 +1276,14 @@ class AlbumCollectionApp {
             } else {
                 // No valid cache, load full data from database
                 this.updateLoadingProgress('📚 Loading albums...', 'Downloading complete data...', 30);
-                albums = await this.dataService.service.getAlbums((loaded, progress) => {
-                    this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums loaded`, progress);
+                const mobileLoadStart2 = performance.now();
+                albums = await this.dataService.service.getAlbums((loaded, progress, info) => {
+                    const elapsed = ((performance.now() - mobileLoadStart2) / 1000).toFixed(1);
+                    if (info) {
+                        this.updateLoadingProgress('📚 Loading from database...', `${loaded.toLocaleString()} albums · Wave ${info.wave} · ${elapsed}s`, progress, `${loaded.toLocaleString()} albums`);
+                    } else {
+                        this.updateLoadingProgress('📚 Loading albums...', `${loaded.toLocaleString()} albums · ${elapsed}s`, progress);
+                    }
                 });
 
                 // Cache for next time (non-blocking)

@@ -534,12 +534,15 @@ class SupabaseService {
         const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const concurrency = isMobile ? 4 : 8;
         const maxBatches = 30;
+        let waveNumber = 0;
 
-        console.log(`📦 Loading ${label}... (${isMobile ? 'Mobile' : 'Desktop'} mode, concurrency: ${concurrency})`);
+        console.log(`📦 Loading ${label}... (${isMobile ? 'Mobile' : 'Desktop'} mode, batch: ${batchSize}, concurrency: ${concurrency})`);
 
         let allData = [];
 
         for (let wave = 0; wave < maxBatches; wave += concurrency) {
+            waveNumber++;
+            const waveStart = performance.now();
             const promises = [];
             for (let i = 0; i < concurrency; i++) {
                 const start = (wave + i) * batchSize;
@@ -553,27 +556,40 @@ class SupabaseService {
 
             const results = await Promise.all(promises);
             let done = false;
+            let waveRows = 0;
 
             for (const result of results) {
                 if (result.error) throw result.error;
                 if (result.data?.length > 0) {
                     allData = allData.concat(result.data);
+                    waveRows += result.data.length;
                 }
                 if (!result.data || result.data.length < batchSize) {
                     done = true;
                 }
             }
 
+            const waveDuration = ((performance.now() - waveStart) / 1000).toFixed(1);
+            const elapsedTotal = ((performance.now() - startTime) / 1000).toFixed(1);
+
             if (onProgress) {
                 const progress = Math.min(85, 30 + Math.floor((allData.length / 32000) * 55));
-                onProgress(allData.length, progress);
+                onProgress(allData.length, progress, {
+                    wave: waveNumber,
+                    waveRows,
+                    waveDuration: parseFloat(waveDuration),
+                    elapsedTotal: parseFloat(elapsedTotal),
+                    done,
+                    batchSize,
+                    concurrency
+                });
             }
 
             if (done) break;
         }
 
         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-        console.log(`✅ Loaded ${allData.length} ${label} in ${duration}s`);
+        console.log(`✅ Loaded ${allData.length} ${label} in ${duration}s (${waveNumber} waves)`);
         return allData;
     }
 
