@@ -1478,10 +1478,15 @@ class AlbumCollectionApp {
                 this.enrichmentState.inProgress = false;
                 this.artistsNeedRegeneration = true;
 
-                // Generate derived data immediately (no idle delay)
-                this._generateAndCacheDerivedData();
+                // Clear any stale cached derived data so it regenerates with enriched credits
+                this.clearDataGenerationCache();
 
+                // Generate derived data after a microtask to let the promise resolve first
+                // This ensures waitForEnrichment() resolves before heavy CPU work
                 resolve();
+
+                // Generate derived data after resolve, so tabs waiting on enrichment can proceed
+                setTimeout(() => this._generateAndCacheDerivedData(), 50);
 
             } catch (error) {
                 console.error('❌ Background enrichment failed:', error);
