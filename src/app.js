@@ -7451,6 +7451,7 @@ class AlbumCollectionApp {
         }
 
         const stats = { artists: 0, albumsFound: 0, newAlbums: 0, scraped: 0, errors: 0, skipped: 0 };
+        const syncStats = { noResults: 0, noMatch: 0, noRelease: 0, noMusicalRole: 0, parseFail: 0, duplicate: 0, added: 0, replaced: 0, error: 0 };
 
         try {
             // Step 1: Fetch followed artists
@@ -7466,182 +7467,176 @@ class AlbumCollectionApp {
                 return;
             }
 
-            // Step 2: For each artist, get albums + appearances from Spotify
-            this.updateSpotifyProgress(15, `Discovering albums for ${followedArtists.length} artists...`);
-            const allNewAlbums = []; // { spotifyAlbum, artistName, type: 'own'|'appearance' }
-
-            for (let i = 0; i < followedArtists.length; i++) {
-                const artist = followedArtists[i];
-                const progress = 15 + (i / followedArtists.length) * 35;
-                this.updateSpotifyProgress(progress, `Checking ${artist.name} (${i + 1}/${followedArtists.length})...`);
-
-                try {
-                    // Get own albums
-                    const ownAlbums = await this.spotifyAPI.getArtistAlbums(artist.id, artist.name);
-                    for (const album of ownAlbums) {
-                        allNewAlbums.push({
-                            spotifyAlbum: album,
-                            followedArtistName: artist.name,
-                            type: 'own'
-                        });
-                    }
-
-                    // Get appearances
-                    const appearances = await this.spotifyAPI.getArtistAppearances(artist.id, artist.name);
-                    for (const album of appearances) {
-                        allNewAlbums.push({
-                            spotifyAlbum: album,
-                            followedArtistName: artist.name,
-                            type: 'appearance'
-                        });
-                    }
-                } catch (err) {
-                    console.warn(`⚠️ Error fetching albums for ${artist.name}:`, err);
-                    stats.errors++;
-                }
-            }
-
-            stats.albumsFound = allNewAlbums.length;
-            this.updateSpotifyProgress(50, `Found ${allNewAlbums.length} albums. Filtering against your collection...`);
-
-            // Step 3: Filter against existing collection
+            // Build existing titles set for duplicate filtering
             const existingTitles = new Set();
             for (const album of this.collection.albums) {
-                // Normalize: lowercase, remove parentheticals, trim
                 const key = `${album.artist}-${album.title}`.toLowerCase()
                     .replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
                 existingTitles.add(key);
             }
 
-            const toScrape = [];
-            for (const entry of allNewAlbums) {
-                const sa = entry.spotifyAlbum;
-                const albumArtist = sa.artists?.[0]?.name || '';
-                const key = `${albumArtist}-${sa.name}`.toLowerCase()
-                    .replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
+            let totalAlbumsScraping = 0;
+            let globalAlbumIndex = 0;
 
-                if (!existingTitles.has(key)) {
-                    // Also prevent duplicates within this sync batch
+            // Step 2+3+4: Process each artist one by one — discover, filter, scrape
+            for (let artistIdx = 0; artistIdx < followedArtists.length; artistIdx++) {
+                const artist = followedArtists[artistIdx];
+                const artistProgress = 15 + (artistIdx / followedArtists.length) * 80;
+                this.updateSpotifyProgress(artistProgress,
+                    `Artist ${artistIdx + 1}/${followedArtists.length}: ${artist.name} — discovering albums...`
+                );
+
+                let artistAlbums = [];
+                try {
+                    // Get own albums from Spotify
+                    const ownAlbums = await this.spotifyAPI.getArtistAlbums(artist.id, artist.name);
+                    for (const album of ownAlbums) {
+                        artistAlbums.push({ spotifyAlbum: album, followedArtistName: artist.name, type: 'own' });
+                    }
+
+                    // Get appearances from Spotify
+                    const appearances = await this.spotifyAPI.getArtistAppearances(artist.id, artist.name);
+                    for (const album of appearances) {
+                        artistAlbums.push({ spotifyAlbum: album, followedArtistName: artist.name, type: 'appearance' });
+                    }
+                } catch (err) {
+                    console.warn(`⚠️ Error fetching Spotify albums for ${artist.name}:`, err);
+                    stats.errors++;
+                    continue;
+                }
+
+                stats.albumsFound += artistAlbums.length;
+
+                // Filter against existing collection
+                const toScrape = [];
+                for (const entry of artistAlbums) {
+                    const sa = entry.spotifyAlbum;
+                    const albumArtist = sa.artists?.[0]?.name || '';
+                    const key = `${albumArtist}-${sa.name}`.toLowerCase()
+                        .replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
+
                     if (!existingTitles.has(key)) {
                         existingTitles.add(key);
                         toScrape.push(entry);
+                    } else {
+                        stats.skipped++;
                     }
-                } else {
-                    stats.skipped++;
-                }
-            }
-
-            stats.newAlbums = toScrape.length;
-            this.updateSpotifyProgress(55, `${toScrape.length} new albums to scrape from Discogs...`);
-
-            if (toScrape.length === 0) {
-                this.updateSpotifyProgress(100, 'Your collection is up to date! No new albums found.');
-                this.finishSpotifySync(syncBtn, stats);
-                return;
-            }
-
-            // Step 4: For each new album, search Discogs and scrape
-            const syncStats = { noResults: 0, noMatch: 0, noRelease: 0, noMusicalRole: 0, parseFail: 0, duplicate: 0, added: 0, replaced: 0, error: 0 };
-            for (let i = 0; i < toScrape.length; i++) {
-                const entry = toScrape[i];
-                const sa = entry.spotifyAlbum;
-                const albumArtist = sa.artists?.[0]?.name || '';
-                const albumTitle = sa.name;
-                const progress = 55 + (i / toScrape.length) * 40;
-
-                this.updateSpotifyProgress(progress,
-                    `Scraping ${i + 1}/${toScrape.length}: ${albumTitle} by ${albumArtist}`
-                );
-
-                // Log running stats every 25 albums
-                if (i > 0 && i % 25 === 0) {
-                    console.log(`📊 Spotify Sync stats at ${i}/${toScrape.length}: added=${syncStats.added}, replaced=${syncStats.replaced}, noResults=${syncStats.noResults}, noMatch=${syncStats.noMatch}, noRelease=${syncStats.noRelease}, noMusicalRole=${syncStats.noMusicalRole}, duplicate=${syncStats.duplicate}, parseFail=${syncStats.parseFail}, error=${syncStats.error}`);
                 }
 
-                try {
-                    // Rate-limit delay BEFORE each Discogs request cycle
-                    // Discogs allows ~60 req/min for authenticated users
-                    if (i > 0) {
-                        const delay = window.CONFIG.DISCOGS.RATE_LIMIT.SCRAPER_DELAY || 3000;
-                        await this.sleep(delay);
+                if (toScrape.length === 0) {
+                    console.log(`✅ ${artist.name}: all ${artistAlbums.length} albums already in collection`);
+                    continue;
+                }
+
+                stats.newAlbums += toScrape.length;
+                console.log(`🎵 ${artist.name}: ${toScrape.length} new albums to scrape (${artistAlbums.length} total from Spotify)`);
+
+                // Scrape each new album from Discogs
+                for (let i = 0; i < toScrape.length; i++) {
+                    const entry = toScrape[i];
+                    const sa = entry.spotifyAlbum;
+                    const albumArtist = sa.artists?.[0]?.name || '';
+                    const albumTitle = sa.name;
+                    globalAlbumIndex++;
+
+                    this.updateSpotifyProgress(artistProgress,
+                        `Artist ${artistIdx + 1}/${followedArtists.length} (${artist.name}) — scraping ${i + 1}/${toScrape.length}: ${albumTitle}`
+                    );
+
+                    // Log running stats every 25 albums
+                    if (globalAlbumIndex > 0 && globalAlbumIndex % 25 === 0) {
+                        console.log(`📊 Spotify Sync stats at album #${globalAlbumIndex}: added=${syncStats.added}, replaced=${syncStats.replaced}, noResults=${syncStats.noResults}, noMatch=${syncStats.noMatch}, noRelease=${syncStats.noRelease}, noMusicalRole=${syncStats.noMusicalRole}, duplicate=${syncStats.duplicate}, parseFail=${syncStats.parseFail}, error=${syncStats.error}`);
                     }
 
-                    // Search Discogs for this album
-                    const query = `${albumArtist} ${albumTitle}`;
-                    const searchResults = await this.discogsAPI.searchReleases(query, 'release', 5);
+                    try {
+                        // Rate-limit delay BEFORE each Discogs request cycle
+                        if (globalAlbumIndex > 1) {
+                            const delay = window.CONFIG.DISCOGS.RATE_LIMIT.SCRAPER_DELAY || 3000;
+                            await this.sleep(delay);
+                        }
 
-                    // searchReleases returns the results array directly (not a wrapper object)
-                    if (!searchResults?.length) {
-                        console.log(`⚠️ No Discogs results for: ${query}`);
-                        syncStats.noResults++;
-                        stats.errors++;
-                        continue;
-                    }
+                        // Search Discogs for this album
+                        const query = `${albumArtist} ${albumTitle}`;
+                        const searchResults = await this.discogsAPI.searchReleases(query, 'release', 5);
 
-                    // Find the best match from Discogs results
-                    const match = this.findBestDiscogsMatch(searchResults, albumArtist, albumTitle);
-                    if (!match) {
-                        console.log(`⚠️ No good Discogs match for: ${query}`);
-                        syncStats.noMatch++;
-                        stats.errors++;
-                        continue;
-                    }
+                        // searchReleases returns the results array directly
+                        if (!searchResults?.length) {
+                            console.log(`⚠️ No Discogs results for: ${query}`);
+                            syncStats.noResults++;
+                            stats.errors++;
+                            continue;
+                        }
 
-                    // Delay between search and release fetch to respect rate limits
-                    await this.sleep(1500);
+                        // Find the best match from Discogs results
+                        const match = this.findBestDiscogsMatch(searchResults, albumArtist, albumTitle);
+                        if (!match) {
+                            console.log(`⚠️ No good Discogs match for: ${query}`);
+                            syncStats.noMatch++;
+                            stats.errors++;
+                            continue;
+                        }
 
-                    // Get full release details
-                    const releaseData = await this.discogsAPI.getRelease(match.id);
-                    if (!releaseData) {
-                        syncStats.noRelease++;
-                        stats.errors++;
-                        continue;
-                    }
+                        // Delay between search and release fetch to respect rate limits
+                        await this.sleep(1500);
 
-                    // For own albums: check musical role
-                    if (entry.type === 'own') {
-                        if (!window.hasScrapedArtistMusicalRole(releaseData, entry.followedArtistName)) {
-                            console.log(`⏭️ No musical role for ${entry.followedArtistName} on: ${albumTitle}`);
-                            syncStats.noMusicalRole++;
+                        // Get full release details
+                        const releaseData = await this.discogsAPI.getRelease(match.id);
+                        if (!releaseData) {
+                            syncStats.noRelease++;
+                            stats.errors++;
+                            continue;
+                        }
+
+                        // For own albums: check musical role
+                        if (entry.type === 'own') {
+                            if (!window.hasScrapedArtistMusicalRole(releaseData, entry.followedArtistName)) {
+                                console.log(`⏭️ No musical role for ${entry.followedArtistName} on: ${albumTitle}`);
+                                syncStats.noMusicalRole++;
+                                stats.skipped++;
+                                continue;
+                            }
+                        }
+
+                        // Parse album
+                        const album = this.parser.parseAlbum(releaseData);
+                        if (!album) {
+                            syncStats.parseFail++;
+                            stats.errors++;
+                            continue;
+                        }
+
+                        // Check duplicates (by Discogs ID / title+artist+year)
+                        const duplicateStatus = this.checkAlbumDuplicateStatus(album);
+                        if (duplicateStatus.isDuplicate && !duplicateStatus.shouldReplace) {
+                            console.log(`⏭️ Duplicate: ${album.title} by ${album.artist}`);
+                            syncStats.duplicate++;
                             stats.skipped++;
                             continue;
                         }
-                    }
 
-                    // Parse album
-                    const album = this.parser.parseAlbum(releaseData);
-                    if (!album) {
-                        syncStats.parseFail++;
+                        if (duplicateStatus.shouldReplace) {
+                            await this.replaceAlbumWithEarlierVersion(album, duplicateStatus.existingIndex);
+                            syncStats.replaced++;
+                        } else {
+                            await this.addAlbumToCollection(album);
+                            syncStats.added++;
+                        }
+
+                        stats.scraped++;
+                        console.log(`✅ Spotify Sync added: ${album.title} (${album.year})`);
+                    } catch (err) {
+                        console.warn(`❌ Error scraping ${albumTitle}:`, err);
+                        syncStats.error++;
                         stats.errors++;
-                        continue;
                     }
-
-                    // Check duplicates (by Discogs ID / title+artist+year)
-                    const duplicateStatus = this.checkAlbumDuplicateStatus(album);
-                    if (duplicateStatus.isDuplicate && !duplicateStatus.shouldReplace) {
-                        console.log(`⏭️ Duplicate: ${album.title} by ${album.artist}`);
-                        syncStats.duplicate++;
-                        stats.skipped++;
-                        continue;
-                    }
-
-                    if (duplicateStatus.shouldReplace) {
-                        await this.replaceAlbumWithEarlierVersion(album, duplicateStatus.existingIndex);
-                        syncStats.replaced++;
-                    } else {
-                        await this.addAlbumToCollection(album);
-                        syncStats.added++;
-                    }
-
-                    stats.scraped++;
-                    console.log(`✅ Spotify Sync added: ${album.title} (${album.year})`);
-                } catch (err) {
-                    console.warn(`❌ Error scraping ${albumTitle}:`, err);
-                    stats.errors++;
                 }
+
+                // Log artist summary
+                console.log(`✅ Done with ${artist.name} (artist ${artistIdx + 1}/${followedArtists.length}) — total added so far: ${syncStats.added}`);
             }
 
             // Step 5: Done - regenerate collection data
+            console.log(`📊 FINAL Spotify Sync stats: added=${syncStats.added}, replaced=${syncStats.replaced}, noResults=${syncStats.noResults}, noMatch=${syncStats.noMatch}, noRelease=${syncStats.noRelease}, noMusicalRole=${syncStats.noMusicalRole}, duplicate=${syncStats.duplicate}, parseFail=${syncStats.parseFail}, error=${syncStats.error}`);
             this.updateSpotifyProgress(98, 'Updating collection...');
             if (stats.scraped > 0) {
                 await this.regenerateCollectionData();
