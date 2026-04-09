@@ -3295,6 +3295,9 @@ class AlbumCollectionApp {
             const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(this.activeCollection.artists);
             this.musicalArtists = musicalArtists;
             this.technicalArtists = technicalArtists;
+            // Update search backup arrays so searches use the full regenerated set
+            this.originalMusicalArtists = [...musicalArtists];
+            this.originalTechnicalArtists = [...technicalArtists];
         } else {
             console.log('🎭 Using cached artists (albums unchanged)');
         }
@@ -9821,6 +9824,8 @@ class AlbumCollectionApp {
             const { musicalArtists, technicalArtists } = this.categorizeArtistsByRoles(this.activeCollection.artists);
             this.musicalArtists = musicalArtists;
             this.technicalArtists = technicalArtists;
+            this.originalMusicalArtists = [...musicalArtists];
+            this.originalTechnicalArtists = [...technicalArtists];
         }
 
         // Only sort if we have artists
