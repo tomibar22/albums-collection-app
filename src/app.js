@@ -8626,9 +8626,6 @@ class AlbumCollectionApp {
                 console.log(`📅 Newest: ${newAlbums[0]?.title} (${newAlbums[0]?.created_at})`);
                 return newAlbums;
             } else {
-                    
-                    return [];
-                } else {
                 console.log('✅ All fetched albums already in cache');
                 return [];
             }
