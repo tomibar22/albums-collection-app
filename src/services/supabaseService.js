@@ -534,6 +534,7 @@ class SupabaseService {
         const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const concurrency = isMobile ? 4 : 8;
         const maxBatches = 30;
+        const maxRetries = 3;
         let waveNumber = 0;
 
         console.log(`📦 Loading ${label}... (${isMobile ? 'Mobile' : 'Desktop'} mode, batch: ${batchSize}, concurrency: ${concurrency})`);
@@ -543,18 +544,42 @@ class SupabaseService {
         for (let wave = 0; wave < maxBatches; wave += concurrency) {
             waveNumber++;
             const waveStart = performance.now();
-            const promises = [];
-            for (let i = 0; i < concurrency; i++) {
-                const start = (wave + i) * batchSize;
-                promises.push(
-                    this.client
-                        .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
-                        .select(columns)
-                        .range(start, start + batchSize - 1)
-                );
+
+            let results = null;
+            for (let retry = 0; retry < maxRetries; retry++) {
+                try {
+                    const promises = [];
+                    for (let i = 0; i < concurrency; i++) {
+                        const start = (wave + i) * batchSize;
+                        promises.push(
+                            this.client
+                                .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
+                                .select(columns)
+                                .range(start, start + batchSize - 1)
+                        );
+                    }
+                    results = await Promise.all(promises);
+                    break; // Success
+                } catch (err) {
+                    console.warn(`⚠️ Wave ${waveNumber} attempt ${retry + 1} failed:`, err.message);
+                    if (retry < maxRetries - 1) {
+                        const delay = (retry + 1) * 2000;
+                        console.log(`⏳ Retrying in ${delay / 1000}s...`);
+                        if (onProgress) {
+                            onProgress(allData.length, null, {
+                                wave: waveNumber, waveRows: 0,
+                                waveDuration: 0, elapsedTotal: ((performance.now() - startTime) / 1000),
+                                done: false, batchSize, concurrency,
+                                retrying: true, retryAttempt: retry + 1
+                            });
+                        }
+                        await new Promise(r => setTimeout(r, delay));
+                    } else {
+                        throw err;
+                    }
+                }
             }
 
-            const results = await Promise.all(promises);
             let done = false;
             let waveRows = 0;
 

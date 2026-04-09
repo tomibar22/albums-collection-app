@@ -1095,7 +1095,9 @@ class AlbumCollectionApp {
                 const [fullAlbums, fetchedScrapedHistory] = await Promise.all([
                     this.dataService.service.getAlbums((loaded, progress, info) => {
                         const elapsed = ((performance.now() - loadStartTime) / 1000).toFixed(1);
-                        if (info) {
+                        if (info?.retrying) {
+                            this.updateLoadingProgress('⚠️ Connection issue, retrying...', `Attempt ${info.retryAttempt + 1} · ${loaded.toLocaleString()} albums so far · ${elapsed}s`, progress || 30);
+                        } else if (info) {
                             const stepText = `${loaded.toLocaleString()} albums loaded · Wave ${info.wave} (${info.waveRows.toLocaleString()} rows in ${info.waveDuration}s) · ${elapsed}s elapsed`;
                             this.updateLoadingProgress('📚 Loading from database...', stepText, progress, `${loaded.toLocaleString()} albums`);
                         } else {
