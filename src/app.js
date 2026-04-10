@@ -10609,8 +10609,8 @@ class AlbumCollectionApp {
         const artistCount = trackData.uniqueArtistCount || 0;
         const albumCount = trackData.frequency || 0;
         const frequencyText = artistCount > 1
-            ? `${artistCount} artists · ${albumCount} album${albumCount !== 1 ? 's' : ''}`
-            : `${albumCount} album${albumCount !== 1 ? 's' : ''}`;
+            ? `${artistCount} 🎤 · ${albumCount} 💿`
+            : `${albumCount} 💿`;
 
         card.innerHTML = `
             <div class="track-card-content">
