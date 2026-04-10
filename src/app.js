@@ -162,7 +162,7 @@ class AlbumCollectionApp {
         DB_NAME: 'AlbumsCollectionDB',
         DB_VERSION: 1,
         STORE_NAME: 'albumsCache',
-        CACHE_VERSION: '4.1', // v4.1: force fresh load after duplicate cleanup
+        CACHE_VERSION: '4.2', // v4.2: force fresh load after batch loading fix (.order('id') added)
         MAX_AGE_HOURS: 24 // Cache expires after 24 hours
     };
 
@@ -12513,15 +12513,18 @@ class AlbumCollectionApp {
     }
 
     // Render track albums grid with provided data
-    renderTrackAlbumsGrid(trackTitle, albums) {
+    renderTrackAlbumsGrid(trackTitle, albums, { preserveOriginalData = false } = {}) {
         const albumsGrid = document.getElementById('track-albums-grid');
         if (!albumsGrid) {
             console.error('Track albums grid not found');
             return;
         }
 
-        // Store albums data for searching
-        albumsGrid.setAttribute('data-all-albums', JSON.stringify(albums));
+        // Only update the stored data when not filtering by search
+        // (search needs the original data preserved to restore on clear)
+        if (!preserveOriginalData) {
+            albumsGrid.setAttribute('data-all-albums', JSON.stringify(albums));
+        }
 
         // Create a container for album cards using the proper AlbumCard component
         const albumCardsContainer = document.createElement('div');
@@ -12701,7 +12704,8 @@ class AlbumCollectionApp {
         }
 
         // Re-render the albums grid with filtered and sorted data
-        this.renderTrackAlbumsGrid(trackTitle, filteredAlbums);
+        // Preserve original data-all-albums so clearing search restores all albums
+        this.renderTrackAlbumsGrid(trackTitle, filteredAlbums, { preserveOriginalData: true });
 
         console.log(`✅ Search completed: ${filteredAlbums.length} of ${albums.length} albums match "${searchTerm}"`);
     }
