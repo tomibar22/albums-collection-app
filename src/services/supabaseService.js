@@ -560,6 +560,7 @@ class SupabaseService {
                             this.client
                                 .from(window.CONFIG.SUPABASE.TABLES.ALBUMS)
                                 .select(columns)
+                                .order('id')
                                 .range(start, start + batchSize - 1)
                         );
                     }

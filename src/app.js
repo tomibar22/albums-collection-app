@@ -15372,7 +15372,21 @@ class AlbumCollectionApp {
             }
         });
 
-        console.log('🧹 Cleared all search inputs');
+        // Reset search query state so sort functions don't re-apply stale filters
+        this.currentSearchQueries = {
+            albums: '',
+            artists: '',
+            tracks: '',
+            roles: ''
+        };
+
+        // Restore original artist arrays if they were filtered
+        if (this.originalMusicalArtists) {
+            this.musicalArtists = [...this.originalMusicalArtists];
+            this.technicalArtists = [...this.originalTechnicalArtists];
+        }
+
+        console.log('🧹 Cleared all search inputs and reset search state');
     }
 
     // ============================================
