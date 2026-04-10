@@ -10437,8 +10437,20 @@ class AlbumCollectionApp {
             return []; // Return empty array on error
         }
 
-        // Convert map to array
+        // Convert map to array and compute unique artist counts
         const tracksArray = Array.from(trackMap.values());
+        tracksArray.forEach(track => {
+            const uniqueArtists = new Set();
+            track.albums.forEach(albumInfo => {
+                if (albumInfo.albumArtists && Array.isArray(albumInfo.albumArtists)) {
+                    albumInfo.albumArtists.forEach(artist => {
+                        const name = (typeof artist === 'string' ? artist : artist.name || '').toLowerCase().trim();
+                        if (name) uniqueArtists.add(name);
+                    });
+                }
+            });
+            track.uniqueArtistCount = uniqueArtists.size;
+        });
         console.log(`🎵 Generated ${tracksArray.length} tracks from ${albumsToProcess.length} albums`);
 
         // Log sample track for debugging
@@ -10562,8 +10574,20 @@ class AlbumCollectionApp {
             return []; // Return empty array on error
         }
 
-        // Convert map to array
+        // Convert map to array and compute unique artist counts
         const tracksArray = Array.from(trackMap.values());
+        tracksArray.forEach(track => {
+            const uniqueArtists = new Set();
+            track.albums.forEach(albumInfo => {
+                if (albumInfo.albumArtists && Array.isArray(albumInfo.albumArtists)) {
+                    albumInfo.albumArtists.forEach(artist => {
+                        const name = (typeof artist === 'string' ? artist : artist.name || '').toLowerCase().trim();
+                        if (name) uniqueArtists.add(name);
+                    });
+                }
+            });
+            track.uniqueArtistCount = uniqueArtists.size;
+        });
         console.log(`🎵 Generated ${tracksArray.length} tracks from ${totalAlbums} albums (async method)`);
 
         // Log sample track for debugging
@@ -10581,8 +10605,12 @@ class AlbumCollectionApp {
         card.className = 'track-card';
         card.setAttribute('data-track-id', trackData.id);
 
-        // Build frequency display
-        const frequencyText = trackData.frequency === 1 ? '1 album' : `${trackData.frequency} albums`;
+        // Build frequency display showing unique artists and total albums
+        const artistCount = trackData.uniqueArtistCount || 0;
+        const albumCount = trackData.frequency || 0;
+        const frequencyText = artistCount > 1
+            ? `${artistCount} artists · ${albumCount} album${albumCount !== 1 ? 's' : ''}`
+            : `${albumCount} album${albumCount !== 1 ? 's' : ''}`;
 
         card.innerHTML = `
             <div class="track-card-content">
@@ -12160,8 +12188,15 @@ class AlbumCollectionApp {
 
         switch(sortType) {
             case 'frequency':
-                tracksToDisplay.sort((a, b) => b.frequency - a.frequency);
-                console.log(`✅ Sorted by frequency: "${tracksToDisplay[0]?.title}" (${tracksToDisplay[0]?.frequency} albums) to "${tracksToDisplay[tracksToDisplay.length-1]?.title}" (${tracksToDisplay[tracksToDisplay.length-1]?.frequency} albums)`);
+                // Sort by unique artist count (not total album appearances) so tracks
+                // covered by many different artists rank higher than tracks repeated
+                // across albums by the same artist.
+                tracksToDisplay.sort((a, b) => {
+                    const diff = (b.uniqueArtistCount || 0) - (a.uniqueArtistCount || 0);
+                    // Tie-break by total album count
+                    return diff !== 0 ? diff : b.frequency - a.frequency;
+                });
+                console.log(`✅ Sorted by unique artists: "${tracksToDisplay[0]?.title}" (${tracksToDisplay[0]?.uniqueArtistCount} artists, ${tracksToDisplay[0]?.frequency} albums) to "${tracksToDisplay[tracksToDisplay.length-1]?.title}" (${tracksToDisplay[tracksToDisplay.length-1]?.uniqueArtistCount} artists)`);
                 break;
             case 'a-z':
                 tracksToDisplay.sort((a, b) => a.title.localeCompare(b.title));
