@@ -3877,11 +3877,15 @@ class AlbumCollectionApp {
             // Skip if this album is already counted for this artist
             if (existingArtist.albums.some(a => a.id === album.id)) return;
 
-            // Determine most frequent role for this artist
-            const mostFrequentRole = existingArtist.roleFrequency ?
+            // Determine most frequent role for this artist (prefer musical, skip guest-only roles)
+            const guestRoles = ['featuring', 'w/', 'feat.', 'guest'];
+            const sortedRoles = existingArtist.roleFrequency ?
                 Array.from(existingArtist.roleFrequency.entries())
-                    .sort((a, b) => b[1] - a[1])[0]?.[0] || 'Performer' :
-                existingArtist.roles?.[0] || 'Performer';
+                    .sort((a, b) => b[1] - a[1])
+                    .filter(([role]) => !guestRoles.includes(role.toLowerCase().trim())) :
+                (existingArtist.roles || []).filter(r => !guestRoles.includes(r.toLowerCase().trim())).map(r => [r]);
+            const musicalRole = sortedRoles.find(([role]) => window.roleCategorizer.categorizeRole(role) === 'musical');
+            const mostFrequentRole = (musicalRole || sortedRoles[0])?.[0] || 'Performer';
 
             // Add this album to the artist
             existingArtist.albumCount++;
@@ -4650,9 +4654,34 @@ class AlbumCollectionApp {
             `).join('')
             : '<p class="no-content">No tracklist available</p>';
 
+        // Inject main artist into credits if missing but known from other albums
+        let creditsForDisplay = album.credits && Array.isArray(album.credits) ? [...album.credits] : [];
+        if (album.artist && creditsForDisplay.length > 0) {
+            const mainArtistInCredits = creditsForDisplay.some(c =>
+                c.name && c.name.toLowerCase().trim() === album.artist.toLowerCase().trim()
+            );
+            if (!mainArtistInCredits) {
+                // Check if this artist is known from the generated artists data
+                const knownArtist = this.musicalArtists?.find(a => a.name === album.artist) ||
+                    this.technicalArtists?.find(a => a.name === album.artist);
+                if (knownArtist) {
+                    // Prefer a musical role so the main artist shows in the primary credits section
+                    const guestRoles = ['featuring', 'w/', 'feat.', 'guest'];
+                    const nonGuestRoles = knownArtist.roles?.filter(r => !guestRoles.includes(r.toLowerCase().trim())) || [];
+                    const musicalRole = nonGuestRoles.find(r => window.roleCategorizer?.categorizeRole(r) === 'musical');
+                    const mostFrequentRole = musicalRole || nonGuestRoles[0] || 'Performer';
+                    creditsForDisplay.unshift({
+                        name: album.artist,
+                        role: mostFrequentRole,
+                        id: knownArtist.discogsId || null
+                    });
+                }
+            }
+        }
+
         // Separate musical and technical credits using role categorizer
-        const { musicalCreditsHtml, technicalCreditsHtml } = album.credits && album.credits.length > 0
-            ? this.generateSeparatedCreditsHtml(album.credits)
+        const { musicalCreditsHtml, technicalCreditsHtml } = creditsForDisplay.length > 0
+            ? this.generateSeparatedCreditsHtml(creditsForDisplay)
             : { musicalCreditsHtml: '<p class="no-content">No credits available</p>', technicalCreditsHtml: '' };
 
         // Generate genres and styles tags
