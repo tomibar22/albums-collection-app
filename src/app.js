@@ -3855,6 +3855,87 @@ class AlbumCollectionApp {
             });
         });
 
+        // MAIN ARTIST INJECTION PASS:
+        // For albums where the main artist (album.artist) is NOT in the credits,
+        // check if that artist name exists in the artistMap (from other albums' credits).
+        // If yes, associate this album with that artist using their most frequent role.
+        let mainArtistInjections = 0;
+        albumsToProcess.forEach(album => {
+            const mainArtist = album.artist;
+            if (!mainArtist) return;
+
+            // Check if the main artist is already in this album's credits
+            const alreadyInCredits = album.credits && Array.isArray(album.credits) &&
+                album.credits.some(credit => credit.name && credit.name.toLowerCase().trim() === mainArtist.toLowerCase().trim());
+            if (alreadyInCredits) return;
+
+            // Check if this artist exists in the artistMap (known from other albums)
+            if (!artistMap.has(mainArtist)) return;
+
+            const existingArtist = artistMap.get(mainArtist);
+
+            // Skip if this album is already counted for this artist
+            if (existingArtist.albums.some(a => a.id === album.id)) return;
+
+            // Determine most frequent role for this artist
+            const mostFrequentRole = existingArtist.roleFrequency ?
+                Array.from(existingArtist.roleFrequency.entries())
+                    .sort((a, b) => b[1] - a[1])[0]?.[0] || 'Performer' :
+                existingArtist.roles?.[0] || 'Performer';
+
+            // Add this album to the artist
+            existingArtist.albumCount++;
+            existingArtist.albums.push(album);
+
+            // Categorize the role for musical/technical counts
+            const roleCategory = window.roleCategorizer.categorizeRole(mostFrequentRole);
+            if (roleCategory === 'musical') {
+                existingArtist.musicalAlbumCount++;
+                existingArtist.musicalAlbums.push(album);
+            }
+            if (roleCategory === 'technical') {
+                existingArtist.technicalAlbumCount++;
+                existingArtist.technicalAlbums.push(album);
+            }
+
+            // Update role frequency
+            if (existingArtist.roleFrequency) {
+                existingArtist.roleFrequency.set(mostFrequentRole,
+                    (existingArtist.roleFrequency.get(mostFrequentRole) || 0) + 1);
+
+                // Rebuild sorted roles
+                existingArtist.roles = Array.from(existingArtist.roleFrequency.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .map(entry => entry[0]);
+            }
+
+            // Update genre frequency
+            if (existingArtist.genreFrequency) {
+                const allGenres = [
+                    ...(album.genres && Array.isArray(album.genres) ? album.genres : []),
+                    ...(album.styles && Array.isArray(album.styles) ? album.styles : [])
+                ];
+                allGenres.forEach(genre => {
+                    if (genre && genre.trim()) {
+                        existingArtist.genreFrequency.set(genre,
+                            (existingArtist.genreFrequency.get(genre) || 0) + 1);
+                    }
+                });
+                const sortedGenres = Array.from(existingArtist.genreFrequency.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .map(entry => entry[0]);
+                existingArtist.genres = sortedGenres;
+                existingArtist.topGenres = sortedGenres.slice(0, 3);
+                existingArtist.mostFrequentGenre = sortedGenres[0] || null;
+            }
+
+            mainArtistInjections++;
+        });
+
+        if (mainArtistInjections > 0) {
+            console.log(`🎯 Main artist injection: associated ${mainArtistInjections} albums with their main artist (not in credits but artist known from other albums)`);
+        }
+
         // Convert map to array and finalize role sorting by frequency
         const artists = Array.from(artistMap.values()).map(artist => {
             // Ensure roles are sorted by frequency and remove the roleFrequency map
@@ -4498,16 +4579,19 @@ class AlbumCollectionApp {
         const seenTitleKeys = new Set();
         const normalize = s => (s || '').toLowerCase().replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
         const unfilteredAlbums = this.collection.albums.filter(album => {
-            if (!album.credits || !Array.isArray(album.credits)) return false;
             // Dedup by album ID
             if (seenIds.has(album.id)) return false;
             // Dedup by title+artist+year (catches different Discogs release IDs for same album)
             const titleKey = `${normalize(album.title)}|${normalize(album.artist)}|${album.year || ''}`;
             if (seenTitleKeys.has(titleKey)) return false;
 
-            const hasArtist = album.credits.some(credit =>
-                credit.name && credit.name.toLowerCase().trim() === artist.name.toLowerCase().trim()
-            );
+            const hasArtistInCredits = album.credits && Array.isArray(album.credits) &&
+                album.credits.some(credit =>
+                    credit.name && credit.name.toLowerCase().trim() === artist.name.toLowerCase().trim()
+                );
+            // Also match if this artist is the album's main artist
+            const isMainArtist = album.artist && album.artist.toLowerCase().trim() === artist.name.toLowerCase().trim();
+            const hasArtist = hasArtistInCredits || isMainArtist;
             if (hasArtist) {
                 seenIds.add(album.id);
                 seenTitleKeys.add(titleKey);
