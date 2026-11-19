@@ -2,7 +2,7 @@
 window.CONFIG = {
     // Discogs API Configuration
     DISCOGS: {
-        API_KEY: 'WqpYrXczbaWXtmKNncCeRysLaXNQFJQWXPetKSPR',
+        API_KEY: '',
         BASE_URL: 'https://api.discogs.com',
         HEADERS: {
             'User-Agent': 'AlbumsCollectionApp/1.0'
@@ -18,7 +18,7 @@ window.CONFIG = {
     },
 
     GOOGLE_SHEETS: {
-        API_KEY: 'AIzaSyBxQdVUs_YzdA4bcg8cD1jzCCtDT4ScmIw',
+        API_KEY: '',
         SPREADSHEET_ID: '1yCd_gxOKN3EH4AFyGH61cEti-Ehduxxh_egx_yZkJhg',
 
         SHEETS: {
